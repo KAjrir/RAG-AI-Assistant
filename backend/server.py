@@ -7,6 +7,10 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 from vectorized_ai_chatbot import promptAI
+
+from dotenv import load_dotenv
+load_dotenv()
+
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 app = Flask(__name__)

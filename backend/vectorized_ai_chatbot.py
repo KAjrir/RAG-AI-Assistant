@@ -3,7 +3,6 @@ import json
 
 from collections import defaultdict
 from prompts import SYSTEM_PROMPT
-from dotenv import load_dotenv
 
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_chroma import Chroma
@@ -11,7 +10,6 @@ from langchain_core.prompts import ChatPromptTemplate
 
 
 # === Setup ===
-load_dotenv()
 
 PERSIST_DIR = "./chroma_db"
 EMBED_MODEL = "text-embedding-3-small"
