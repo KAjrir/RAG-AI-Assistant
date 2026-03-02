@@ -1,20 +1,17 @@
 import { useEffect, useRef, useState } from "react";
+
 import "./App.css"
 import "./markdown.css"
+import API_URL from "./config/api";
+
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeRaw from 'rehype-raw';
 
-const initialMessages = [
-  // { id: 1, role: "assistant", text: "Hoi! Waarmee kan ik helpen?" },
-  // { id: 2, role: "user", text: "Ik wil een chat layout maken 😅" },
-];
-
-
 
 export default function App() {
-  const [messages, setMessages] = useState(initialMessages);
+  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [draft, setDraft] = useState("");
   const bottomRef = useRef(null);
@@ -49,11 +46,11 @@ export default function App() {
     const sessionId = localStorage.getItem("session_id")
 
     const url =
-      `http://localhost:3000/chat-stream` +
+      `${API_URL}/chat-stream` +
       `?session_id=${encodeURIComponent(sessionId)}` +
       `&message=${encodeURIComponent(text)}`;
 
-    const response = await fetch(url) //new EventSource(url);
+    const response = await fetch(url)
     let full_text = ""
 
     const reader = response.body.getReader()
@@ -132,33 +129,3 @@ export default function App() {
     </div>
   );
 }
-
-
-// function receiveEventsource(eventSource) {
-//   let full_text = ""
-//   eventSource.onmessage = (event) => {
-//       const chunk = event.data;
-//       full_text += chunk
-//       console.log(JSON.stringify(event));
-
-//       if(chunk.includes("[[END]]")) {
-//         setLoading(false);
-//         eventSource.close();
-//         console.log(full_text)
-//         return
-//       }
-
-//       setMessages((prev) => 
-//         prev.map((msg) => 
-//           msg.id === assistantId 
-//             ? { ...msg, text: msg.text + chunk }
-//             : msg
-//         )
-//       )
-//     };
-
-//     eventSource.onerror = () => {
-//       setLoading(false)
-//       eventSource.close();
-//     };
-// }
