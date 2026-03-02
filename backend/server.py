@@ -1,12 +1,27 @@
-import time
+import os
 from flask import Flask, Response, request
 from flask_cors import CORS
 import asyncio
 
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
 from vectorized_ai_chatbot import promptAI
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 app = Flask(__name__)
-CORS(app)
+
+CORS(
+    app,
+    resources={r"/*": {"origins": [FRONTEND_URL]}},
+    supports_credentials=True
+)
+
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["60 per minute"]
+)
 
 async def collect_chunks(callable_fn, chunk_fnc):
     async for chunk in callable_fn():
@@ -63,6 +78,7 @@ def send_chunk(chunk, newline=False):
     return chunk
 
 @app.route("/chat-stream")
+@limiter.limit("10 per minute")
 def chat_stream():
     message = request.args.get("message", "")
     session_id = request.args.get("session_id", "")
@@ -73,4 +89,8 @@ def chat_stream():
     )
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=3000, debug=True)
+    app.run(
+        host="0.0.0.0",
+        port=3000,
+        debug=False
+    )
