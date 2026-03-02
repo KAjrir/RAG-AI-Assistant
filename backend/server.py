@@ -1,6 +1,6 @@
 import os
 from flask import Flask, Response, request
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 import asyncio
 
 from flask_limiter import Limiter
@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
-
+print(FRONTEND_URL)
 app = Flask(__name__)
 
 CORS(
@@ -83,6 +83,7 @@ def send_chunk(chunk, newline=False):
 
 @app.route("/chat-stream")
 @limiter.limit("10 per minute")
+@cross_origin(origins=[FRONTEND_URL])
 def chat_stream():
     message = request.args.get("message", "")
     session_id = request.args.get("session_id", "")
@@ -90,6 +91,11 @@ def chat_stream():
     return Response(
         generate_stream(lambda: promptAI(message, session_id), send_chunk),
         mimetype="text/plain",
+        headers={
+            "Access-Control-Allow-Origin": FRONTEND_URL,
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        },
     )
 
 if __name__ == "__main__":
