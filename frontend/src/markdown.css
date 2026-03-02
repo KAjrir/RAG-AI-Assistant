@@ -1,0 +1,105 @@
+/* ===== MARKDOWN INSIDE ASSISTANT BUBBLE ===== */
+.markdown {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--sdb-text);
+}
+
+/* HEADINGS (CORPORATE, COMPACT) */
+.markdown h1 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0 0 0.6rem 0;
+  color: var(--sdb-text);
+  border-bottom: 2px solid var(--sdb-primary);
+  padding-bottom: 4px;
+}
+
+.markdown h2 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0.9rem 0 0.4rem 0;
+  color: var(--sdb-primary-dark);
+}
+
+.markdown h3 {
+  font-size: 0.98rem;
+  font-weight: 600;
+  margin: 0.7rem 0 0.3rem 0;
+}
+
+/* PARAGRAPHS */
+.markdown p {
+  margin: 0.4rem 0;
+  color: var(--sdb-text);
+}
+
+/* LISTS (COMPACT ENTERPRISE STYLE) */
+.markdown ul,
+.markdown ol {
+  padding-left: 1.2rem;
+  margin: 0.4rem 0;
+}
+
+.markdown li {
+  margin: 0.25rem 0;
+}
+
+.markdown ul li::marker {
+  color: var(--sdb-primary);
+}
+
+/* STRONG / EMPHASIS */
+.markdown strong {
+  font-weight: 600;
+  color: var(--sdb-text);
+}
+
+.markdown em {
+  color: var(--sdb-primary-dark);
+}
+
+/* LINKS (SDB PORTAL STYLE) */
+.markdown a {
+  color: var(--sdb-primary-dark);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.markdown a:hover {
+  text-decoration: underline;
+}
+
+/* CODE */
+.markdown pre {
+  background: #F1F7FA;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  overflow-x: auto;
+}
+
+.markdown code {
+  background: #EAF3F7;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+/* BLOCKQUOTE (INFO PANEL LOOK) */
+.markdown blockquote {
+  border-left: 3px solid var(--sdb-primary);
+  padding-left: 10px;
+  margin: 0.6rem 0;
+  color: var(--sdb-text-muted);
+  background: #F4FAFC;
+  border-radius: 6px;
+}
+
+/* MEDIA (AI IMAGES & IFRAMES) */
+.markdown img,
+.markdown iframe {
+  margin: 0.7rem 0;
+  border-radius: 8px;
+  max-width: 100%;
+}

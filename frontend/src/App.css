@@ -1,0 +1,136 @@
+/* ===== SDB DESIGN TOKENS ===== */
+:root{
+  --sdb-primary: #61AFC9;
+  --sdb-primary-dark: #2B6C80;
+  --sdb-bg: #F4F9FB;
+  --sdb-surface: #FFFFFF;
+  --sdb-border: #E3EEF3;
+  --sdb-text: #0F2A33;
+  --sdb-text-muted: #5B7C86;
+}
+
+/* ===== APP SHELL ===== */
+.chatShell{
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--sdb-bg);
+  color: var(--sdb-text);
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+/* ===== HEADER (SDB PORTAL STYLE) ===== */
+.chatHeader{
+  padding: 14px 20px;
+  background: var(--sdb-surface);
+  border-bottom: 1px solid var(--sdb-border);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--sdb-text);
+}
+
+/* ===== CHAT BODY ===== */
+.chatBody{
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ===== ROW ALIGNMENT ===== */
+.row{
+  display: flex;
+}
+.rowUser{
+  justify-content: flex-end;
+}
+.rowAssistant{
+  justify-content: flex-start;
+}
+
+/* ===== BASE BUBBLE (CARD STYLE) ===== */
+.bubble{
+  max-width: min(72ch, 85%);
+  padding: 14px 16px;
+  border-radius: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+  border: 1px solid var(--sdb-border);
+  box-shadow: 0 2px 6px rgba(15, 42, 51, 0.04);
+}
+
+/* ===== USER BUBBLE (SDB ACCENT) ===== */
+.bubbleUser{
+  background: var(--sdb-primary);
+  color: white;
+  border: none;
+  border-bottom-right-radius: 6px;
+}
+
+/* ===== ASSISTANT BUBBLE (KNOWLEDGE PANEL STYLE) ===== */
+.bubbleAssistant{
+  background: var(--sdb-surface);
+  color: var(--sdb-text);
+  border-bottom-left-radius: 6px;
+}
+
+/* ===== COMPOSER (BOTTOM INPUT BAR) ===== */
+.chatComposer{
+  display: flex;
+  gap: 10px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--sdb-border);
+  background: var(--sdb-surface);
+  position: sticky;
+  bottom: 0;
+}
+
+/* ===== INPUT ===== */
+.chatInput{
+  flex: 1;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--sdb-border);
+  background: #ffffff;
+  color: var(--sdb-text);
+  outline: none;
+  font-size: 0.95rem;
+}
+
+.chatInput::placeholder{
+  color: var(--sdb-text-muted);
+}
+
+.chatInput:focus{
+  border-color: var(--sdb-primary);
+  box-shadow: 0 0 0 2px rgba(97,175,201,0.15);
+}
+
+/* ===== SEND BUTTON (SDB STYLE) ===== */
+.chatSend{
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: none;
+  background: var(--sdb-primary);
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+
+.chatSend:hover{
+  background: var(--sdb-primary-dark);
+}
+
+/* ===== EMPTY STATE ===== */
+.no-messages {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 500;
+  color: var(--sdb-text-muted);
+}

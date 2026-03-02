@@ -1,0 +1,63 @@
+# ===== FRONTEND =====
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# ===== BACKEND =====
+backend/.venv/
+backend/__pycache__/
+backend/.env
+*.pyc
+
+# ===== DATABASES (AI / CHROMA / SQLITE) =====
+# *.sqlite3
+# *.db
+# backend/chroma_db/
+
+# ===== ENV & SECRETS =====
+.env
+.env.local
+.env.production
+
+# ===== OS FILES =====
+.DS_Store
+Thumbs.db
+
+# ===== LOGS =====
+*.log
+logs/
+
+# Node
+node_modules/
+dist/
+build/
+
+### Vite ###
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+docs/
+scripts/
