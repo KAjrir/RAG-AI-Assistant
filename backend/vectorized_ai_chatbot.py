@@ -74,7 +74,6 @@ async def promptAI(question, session_id):
 
     # 2. Retrieval (blijft hetzelfde)
     docs = retriever.invoke(question)
-    print(len(docs))
     context = "\n\n".join([doc.page_content for doc in docs])
 
     all_videos = []
@@ -109,7 +108,7 @@ async def promptAI(question, session_id):
         "chat_history": history
     },
     version="v1"):
-        print(event)
+        # print(event)
         if event["event"] == "on_chat_model_stream":
             token = event["data"]["chunk"].content
             full_response += token
