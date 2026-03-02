@@ -17,7 +17,7 @@ app = Flask(__name__)
 
 CORS(
     app,
-    resources={r"/*": {"origins": [FRONTEND_URL]}},
+    resources={r"/api/*": {"origins": [FRONTEND_URL]}},
     supports_credentials=True
 )
 
@@ -81,9 +81,8 @@ def send_chunk(chunk, newline=False):
 
     return chunk
 
-@app.route("/chat-stream")
+@app.route("/api/chat-stream")
 @limiter.limit("10 per minute")
-@cross_origin(origins=[FRONTEND_URL])
 def chat_stream():
     message = request.args.get("message", "")
     session_id = request.args.get("session_id", "")
@@ -92,7 +91,6 @@ def chat_stream():
         generate_stream(lambda: promptAI(message, session_id), send_chunk),
         mimetype="text/plain",
         headers={
-            "Access-Control-Allow-Origin": FRONTEND_URL,
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
         },

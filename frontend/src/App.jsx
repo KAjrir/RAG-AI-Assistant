@@ -46,7 +46,7 @@ export default function App() {
     const sessionId = localStorage.getItem("session_id")
 
     const url =
-      `${API_URL}/chat-stream` +
+      `${API_URL}/api/chat-stream` +
       `?session_id=${encodeURIComponent(sessionId)}` +
       `&message=${encodeURIComponent(text)}`;
 
