@@ -8,12 +8,14 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeRaw from 'rehype-raw';
+import TypingDots from "./components/TypingDots";
 
 
 export default function App() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [draft, setDraft] = useState("");
+  const inputRef = useRef(null)
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -21,6 +23,25 @@ export default function App() {
       localStorage.setItem("session_id", crypto.randomUUID());
     }
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (document.activeElement !== inputRef.current && e.key.length === 1) {
+        inputRef.current?.focus()
+      }
+
+      if(e.key === "Escape") {
+        inputRef.current?.blur()
+      }
+    }
+    
+    window.addEventListener("keydown", handleKeyDown)
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown)
+    }
+
+  }, [])
 
   // auto-scroll naar nieuwste bericht
   useEffect(() => {
@@ -40,7 +61,7 @@ export default function App() {
     setMessages((prev) => [
       ...prev,
       { id: userId, role: "user", text },
-      { id: assistantId, role: "assistant", text: "" }
+      { id: assistantId, role: "assistant", done: false, text: "" }
     ])
 
     const sessionId = localStorage.getItem("session_id")
@@ -74,12 +95,20 @@ export default function App() {
 
     }
 
+    setMessages((prev) => 
+        prev.map((msg) => 
+          msg.id === assistantId 
+            ? { ...msg, done: true}
+            : msg
+        )
+      )
+
     console.log(full_text)
   };
 
   return (
     <div className="chatShell">
-      <header className="chatHeader">My Chat</header>
+      <header className="chatHeader">Mijn Chat</header>
 
       <main className="chatBody">
         {messages.length > 0 ? messages.map((m) => (
@@ -87,30 +116,39 @@ export default function App() {
             key={m.id}
             className={`row ${m.role === "user" ? "rowUser" : "rowAssistant"}`}
           >
-            <div className={`bubble ${m.role === "user" ? "bubbleUser" : "bubbleAssistant"}`}>
+            {m.role === "user" && 
+              <div className={`bubble ${m.role === "user" ? "bubbleUser" : "bubbleAssistant"}`}>
+                {m.text}
+              </div>
+            }
 
-              {m.role === "user" 
-                  ? m.text
-                  : <div className="markdown">
-                      <ReactMarkdown
-                        rehypePlugins={[rehypeRaw, rehypeHighlight]}
-                        remarkRehypeOptions={[remarkGfm]}
-                      >
-                        { m.text }
-                      </ReactMarkdown>
-                    </div>
-              }
-              
-            </div>
+            {m.role === "assistant" && (
+              loading && !m.done
+                ? <TypingDots />
+                :
+                  <div className={`bubble bubbleAssistant`}>
+                    <div className="markdown">
+                        <ReactMarkdown
+                          rehypePlugins={[rehypeRaw, rehypeHighlight]}
+                          remarkPlugins={[remarkGfm]}
+                        >
+                          { m.text }
+                        </ReactMarkdown>
+                      </div>
+                  </div>
+              )
+            }
+
           </div>
         )) :
           <div className="no-messages">Waar kan ik je mee helpen?</div>
         }
-        <div ref={bottomRef} />
+        <div ref={bottomRef}></div>
       </main>
 
       <footer className="chatComposer">
-        <input
+        <textarea
+          ref={inputRef}
           className="chatInput"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -120,10 +158,11 @@ export default function App() {
               e.preventDefault();
               sendMessage(draft);
             }
+
           }}
         />
         <button className="chatSend" onClick={() => sendMessage(draft)} disabled={loading}>
-          Send
+          Verstuur
         </button>
       </footer>
     </div>
