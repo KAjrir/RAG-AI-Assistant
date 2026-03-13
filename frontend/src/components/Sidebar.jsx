@@ -144,8 +144,10 @@ const Sidebar = () => {
                 />
               );
             })}
+          
         </nav>
       </nav>
+      <ProfileItem isSidebarOpen={isSidebarOpen}/>
     </aside>
   );
 };
@@ -177,5 +179,27 @@ function Chat({ id, label }) {
     </NavLink>
   );
 }
+
+function ProfileItem({ isSidebarOpen }) {
+  return (
+    <div
+      className={`profile-item ${
+        isSidebarOpen ? "profile-open" : "profile-closed"
+      }`}
+    >
+      <div className="profile-avatar">
+        KA
+      </div>
+
+      {isSidebarOpen &&
+        <div className="profile-item-content">
+          <span className="profile-name">Karim Ajrir</span>
+          <span className="profile-plan">Plus</span>
+        </div>
+      }
+    </div>
+  );
+}
+
 
 export default Sidebar;
