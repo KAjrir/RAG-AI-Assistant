@@ -9,9 +9,15 @@
   --sdb-text-muted: #5B7C86;
 }
 
+.wrapper{
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
 /* ===== APP SHELL ===== */
 .chatShell{
-  height: 100vh;
+  height: 100svh;
   display: flex;
   flex-direction: column;
   background: var(--sdb-bg);
@@ -31,12 +37,17 @@
 
 /* ===== CHAT BODY ===== */
 .chatBody{
-  flex: 1;
+  flex: 3;
   overflow: auto;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  position: relative;
+}
+
+.chatBodyWrapper{
+  flex: 1;
 }
 
 /* ===== ROW ALIGNMENT ===== */

@@ -1,0 +1,148 @@
+.sidebar{
+  display: flex;
+  flex-direction: column;
+  width: 280px;
+
+  background: var(--sdb-surface);
+  border-right: 1px solid var(--sdb-border);
+
+  position: sticky;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 250px;
+  transition: width .25s ease;
+}
+
+.sidebar-closed{
+  width: 72px;
+}
+
+.sidebar-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 16px;
+  border-bottom: 1px solid var(--sdb-border);
+}
+
+.sidebar-title{
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--sdb-text);
+}
+
+.sidebar-toggle{
+  border: none;
+  background: none;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: var(--sdb-text-muted);
+}
+
+.sidebar-toggle:hover{
+  color: var(--sdb-text);
+}
+
+.sidebar-content{
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sidebar-divider{
+  border: none;
+  border-top: 1px solid var(--sdb-border);
+  margin: 6px 0;
+}
+
+.sidebar-item{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  width: 100%;
+
+  padding: 10px 12px;
+
+  border-radius: 8px;
+  border: none;
+
+  background: none;
+
+  cursor: pointer;
+
+  color: var(--sdb-text);
+
+  transition: background .15s ease;
+}
+
+.sidebar-item-open{
+  justify-content: flex-start;
+}
+
+.sidebar-item-closed{
+  justify-content: center;
+}
+
+.sidebar-item:hover{
+  background: var(--sdb-bg);
+}
+
+.sidebar-label{
+  white-space: nowrap;
+}
+
+/* CHAT LIST */
+
+.chat-list{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chat-item{
+  text-decoration: none;
+}
+
+.chat-button{
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+
+  padding: 10px 12px;
+
+  border-radius: 8px;
+  border: none;
+
+  background: none;
+
+  cursor: pointer;
+
+  transition: background .15s ease;
+}
+
+.chat-button:hover{
+  background: var(--sdb-bg);
+}
+
+.chat-active .chat-button{
+  background: var(--sdb-primary);
+  color: white;
+}
+
+.chat-label{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
