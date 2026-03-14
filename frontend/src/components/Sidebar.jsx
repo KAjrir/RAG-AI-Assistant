@@ -5,6 +5,8 @@ import { ChevronLeft, ChevronRight, MessageSquare, Search } from "lucide-react";
 import { random } from "../../utils";
 
 import "../styles/sidebar.css"
+import useModal from "../modals/ModalContext.jsx";
+import ProfileModal from "../modals/ProfileModal.jsx"
 
 const chats = [
   { 
@@ -97,7 +99,6 @@ const chats = [
 const Sidebar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { pathname } = useLocation()
-  console.log(pathname)
 
   return (
     <aside
@@ -134,7 +135,7 @@ const Sidebar = () => {
         <nav className="chat-list">
           {chats && isSidebarOpen &&
             chats.map((chat) => {
-              const currentChat = pathname === `/chat/${chat.id}`;
+              const currentChat = pathname === `/c/${chat.id}`;
               return (
                 <Chat
                   key={chat.id}
@@ -168,7 +169,7 @@ function SidebarItem({ icon = null, label, isSidebarOpen }) {
 function Chat({ id, label }) {
   return (
     <NavLink
-      to={`/chat/${id}`}
+      to={`/c/${id}`}
       className={({ isActive }) =>
         `chat-item ${isActive ? "chat-active" : ""}`
       }
@@ -181,8 +182,11 @@ function Chat({ id, label }) {
 }
 
 function ProfileItem({ isSidebarOpen }) {
+  const {openModal} = useModal()
+  
   return (
     <div
+      onClick={() => openModal(<ProfileModal/>)}
       className={`profile-item ${
         isSidebarOpen ? "profile-open" : "profile-closed"
       }`}

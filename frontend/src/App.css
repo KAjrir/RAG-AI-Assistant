@@ -47,24 +47,28 @@
 }
 
 .chatBodyWrapper{
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: min(150ch, 85%);
+  margin: 0 auto;
   flex: 1;
 }
 
 /* ===== ROW ALIGNMENT ===== */
 .row{
-  display: flex;
+
 }
 .rowUser{
+  display: flex;
   justify-content: flex-end;
 }
 .rowAssistant{
-  justify-content: flex-start;
+
 }
 
 /* ===== BASE BUBBLE (CARD STYLE) ===== */
 .bubble{
-  max-width: min(72ch, 85%);
-  padding: 14px 16px;
   border-radius: 14px;
   line-height: 1.5;
   word-break: break-word;
@@ -78,6 +82,7 @@
   color: white;
   border: none;
   border-bottom-right-radius: 6px;
+  padding: 8px 16px;
 }
 
 /* ===== ASSISTANT BUBBLE (KNOWLEDGE PANEL STYLE) ===== */
@@ -85,6 +90,7 @@
   background: var(--sdb-surface);
   color: var(--sdb-text);
   border-bottom-left-radius: 6px;
+  padding: 14px 16px;
 }
 
 /* ===== COMPOSER (BOTTOM INPUT BAR) ===== */
@@ -170,11 +176,82 @@
   animation-delay: 0.4s;
 }
 
-@keyframes bounce {
-  0%, 80%, 100% {
-    transform: translateY(0);
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(8px);
+
+  animation: overlayEnter .2s ease forwards;
+}
+
+.modal-overlay.close {
+  animation: overlayExit .2s ease forwards;
+  pointer-events: none;
+}
+
+.modal {
+  position: relative;
+
+  width: min(500px, 100%);
+  padding: 2rem;
+
+  background: white;
+  border-radius: 16px;
+
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+
+  animation: modalEnter .2s ease forwards;
+}
+
+.modal-overlay.close .modal {
+  animation: modalExit .2s ease forwards;
+}
+
+.close-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+
+  border: none;
+  background: transparent;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+@keyframes overlayEnter {
+  from { opacity: 0 }
+  to { opacity: 1 }
+}
+
+@keyframes overlayExit {
+  from { opacity: 1 }
+  to { opacity: 0 }
+}
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: scale(.96);
   }
-  40% {
-    transform: translateY(-8px);
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes modalExit {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(.96);
   }
 }
