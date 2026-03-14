@@ -10,6 +10,8 @@ import rehypeRaw from "rehype-raw";
 
 import TypingDots from "./TypingDots";
 
+import { useParams } from "react-router";
+
 const ChatUI = () => {
   const [messages, setMessages] = useState([]);
   const [chatLoading, setChatLoading] = useState(false);
@@ -17,6 +19,11 @@ const ChatUI = () => {
   const [draft, setDraft] = useState("");
   const inputRef = useRef(null);
   const bottomRef = useRef(null);
+
+  
+  const { id } = useParams()
+  console.log(id)
+
 
   useEffect(() => {
     if (!localStorage.getItem("session_id")) {

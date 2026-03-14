@@ -50,7 +50,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-width: min(150ch, 85%);
+  min-width: min(150ch, 85%);
   margin: 0 auto;
   flex: 1;
 }
