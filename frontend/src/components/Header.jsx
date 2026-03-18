@@ -60,6 +60,8 @@ export default function Header({ user }) {
 
       <div className="headerRight">
 
+        {/* WEET NOG NIT ZEKER OF DIT ER IN MOET GAAN ZITTEN OF NIET, OMDAT USER DATA ERGENS ANDERS MOET STAAN VOOR DE VOLLEDIGE WEBSITE */}
+{/* 
         {!user && (
           <>
             <Link to={"/login"}>Login</Link>
@@ -73,14 +75,14 @@ export default function Header({ user }) {
               Sign out
             </button>
 
-            {/* <button className="avatarButton">
+            <button className="avatarButton">
               <img
                 src="https://github.com/shadcn.png"
                 alt="avatar"
               />
-            </button> */}
+            </button>
           </>
-        )}
+        )} */}
 
       </div>
 

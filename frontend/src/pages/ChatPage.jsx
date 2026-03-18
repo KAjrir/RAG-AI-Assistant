@@ -2,7 +2,6 @@ import "../styles/chatPage.css";
 import "../styles/markdown.css";
 
 import Header from "../components/Header.jsx";
-import ChatUI from "../components/ChatUI.jsx";
 import Sidebar from "../components/Sidebar.jsx";
 
 import { ModalProvider } from "../modals/ModalContext.jsx";

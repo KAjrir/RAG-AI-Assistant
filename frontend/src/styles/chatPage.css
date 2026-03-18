@@ -37,22 +37,31 @@
 
 /* ===== CHAT BODY ===== */
 .chatBody{
-  flex: 3;
-  overflow: auto;
-  padding: 20px;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 14px;
   position: relative;
+  overflow: auto;
+  z-index: 1;
+  padding-top: 20px;
+  gap: 14px;
 }
 
 .chatBodyWrapper{
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  min-width: min(150ch, 85%);
-  margin: 0 auto;
   flex: 1;
+  gap: 16px;
+
+  width: clamp(300px, 90%, 900px);
+  margin: 0 auto;
+}
+
+.chatMessages{
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 28px;
 }
 
 /* ===== ROW ALIGNMENT ===== */
@@ -93,52 +102,87 @@
   padding: 14px 16px;
 }
 
-/* ===== COMPOSER (BOTTOM INPUT BAR) ===== */
-.chatComposer{
-  display: flex;
-  gap: 10px;
-  padding: 14px 18px;
-  border-top: 1px solid var(--sdb-border);
-  background: var(--sdb-surface);
+/* ===== FADE (BEHIND COMPOSER) ===== */
+
+/* .chatFade {
   position: sticky;
   bottom: 0;
+  height: 60px;
+  margin-bottom: -60px;
+  background-color: black;
+  background: linear-gradient(to bottom, transparent, var(--sdb-bg));
+  z-index: 1;
+} */
+
+/* ===== COMPOSER (BOTTOM INPUT BAR) ===== */
+.chatComposer {
+  display: flex;
+  gap: 10px;
+  position: sticky;
+  bottom: 0;
+  background-color: var(--sdb-bg);
+
+  border-radius: 24px 24px 0 0;
+}
+
+/* ===== INPUT WRAPPER (krijgt de styling) ===== */
+.chatInputWrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 24px;
+  border: 1px solid var(--sdb-border);
+  background: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  margin-bottom: 20px;
+}
+
+.chatInputWrapper:focus-within {
+  border-color: var(--sdb-primary);
+  box-shadow: 0 0 0 2px rgba(97, 175, 201, 0.15);
 }
 
 /* ===== INPUT ===== */
-.chatInput{
+.chatInput {
   flex: 1;
-  padding: 11px 14px;
-  border-radius: 10px;
-  border: 1px solid var(--sdb-border);
-  background: #ffffff;
+  field-sizing: content;
+  resize: none;
+  min-height: 28px;
+  max-height: 200px;
+  border: none;
+  background: transparent;
   color: var(--sdb-text);
   outline: none;
   font-size: 0.95rem;
+  line-height: 1.5;
 }
 
-.chatInput::placeholder{
+.chatInput::placeholder {
   color: var(--sdb-text-muted);
 }
 
-.chatInput:focus{
-  border-color: var(--sdb-primary);
-  box-shadow: 0 0 0 2px rgba(97,175,201,0.15);
-}
-
-/* ===== SEND BUTTON (SDB STYLE) ===== */
-.chatSend{
-  padding: 10px 16px;
-  border-radius: 10px;
+/* ===== SEND BUTTON ===== */
+.chatSend {
+  display: flex;
+  padding: 6px;
+  border-radius: 50%;
   border: none;
   background: var(--sdb-primary);
   color: white;
   font-weight: 500;
   cursor: pointer;
-  transition: 0.15s ease;
+  align-self: flex-end;
+  
+  transition:
+  background 0.15s ease,
+  transform 0.15s ease;
 }
 
-.chatSend:hover{
+.chatSend:hover {
   background: var(--sdb-primary-dark);
+  transform: rotateZ(90deg);
 }
 
 /* ===== EMPTY STATE ===== */
@@ -254,5 +298,14 @@
   to {
     opacity: 0;
     transform: scale(.96);
+  }
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-8px);
   }
 }

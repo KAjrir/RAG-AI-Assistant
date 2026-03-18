@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router";
 import { ChevronLeft, ChevronRight, MessageSquare, Search } from "lucide-react";
+import API_URL from "../config/api";
 
 import { random } from "../../utils";
 
@@ -8,97 +9,19 @@ import "../styles/sidebar.css"
 import useModal from "../modals/ModalContext.jsx";
 import ProfileModal from "../modals/ProfileModal.jsx"
 
-const chats = [
-  { 
-    id: random(),
-    title: "Je maatjajndihbasfhsabijkdbase"
-  },
-  {
-    id: random(),
-    title: "Je paatje"
-  },
-  {
-    id: random(),
-    title: "Je paatje"
-  },
-  {
-    id: random(),
-    title: "Je paadfnsafbahjfb ushjbafikdbfdsatje"
-  },
-  {
-    id: random(),
-    title: "Je paatje"
-  },
-  {
-    id: random(),
-    title: "Je paatje"
-  },
-  {
-    id: random(),
-    title: "Je paatje"
-  },
-  {
-    id: random(),
-    title: "Je paatje"
-  },
-  {
-    id: random(),
-    title: "Je paatje"
-  },
-  {
-    id: random(),
-    title: "Je paatje"
-  },
-  {
-    id: random(),
-    title: "Je paatje"
-  },
-  {
-    id: random(),
-    title: "Je paatje"
-  },
-  {
-    id: random(),
-    title: "Je paatje"
-  },
-  {
-    id: random(),
-    title: "Je paatje"
-  },
-  {
-    id: random(),
-    title: "Je paatje"
-  },
-  {
-    id: random(),
-    title: "Je paatje"
-  },
-  {
-    id: random(),
-    title: "Je paatje"
-  },
-  {
-    id: random(),
-    title: "Je paatje"
-  },
-  {
-    id: random(),
-    title: "Je paatje"
-  },
-  {
-    id: random(),
-    title: "Je paatje"
-  },
-  {
-    id: random(),
-    title: "Je paatje"
-  },
-
-];
 
 const Sidebar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [chats, setChats] = useState([])
   const { pathname } = useLocation()
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/chats`)
+    .then(r => r.json())
+    .then(setChats)
+    .catch(err => console.error(err))
+  }, [])
+
 
   return (
     <aside
@@ -116,7 +39,7 @@ const Sidebar = () => {
       </div>
 
       <nav className="sidebar-content">
-        <Link to={"/"}>
+        <Link to={"/chats"}>
           <SidebarItem
             icon={<MessageSquare size={22} />}
             label="New Chat"
@@ -135,7 +58,7 @@ const Sidebar = () => {
         <nav className="chat-list">
           {chats && isSidebarOpen &&
             chats.map((chat) => {
-              const currentChat = pathname === `/c/${chat.id}`;
+              const currentChat = pathname === `/chats/${chat.id}`;
               return (
                 <Chat
                   key={chat.id}
@@ -169,7 +92,7 @@ function SidebarItem({ icon = null, label, isSidebarOpen }) {
 function Chat({ id, label }) {
   return (
     <NavLink
-      to={`/c/${id}`}
+      to={`/chats/${id}`}
       className={({ isActive }) =>
         `chat-item ${isActive ? "chat-active" : ""}`
       }

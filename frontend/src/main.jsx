@@ -17,7 +17,7 @@ const router = createBrowserRouter([
     element: <HomePage />
   },
   {
-    path: "/c",
+    path: "/chats",
     element: <ChatPage />,
     children: [
       {

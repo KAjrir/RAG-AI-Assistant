@@ -1,3 +1,5 @@
+import "../styles/chatPage.css"
+
 const TypingDots = () => {
   return (
     <div className="typing-indicator">
