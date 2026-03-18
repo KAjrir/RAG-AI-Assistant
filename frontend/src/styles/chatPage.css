@@ -171,13 +171,21 @@
   align-self: flex-end;
   
   transition:
-  background 0.15s ease,
-  transform 0.15s ease;
+  background 0.4s ease,
+  transform 0.4s ease,
+  opacity 0.4s ease;
 }
 
 .chatSend:hover {
   background: var(--sdb-primary-dark);
   transform: rotateZ(90deg);
+}
+
+.chatSend:disabled {
+  pointer-events: none;
+  transform: rotateZ(90deg);
+
+  opacity: 0.5;
 }
 
 /* ===== EMPTY STATE ===== */
