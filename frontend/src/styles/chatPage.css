@@ -65,15 +65,10 @@
 }
 
 /* ===== ROW ALIGNMENT ===== */
-.row{
 
-}
 .rowUser{
   display: flex;
   justify-content: flex-end;
-}
-.rowAssistant{
-
 }
 
 /* ===== BASE BUBBLE (CARD STYLE) ===== */
