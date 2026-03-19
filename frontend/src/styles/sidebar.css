@@ -27,6 +27,10 @@
   border-bottom: 1px solid var(--sdb-border);
 }
 
+.sidebar-header.closed {
+  justify-content: center;
+}
+
 .sidebar-title{
   font-size: 18px;
   font-weight: 600;

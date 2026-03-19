@@ -141,7 +141,7 @@ function Hero() {
 }
 
 function Strip() {
-  const items = [...STRIP_ITEMS, ...STRIP_ITEMS];
+  const items = [...STRIP_ITEMS, ...STRIP_ITEMS, ...STRIP_ITEMS];
   return (
     <div className="strip">
       <div className="strip-inner">

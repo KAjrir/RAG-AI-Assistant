@@ -1,12 +1,26 @@
 /* ===== SDB DESIGN TOKENS ===== */
-:root{
-  --sdb-primary: #61AFC9;
-  --sdb-primary-dark: #2B6C80;
-  --sdb-bg: #F4F9FB;
-  --sdb-surface: #FFFFFF;
-  --sdb-border: #E3EEF3;
-  --sdb-text: #0F2A33;
-  --sdb-text-muted: #5B7C86;
+
+:root {
+  /* ── Mira design tokens ── */
+  --sdb-primary:       #1A56DB;
+  --sdb-primary-dark:  #1240B0;
+  --sdb-primary-light: #EAF0FD;
+ 
+  --sdb-bg:            #EEF3FA;
+  --sdb-surface:       #FFFFFF;
+  --sdb-surface2:      #E4ECF6;
+ 
+  --sdb-border:        #D2DFEE;
+  --sdb-border-dark:   #B8CCDF;
+ 
+  --sdb-text:          #0F2040;
+  --sdb-text-muted:    #5A7399;
+ 
+  --sdb-shadow-sm:     0 1px 3px rgba(15,32,64,0.07), 0 1px 2px rgba(15,32,64,0.04);
+  --sdb-shadow-md:     0 4px 16px rgba(15,32,64,0.10), 0 1px 4px rgba(15,32,64,0.05);
+ 
+  --sdb-radius:        10px;
+  --sdb-radius-lg:     16px;
 }
 
 .wrapper{
@@ -97,22 +111,8 @@
   padding: 14px 16px;
 }
 
-/* ===== FADE (BEHIND COMPOSER) ===== */
-
-/* .chatFade {
-  position: sticky;
-  bottom: 0;
-  height: 60px;
-  margin-bottom: -60px;
-  background-color: black;
-  background: linear-gradient(to bottom, transparent, var(--sdb-bg));
-  z-index: 1;
-} */
-
 /* ===== COMPOSER (BOTTOM INPUT BAR) ===== */
 .chatComposer {
-  display: flex;
-  gap: 10px;
   position: sticky;
   bottom: 0;
   background-color: var(--sdb-bg);
@@ -122,7 +122,6 @@
 
 /* ===== INPUT WRAPPER (krijgt de styling) ===== */
 .chatInputWrapper {
-  flex: 1;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -144,7 +143,6 @@
   flex: 1;
   field-sizing: content;
   resize: none;
-  min-height: 28px;
   max-height: 200px;
   border: none;
   background: transparent;
@@ -210,7 +208,7 @@
 .dot {
   width: 10px;
   height: 10px;
-  background-color: #61AFC9;
+  background-color: var(--sdb-primary);
   border-radius: 50%;
   animation: bounce 1.2s infinite ease-in-out;
 }

@@ -27,7 +27,9 @@ const Sidebar = () => {
     <aside
       className={`sidebar ${isSidebarOpen ? "sidebar-open" : "sidebar-closed"}`}
     >
-      <div className="sidebar-header">
+      <div 
+        className={`sidebar-header ${isSidebarOpen ? "" : "closed"}`}
+      >
         {isSidebarOpen && <h2 className="sidebar-title">Your Chats</h2>}
 
         <button 
