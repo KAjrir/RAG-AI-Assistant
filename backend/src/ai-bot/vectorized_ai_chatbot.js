@@ -1,17 +1,17 @@
-import { neon } from "@neondatabase/serverless";
 import OpenAI from "openai";
-import dotenv from "dotenv";
+import { config } from "dotenv";
+import db from '../database/db.js'
+
 import { SYSTEM_PROMPT } from "./prompts.js";
 import { EXPERIMENTAL_SYSTEM_PROMPT } from "./prompts.js";
 
-dotenv.config({
+config({
   path: "../.env"
 });
 
 const LLM_MODEL = "gpt-4o-mini";
 const EMBED_MODEL = "text-embedding-3-small";
 
-const sql = neon(process.env.DATABASE_URL);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // In-memory chat history per session
@@ -28,7 +28,7 @@ async function embed(text) {
 async function retrieve(question, k = 3) {
   const embedding = await embed(question);
 
-  const rows = await sql`
+  const rows = await db`
     SELECT content, videos, links, images, metadata,
            1 - (embedding <=> ${JSON.stringify(embedding)}::vector) AS similarity
     FROM documents

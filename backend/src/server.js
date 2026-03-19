@@ -1,18 +1,20 @@
 import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
-import { promptAI } from "./vectorized_ai_chatbot.js";
-import dotenv from "dotenv";
+import { promptAI } from "./ai-bot/vectorized_ai_chatbot.js";
+import { config } from "dotenv";
 
-import { mockChats } from "./constants/mockdata.js";
+config({
+  path: "../.env"
+})
 
-dotenv.config();
+import authRouter from "./modules/auth/auth.controller.js"
+import { mockChats } from "./modules/mocks/chat.mock.js";
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
-console.log(FRONTEND_URL);
-console.log(mockChats)
 
 const app = express();
+app.use(express.json())
 
 app.use(
   cors({
@@ -38,6 +40,8 @@ const chatLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+app.use("/api/auth", authRouter)
 
 app.get("/api/chats", async (req, res) => {
   res.status(200).json(mockChats)
