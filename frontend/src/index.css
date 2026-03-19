@@ -4,29 +4,6 @@
  
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
  
-:root {
-  /* ── Mira design tokens ── */
-  --sdb-primary:       #1A56DB;
-  --sdb-primary-dark:  #1240B0;
-  --sdb-primary-light: #EAF0FD;
- 
-  --sdb-bg:            #EEF3FA;
-  --sdb-surface:       #FFFFFF;
-  --sdb-surface2:      #E4ECF6;
- 
-  --sdb-border:        #D2DFEE;
-  --sdb-border-dark:   #B8CCDF;
- 
-  --sdb-text:          #0F2040;
-  --sdb-text-muted:    #5A7399;
- 
-  --sdb-shadow-sm:     0 1px 3px rgba(15,32,64,0.07), 0 1px 2px rgba(15,32,64,0.04);
-  --sdb-shadow-md:     0 4px 16px rgba(15,32,64,0.10), 0 1px 4px rgba(15,32,64,0.05);
- 
-  --sdb-radius:        10px;
-  --sdb-radius-lg:     16px;
-}
- 
 html, body, #root {
   height: 100%;
   font-family: 'DM Sans', system-ui, sans-serif;

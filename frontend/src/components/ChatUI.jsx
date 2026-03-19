@@ -29,15 +29,18 @@ const ChatUI = () => {
   
   const { id } = useParams();
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      setMessages([])
+      bottomRef.current.style.height = "0px"
+      return
+    };
     console.log(id)
-    fetch(`${API_URL}/api/chats/${id}`)  // laad pas nu de messages
+    fetch(`${API_URL}/api/chats/${id}`)
       .then(r => r.json())
       .then(d => {
         console.log(d)
         setMessages(d.messages)
       })
-      // .then(setMessages);
   }, [id]);
 
   function updateSpacer() {
