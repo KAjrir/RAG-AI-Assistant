@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "../styles/homePage.css";
+import { Link } from "react-router";
 
 // ── DATA ─────────────────────────────────────────────────────────────────────
 const STEPS = [
@@ -10,10 +11,10 @@ const STEPS = [
 ];
 
 const FEATURES = [
-  { icon: "⚡", title: "Semantisch zoeken",       body: "Medewerkers hoeven niet de exacte woorden te kennen. Mira begrijpt de intentie achter de vraag." },
+  { icon: "⚡", title: "Semantisch zoeken",       body: "Medewerkers hoeven niet de exacte woorden te kennen. VLNK begrijpt de intentie achter de vraag." },
   { icon: "📎", title: "Bronverwijzingen",         body: "Elk antwoord bevat een directe link naar het brondocument, zodat medewerkers altijd kunnen verifiëren." },
   { icon: "🔒", title: "Rolgebaseerde toegang",    body: "Niet iedereen ziet alles. Stel per afdeling in welke documenten toegankelijk zijn." },
-  { icon: "🔄", title: "Altijd actueel",           body: "Update een document en Mira verwerkt de wijziging automatisch. Geen verouderde antwoorden." },
+  { icon: "🔄", title: "Altijd actueel",           body: "Update een document en VLNK verwerkt de wijziging automatisch. Geen verouderde antwoorden." },
   { icon: "🌐", title: "Connector API",            body: "Koppel met uw bestaande systemen via onze read-only API. Data blijft waar hij hoort: bij u." },
   { icon: "📊", title: "Gebruiksanalyse",          body: "Zie welke vragen het meest gesteld worden en ontdek waar uw documentatie tekortschiet." },
 ];
@@ -35,9 +36,9 @@ const FLOW = [
 const TESTIMONIALS = [
   { quote: "Eindelijk een tool die onze procesbeschrijvingen begrijpt. Medewerkers vinden nu in seconden wat ze vroeger een kwartier zochten.", name: "Sarah van den Berg", role: "HR Manager · Logistiek bedrijf", initials: "SB" },
   { quote: "De implementatie was verrassend snel. Binnen een dag hadden we onze volledige kennisbank online en konden collega's al vragen stellen.", name: "Thomas Kuiper", role: "IT Lead · Zorginstelling", initials: "TK" },
-  { quote: "Wat ons overtuigde was de privacy-aanpak. Onze documenten blijven bij ons, Mira doet alleen het zoekwerk. Dat is exact wat wij nodig hadden.", name: "Lena Brouwers", role: "Compliance Officer · Financieel", initials: "LB" },
+  { quote: "Wat ons overtuigde was de privacy-aanpak. Onze documenten blijven bij ons, VLNK doet alleen het zoekwerk. Dat is exact wat wij nodig hadden.", name: "Lena Brouwers", role: "Compliance Officer · Financieel", initials: "LB" },
   { quote: "De bronverwijzingen zijn een gamechanger. Medewerkers vertrouwen het antwoord omdat ze direct kunnen zien waar het vandaan komt.", name: "Daan Pietersen", role: "Operations Director · Retailketen", initials: "DP" },
-  { quote: "We hadden eerder een duur maatwerk systeem. Mira doet hetzelfde voor een fractie van de kosten, en het werkt beter.", name: "Roos Janssen", role: "CFO · Scale-up SaaS", initials: "RJ" },
+  { quote: "We hadden eerder een duur maatwerk systeem. VLNK doet hetzelfde voor een fractie van de kosten, en het werkt beter.", name: "Roos Janssen", role: "CFO · Scale-up SaaS", initials: "RJ" },
   { quote: "Het team was van dag één beschikbaar. Niet alleen bij onboarding, maar ook bij vragen daarna. Dat serviceniveau zie je zelden.", name: "Maarten de Vries", role: "CTO · Industrieel bedrijf", initials: "MV" },
 ];
 
@@ -91,15 +92,15 @@ function useReveal() {
 function Nav({ scrolled }) {
   return (
     <nav className={`nav${scrolled ? " scrolled" : ""}`}>
-      <a className="nav-logo" href="#">Mira<span>.</span></a>
+      <a className="nav-logo" href="#">VLNK<span>.</span></a>
       <ul className="nav-links">
         {[["#hoe-het-werkt", "Hoe het werkt"], ["#privacy", "Privacy"], ["#testimonials", "Klanten"], ["#prijzen", "Prijzen"]].map(([href, label]) => (
           <li key={href}><a href={href}>{label}</a></li>
         ))}
       </ul>
       <div className="nav-actions">
-        <a href="/chats" className="btn btn-secondary" style={{ padding: "8px 18px", fontSize: "0.85rem" }}>Inloggen</a>
-        <a href="/chats" className="btn btn-primary" style={{ padding: "8px 18px", fontSize: "0.85rem" }}>Demo aanvragen</a>
+        <Link to="/dashboard" className="btn btn-secondary" style={{ padding: "8px 18px", fontSize: "0.85rem" }}>Inloggen</Link>
+        <Link to="/dashboard" className="btn btn-primary" style={{ padding: "8px 18px", fontSize: "0.85rem" }}>Demo aanvragen</Link>
       </div>
     </nav>
   );
@@ -121,7 +122,7 @@ function Hero() {
       </h1>
 
       <p className="hero-sub fade-up delay-2">
-        Mira leest uw interne documentatie en geeft medewerkers direct het juiste antwoord — zonder zoeken, zonder twijfelen.
+        VLNK leest uw interne documentatie en geeft medewerkers direct het juiste antwoord — zonder zoeken, zonder twijfelen.
       </p>
 
       <div className="hero-actions fade-up delay-3">
@@ -243,7 +244,7 @@ function Testimonials() {
       <div className="section">
         <p className="section-label reveal">Wat klanten zeggen</p>
         <h2 className="section-h2 reveal">Vertrouwd door <em>teams die kennis delen</em></h2>
-        <p className="section-sub reveal">Van zorginstelling tot retailketen — Mira werkt waar documentatie een rol speelt.</p>
+        <p className="section-sub reveal">Van zorginstelling tot retailketen — VLNK werkt waar documentatie een rol speelt.</p>
         <div className="testimonials-grid reveal">
           {TESTIMONIALS.map((t) => (
             <div key={t.name} className="testimonial-card">
@@ -298,7 +299,7 @@ function CTA() {
       <h2 className="section-h2 reveal" style={{ maxWidth: "20ch", margin: "0 auto 1rem" }}>
         Zet uw kennisbank <em>aan het werk</em>
       </h2>
-      <p className="reveal">Vraag een demo aan en zie binnen 30 minuten hoe Mira werkt met uw eigen documentatie.</p>
+      <p className="reveal">Vraag een demo aan en zie binnen 30 minuten hoe VLNK werkt met uw eigen documentatie.</p>
       <div className="reveal">
         <a href="#" className="btn btn-cta-white btn-lg">Demo inplannen →</a>
       </div>
@@ -309,8 +310,8 @@ function CTA() {
 function Footer() {
   return (
     <footer className="footer">
-      <a className="nav-logo" href="#">Mira<span>.</span></a>
-      <p>© 2026 Mira. Alle rechten voorbehouden.</p>
+      <a className="nav-logo" href="#">VLNK<span>.</span></a>
+      <p>© 2026 VLNK. Alle rechten voorbehouden.</p>
       <ul className="footer-links">
         {["Privacy", "Voorwaarden", "Contact"].map((l) => (
           <li key={l}><a href="#">{l}</a></li>

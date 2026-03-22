@@ -27,18 +27,20 @@ const ChatUI = () => {
   const assistantMessageRef = useRef(null);
 
   
-  const { id } = useParams();
+  const { orgSlug, id } = useParams();
+
+
   useEffect(() => {
     if (!id) {
       setMessages([])
       bottomRef.current.style.height = "0px"
       return
     };
-    console.log(id)
-    fetch(`${API_URL}/api/chats/${id}`)
+    fetch(`${API_URL}/api/chats/${id}`, {
+      credentials: "include"
+    })
       .then(r => r.json())
       .then(d => {
-        console.log(d)
         setMessages(d.messages)
       })
   }, [id]);

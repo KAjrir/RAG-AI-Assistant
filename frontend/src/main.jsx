@@ -5,11 +5,14 @@ import './index.css'
 
 import HomePage from './pages/HomePage.jsx'
 import ChatPage from './pages/ChatPage.jsx'
+import Dashboard from './pages/Dashboard.jsx'
+
 import Login from './components/Login.jsx';
-import Register from './components/register.jsx'
+import Register from './components/Register.jsx'
 import ChatUI from './components/ChatUI.jsx'
 
 import AuthProvider from './providers/AuthProvider.jsx'
+import { ProtectedRoute } from './components/ProtectedRoute.jsx'
 
 const router = createBrowserRouter([
   {
@@ -17,18 +20,27 @@ const router = createBrowserRouter([
     element: <HomePage />
   },
   {
-    path: "/chats",
-    element: <ChatPage />,
+    element: <ProtectedRoute />,
     children: [
       {
-        index: true,
-        element: <ChatUI />
+        path: "/dashboard",
+        element: <Dashboard />
       },
       {
-        path: ":id",
-        element: <ChatUI />
-      }
-      
+        path: "/:orgSlug/chats",
+        element: <ChatPage />,
+        children: [
+          {
+            index: true,
+            element: <ChatUI />
+          },
+          {
+            path: ":id",
+            element: <ChatUI />
+          }
+          
+        ]
+      },
     ]
   },
   {

@@ -1,20 +1,85 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
+import API_URL from "../config/api.js";
 
 const AuthContext = createContext();
 
 export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [orgs, setOrgs] = useState(null);
+  const [loading, setLoading] = useState(true);
+  console.log(user, orgs)
+  
+  useEffect(() => {
+    fetch("http://localhost:3000/api/auth/me", {
+        credentials: "include"
+      })
+        .then(res => {
+          if (!res.ok) throw new Error();
+          return res.json();
+        })
+        .then(data => {
+            setUser(data.user);
+            setOrgs(data.organizations);
+        })
+        .catch(() => {
+          setUser(null);
+        })
+        .finally(() => setLoading(false));
+  }, []);
 
-  function login(userData) {
-    setUser(userData);
-  }
+  const register = async (name, email, password) => {
+    const res = await fetch(`${API_URL}/api/auth/register`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ name, email, password })
+    });
 
-  function logout() {
+    if (!res.ok) {
+      throw new Error("Register failed");
+    }
+
+    const data = await res.json();
+
+    // 🔥 belangrijke keuze (zie hieronder)
+    setUser(data.user);
+    setOrgs(data.organizations);
+  };
+
+  const login = async (email, password) => {
+    const res = await fetch(`${API_URL}/api/auth/login`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email, password })
+    });
+
+    if (!res.ok) throw new Error("Login failed");
+
+    const data = await res.json();
+
+    setUser(data.user);
+    setOrgs(data.organizations);
+  };
+
+  const logout = async () => {
+    const res = await fetch(`${API_URL}/api/auth/logout`, {
+      method: "POST",
+      credentials: "include"
+    })
+
+    if(!res.ok) throw new Error("Log out failed")
+
     setUser(null);
-  }
+    setOrgs(null)
+  };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, login, logout }}>
+    <AuthContext.Provider value={{ user, orgs, setUser, register, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

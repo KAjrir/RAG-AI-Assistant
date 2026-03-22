@@ -1,10 +1,13 @@
 // import { Menu } from "lucide-react"
-import { Link } from "react-router"
+import { Link, useNavigate } from "react-router"
 import { useEffect } from "react"
+import { useAuth } from "../providers/AuthProvider.jsx"
 
 import "../styles/header.css"
 
-export default function Header({ user }) {
+export default function Header() {
+  const { user, register, login, logout } = useAuth();
+  const navigate = useNavigate();
 
   function openSidebar() {
     const sidebar = document.querySelector(".sidebar")
@@ -41,16 +44,7 @@ export default function Header({ user }) {
 
       <div className="headerLeft">
 
-        {user && (
-          <button
-            className="menuButton"
-            onClick={openSidebar}
-          >
-            |||
-          </button>
-        )}
-
-        <div className="logo">
+        <div className="logo" onClick={() => navigate("/dashboard")}>
           <img src="/icon.avif" alt="logo" width={40} height={40}/>
           <span>SDB Groep</span>
         </div>
@@ -59,30 +53,6 @@ export default function Header({ user }) {
 
 
       <div className="headerRight">
-
-        {/* WEET NOG NIT ZEKER OF DIT ER IN MOET GAAN ZITTEN OF NIET, OMDAT USER DATA ERGENS ANDERS MOET STAAN VOOR DE VOLLEDIGE WEBSITE */}
-{/* 
-        {!user && (
-          <>
-            <Link to={"/login"}>Login</Link>
-            <Link to={"/register"}>Register</Link>
-          </>
-        )}
-
-        {user && (
-          <>
-            <button className="logoutButton">
-              Sign out
-            </button>
-
-            <button className="avatarButton">
-              <img
-                src="https://github.com/shadcn.png"
-                alt="avatar"
-              />
-            </button>
-          </>
-        )} */}
 
       </div>
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, NavLink, useLocation } from "react-router";
+import { Link, NavLink, useLocation, useParams } from "react-router";
 import { ChevronLeft, ChevronRight, MessageSquare, Search } from "lucide-react";
 import API_URL from "../config/api";
 
@@ -10,13 +10,18 @@ import useModal from "../modals/ModalContext.jsx";
 import ProfileModal from "../modals/ProfileModal.jsx"
 
 
+// ORGSLUG MOET OOK OPGESLAGEN WORDEN IN DE AUTHCONTEXT OF EEN NIEUWE CONTEXT MAKEN DAARVOOR
+
 const Sidebar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [chats, setChats] = useState([])
-  const { pathname } = useLocation()
+  const [chats, setChats] = useState([]);
+  const { pathname } = useLocation();
+  const { orgSlug } = useParams();
 
   useEffect(() => {
-    fetch(`${API_URL}/api/chats`)
+    fetch(`${API_URL}/api/chats`, {
+      credentials: "include"
+    })
     .then(r => r.json())
     .then(setChats)
     .catch(err => console.error(err))
@@ -41,7 +46,7 @@ const Sidebar = () => {
       </div>
 
       <nav className="sidebar-content">
-        <Link to={"/chats"}>
+        <Link to={`/${orgSlug}/chats`}>
           <SidebarItem
             icon={<MessageSquare size={22} />}
             label="New Chat"
@@ -60,12 +65,14 @@ const Sidebar = () => {
         <nav className="chat-list">
           {chats && isSidebarOpen &&
             chats.map((chat) => {
-              const currentChat = pathname === `/chats/${chat.id}`;
+              const chatPath = `/${orgSlug}/chats/${chat.id}`
+              const currentChat = pathname === chatPath
               return (
                 <Chat
                   key={chat.id}
                   id={chat.id}
                   label={chat.title}
+                  chatPath={chatPath}
                   active={currentChat}
                 />
               );
@@ -91,10 +98,10 @@ function SidebarItem({ icon = null, label, isSidebarOpen }) {
   );
 }
 
-function Chat({ id, label }) {
+function Chat({ id, label, chatPath }) {
   return (
     <NavLink
-      to={`/chats/${id}`}
+      to={chatPath}
       className={({ isActive }) =>
         `chat-item ${isActive ? "chat-active" : ""}`
       }

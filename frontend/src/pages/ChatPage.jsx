@@ -11,8 +11,7 @@ export default function ChatPage() {
   return (
     <ModalProvider>
       <div className="chatShell">
-        {/* Hier moet user context gegeven worden */}
-        <Header user={""} />
+        <Header />
         <div className="wrapper">
           <Sidebar />
           <Outlet />
