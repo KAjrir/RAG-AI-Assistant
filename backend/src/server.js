@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from 'cookie-parser';
 import rateLimit from "express-rate-limit";
 import { promptAI } from "./ai-bot/vectorized_ai_chatbot.js";
 import { config } from "dotenv";
@@ -9,12 +10,16 @@ config({
 })
 
 import authRouter from "./modules/auth/auth.controller.js"
-import { mockChats } from "./modules/mocks/chat.mock.js";
+import chatRouter from "./modules/chat/chat.controller.js"
+
+import { authMiddleware } from "./modules/middleware.js";
+
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
 const app = express();
 app.use(express.json())
+app.use(cookieParser())
 
 app.use(
   cors({
@@ -27,7 +32,7 @@ app.use(
 app.use(
   rateLimit({
     windowMs: 60 * 1000,
-    max: 60,
+    max: 6000000000,
     standardHeaders: true,
     legacyHeaders: false,
   })
@@ -41,17 +46,9 @@ const chatLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+app.use("/api/chats", authMiddleware, chatRouter)
+
 app.use("/api/auth", authRouter)
-
-app.get("/api/chats", async (req, res) => {
-  res.status(200).json(mockChats)
-})
-
-app.get("/api/chats/:id", async (req, res) => {
-  const id = req.params.id
-  const data = mockChats.filter(c => c.id === id)
-  res.status(200).json(...data)
-})
 
 app.get("/api/chat-stream", chatLimiter, async (req, res) => {
   const message = req.query.message || "";

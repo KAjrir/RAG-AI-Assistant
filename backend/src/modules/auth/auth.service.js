@@ -11,7 +11,7 @@ export const getUserId = async ({ email }) => {
 
 export const getUserInfo = async ({ email }) => {
     try {
-        const user = await db`SELECT id, password FROM users WHERE email = ${email}`
+        const user = await db`SELECT * FROM users WHERE email = ${email}`
         return user
     } catch (err) {
         console.error(err)
@@ -51,7 +51,7 @@ export const createUser = async (name, email, passwordHash, invitation) => {
         const [user] = await db`
             INSERT INTO users (name, email, password)
             VALUES (${name}, ${email}, ${passwordHash})
-            RETURNING id
+            RETURNING id, name, email
         `
         if(invitation) {
             await db`
@@ -72,6 +72,21 @@ export const createUser = async (name, email, passwordHash, invitation) => {
         await db`ROLLBACK`
         throw err
     }
+}
 
+export const getOrgAndMembershipInfo = async (id) => {
+    const memberships = await db`
+        SELECT 
+        o.id,
+        o.name,
+        o.slug,
+        m.role,
+        o.plan
+        FROM memberships m
+        JOIN organizations o ON o.id = m.organization_id
+        WHERE m.user_id = ${id}
+    `
+    console.log(memberships)
 
+    return memberships
 }

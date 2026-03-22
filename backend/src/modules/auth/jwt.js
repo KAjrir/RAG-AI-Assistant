@@ -7,8 +7,8 @@ const EXPIRES_IN = '7d'
  * Maak een JWT aan voor een ingelogde user
  * Payload bevat userId zodat je hem in elke request beschikbaar hebt
  */
-export function signToken(userId) {
-  return jwt.sign({ userId }, SECRET, { expiresIn: EXPIRES_IN })
+export function signToken(userObject) {
+  return jwt.sign(userObject, SECRET, { expiresIn: EXPIRES_IN })
 }
 
 /**

@@ -1,6 +1,8 @@
+import { randomUUID } from "crypto"
+
 export const mockChats = [
   {
-    id: "chat_1",
+    id: randomUUID(),
     title: "Offerte opvolgen",
     messages: [
       { id: "u1", role: "user", text: "Hoe volg ik een offerte professioneel op na een week stilte?" },
@@ -8,7 +10,7 @@ export const mockChats = [
     ]
   },
   {
-    id: "chat_2",
+    id: randomUUID(),
     title: "Factuur te laat betaald",
     messages: [
       { id: "u2", role: "user", text: "Een klant betaalt al 3 weken te laat, wat doe ik?" },
@@ -16,7 +18,7 @@ export const mockChats = [
     ]
   },
   {
-    id: "chat_3",
+    id: randomUUID(),
     title: "Nieuwe medewerker onboarden",
     messages: [
       { id: "u3", role: "user", text: "Wat zijn de belangrijkste stappen bij het onboarden van een nieuwe medewerker?" },
@@ -24,7 +26,7 @@ export const mockChats = [
     ]
   },
   {
-    id: "chat_4",
+    id: randomUUID(),
     title: "LinkedIn bedrijfspagina",
     messages: [
       { id: "u4", role: "user", text: "Hoe maak ik onze LinkedIn bedrijfspagina aantrekkelijker?" },
@@ -32,7 +34,7 @@ export const mockChats = [
     ]
   },
   {
-    id: "chat_5",
+    id: randomUUID(),
     title: "Vergadering efficiënter maken",
     messages: [
       { id: "u5", role: "user", text: "Onze vergaderingen duren altijd veel te lang, tips?" },
@@ -40,7 +42,7 @@ export const mockChats = [
     ]
   },
   {
-    id: "chat_6",
+    id: randomUUID(),
     title: "Klant wil korting",
     messages: [
       { id: "u6", role: "user", text: "Een klant vraagt altijd om korting, hoe ga ik daarmee om?" },
@@ -48,7 +50,7 @@ export const mockChats = [
     ]
   },
   {
-    id: "chat_7",
+    id: randomUUID(),
     title: "Website conversie verbeteren",
     messages: [
       { id: "u7", role: "user", text: "Onze website trekt bezoekers maar niemand neemt contact op." },
@@ -56,7 +58,7 @@ export const mockChats = [
     ]
   },
   {
-    id: "chat_8",
+    id: randomUUID(),
     title: "Samenwerking beëindigen",
     messages: [
       { id: "u8", role: "user", text: "Hoe stop ik professioneel een samenwerking met een lastige klant?" },
@@ -64,7 +66,7 @@ export const mockChats = [
     ]
   },
   {
-    id: "chat_9",
+    id: randomUUID(),
     title: "Projectplanning maken",
     messages: [
       { id: "u9", role: "user", text: "Wat is een goede manier om een projectplanning op te zetten?" },
@@ -72,7 +74,7 @@ export const mockChats = [
     ]
   },
   {
-    id: "chat_10",
+    id: randomUUID(),
     title: "Prijzen verhogen",
     messages: [
       { id: "u10", role: "user", text: "Ik wil mijn prijzen verhogen maar ben bang klanten te verliezen." },
@@ -80,7 +82,7 @@ export const mockChats = [
     ]
   },
   {
-    id: "chat_11",
+    id: randomUUID(),
     title: "Productlancering strategie",
     messages: [
       { id: "u11", role: "user", text: "We lanceren volgende maand een nieuw product, waar begin ik?" },
@@ -94,7 +96,7 @@ export const mockChats = [
     ]
   },
   {
-    id: "chat_12",
+    id: randomUUID(),
     title: "Team motiveren",
     messages: [
       { id: "u12", role: "user", text: "Mijn team lijkt gedemotiveerd de laatste tijd, hoe pak ik dat aan?" },
@@ -108,7 +110,7 @@ export const mockChats = [
     ]
   },
   {
-    id: "chat_13",
+    id: randomUUID(),
     title: "Automatisering inzetten",
     messages: [
       { id: "u13", role: "user", text: "Welke bedrijfsprocessen kan ik het beste automatiseren?" },
@@ -122,7 +124,7 @@ export const mockChats = [
     ]
   },
   {
-    id: "chat_14",
+    id: randomUUID(),
     title: "Slechte review ontvangen",
     messages: [
       { id: "u14", role: "user", text: "We hebben een slechte Google review gekregen die niet klopt, wat nu?" },
@@ -130,7 +132,7 @@ export const mockChats = [
     ]
   },
   {
-    id: "chat_15",
+    id: randomUUID(),
     title: "Groeistrategie bepalen",
     messages: [
       { id: "u15", role: "user", text: "We draaien stabiel maar groeien niet meer, hoe pak ik dat aan?" },
