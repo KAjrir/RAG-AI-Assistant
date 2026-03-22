@@ -68,6 +68,20 @@ body {
 
 .auth-logo span { color: var(--accent); }
 
+.auth-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  margin-bottom: 20px;
+  transition: color 0.15s;
+}
+
+.auth-back:hover { color: var(--accent); }
+
 /* HEADING */
 .auth-heading {
   margin-bottom: 28px;

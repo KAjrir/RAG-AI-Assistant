@@ -43,7 +43,14 @@ export default function Login() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <Link to="/" className="auth-logo">Mira<span>.</span></Link>
+        <Link to="/" className="auth-logo">VLNK<span>.</span></Link>
+
+        <Link to="/" className="auth-back">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5M12 5l-7 7 7 7"/>
+            </svg>
+            Terug naar home
+        </Link>
 
         <div className="auth-heading">
           <h1>Welkom <em>terug</em></h1>

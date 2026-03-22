@@ -63,6 +63,12 @@ export default function Register() {
       <div className="auth-card">
         <Link to="/" className="auth-logo">VLNK<span>.</span></Link>
 
+        <Link to="/" className="auth-back">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5M12 5l-7 7 7 7"/>
+            </svg>
+            Terug naar home
+        </Link>
         <div className="auth-heading">
           <h1>Account <em>aanmaken</em></h1>
           <p>Start gratis. Geen creditcard vereist.</p>
