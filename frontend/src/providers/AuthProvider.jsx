@@ -10,7 +10,7 @@ export default function AuthProvider({ children }) {
   console.log(user, orgs)
   
   useEffect(() => {
-    fetch("http://localhost:3000/api/auth/me", {
+    fetch(`${API_URL}/api/auth/me`, {
         credentials: "include"
       })
         .then(res => {
