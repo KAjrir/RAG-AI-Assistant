@@ -3,6 +3,7 @@ import bcrypt from "bcrypt"
 
 import { getInvitation, getUserId, createUser, getUserInfo, updateUserLogin, getOrgAndMembershipInfo} from "./auth.service.js"
 import { signToken, verifyToken } from "./jwt.js"
+import { ISPROD } from "../../server.js"
 
 const router = Router()
 
@@ -77,8 +78,8 @@ router.post("/register", async (req, res) => {
         res.cookie("auth_token", token, {
             maxAge: 1000 * 60 * 60 * 24 * 30, // 30 Dagen
             httpOnly: true,
-            sameSite: "strict",
-            // secure: true
+            sameSite: ISPROD ? "none" : "lax",
+            secure: ISPROD
         })
         
         res.status(201).json({
@@ -124,8 +125,8 @@ router.post("/login", async (req, res) => {
     res.cookie("auth_token", token, {
         maxAge: 1000 * 60 * 60 * 24 * 30, // 30 Dagen
         httpOnly: true,
-        sameSite: "strict",
-        // secure: true
+        sameSite: ISPROD ? "none" : "lax",
+        secure: ISPROD
     })
 
     res.status(200).json({
@@ -137,8 +138,8 @@ router.post("/login", async (req, res) => {
 router.post("/logout", async (req, res) => {
     res.clearCookie("auth_token", {
         httpOnly: true,
-        sameSite: "strict"
-        // secure: true,
+        sameSite: ISPROD ? "none" : "lax",
+        secure: ISPROD,
     });
 
     res.status(200).json({ message: "Logged out succesfully"} )

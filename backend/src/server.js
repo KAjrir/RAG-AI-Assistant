@@ -15,7 +15,10 @@ import chatRouter from "./modules/chat/chat.controller.js"
 import { authMiddleware } from "./modules/middleware.js";
 
 
+
+
 const FRONTEND_URL = process.env.FRONTEND_URL;
+export const ISPROD = process.env.NODE_ENV === "production";
 
 const app = express();
 app.use(express.json())
@@ -32,7 +35,7 @@ app.use(
 app.use(
   rateLimit({
     windowMs: 60 * 1000,
-    max: 6000000000,
+    max: ISPROD ? 60 : 6000000000,
     standardHeaders: true,
     legacyHeaders: false,
   })
