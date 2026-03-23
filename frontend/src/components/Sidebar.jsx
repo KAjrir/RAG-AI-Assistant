@@ -22,8 +22,11 @@ const Sidebar = () => {
     fetch(`${API_URL}/api/chats`, {
       credentials: "include"
     })
-    .then(r => r.json())
-    .then(setChats)
+    .then(res => {
+      if (!res.ok) throw new Error(res.status)
+      return res.json()
+    })
+    .then(data => setChats(data))
     .catch(err => console.error(err))
   }, [])
 
