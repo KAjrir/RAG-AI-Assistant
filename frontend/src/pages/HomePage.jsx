@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import "../styles/homePage.css";
 import { Link } from "react-router";
 
+import { useAuth } from "../providers/AuthProvider.jsx"
+
 // ── DATA ─────────────────────────────────────────────────────────────────────
 const STEPS = [
   { n: "01", title: "Documentatie aanleveren", body: "Upload handboeken en procedures via onze beveiligde portal, of koppel direct met SharePoint of Google Drive." },
@@ -90,6 +92,9 @@ function useReveal() {
 
 // ── COMPONENTS ────────────────────────────────────────────────────────────────
 function Nav({ scrolled }) {
+  const { user, loading } = useAuth()
+  const isLoggedIn = !loading && !!user
+
   return (
     <nav className={`nav${scrolled ? " scrolled" : ""}`}>
       <a className="nav-logo" href="#">VLNK<span>.</span></a>
@@ -99,12 +104,25 @@ function Nav({ scrolled }) {
         ))}
       </ul>
       <div className="nav-actions">
-        <Link to="/dashboard" className="btn btn-secondary" style={{ padding: "8px 18px", fontSize: "0.85rem" }}>Inloggen</Link>
-
-        <a href="https://tidycal.com/vanleadnaarklant/kennis-making" className="btn btn-primary" style={{ padding: "8px 18px", fontSize: "0.85rem" }}>Demo aanvragen</a>
+        {isLoggedIn ? (
+          <>
+            <div className="nav-user-pill">
+              <div className="nav-avatar">{user.name?.[0]}</div>
+              <span>{user.name?.split(' ')[0]}</span>
+            </div>
+            <Link to="/dashboard" className="btn btn-primary" style={{ padding: "8px 18px", fontSize: "0.85rem" }}>
+              Open app →
+            </Link>
+          </>
+        ) : (
+          <>
+            <Link to="/login" className="btn btn-secondary" style={{ padding: "8px 18px", fontSize: "0.85rem" }}>Inloggen</Link>
+            <a href="https://tidycal.com/vanleadnaarklant/kennis-making" className="btn btn-primary" style={{ padding: "8px 18px", fontSize: "0.85rem" }}>Demo aanvragen</a>
+          </>
+        )}
       </div>
     </nav>
-  );
+  )
 }
 
 function Hero() {
