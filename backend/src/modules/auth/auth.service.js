@@ -86,7 +86,5 @@ export const getOrgAndMembershipInfo = async (id) => {
         JOIN organizations o ON o.id = m.organization_id
         WHERE m.user_id = ${id}
     `
-    console.log(memberships)
-
     return memberships
 }

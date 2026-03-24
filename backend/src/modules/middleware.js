@@ -5,7 +5,7 @@ export const authMiddleware = async (req, res, next) => {
     const { auth_token } = req.cookies;
 
     const user = verifyToken(auth_token); // jouw logic
-
+    console.log(user)
     // stel je haalt org uit token of database
     req.user = user;
     // req.orgId = user.orgId;

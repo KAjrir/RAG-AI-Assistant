@@ -3,18 +3,23 @@ import { Link, NavLink, useLocation, useParams } from "react-router";
 import { ChevronLeft, ChevronRight, MessageSquare, Search } from "lucide-react";
 import API_URL from "../config/api";
 
-import { random } from "../../utils";
-
 import "../styles/sidebar.css"
 import useModal from "../modals/ModalContext.jsx";
 import ProfileModal from "../modals/ProfileModal.jsx"
 
+import { useAuth } from "../providers/AuthProvider.jsx";
+import { useOrg } from "../providers/OrgProvider.jsx";
 
 // ORGSLUG MOET OOK OPGESLAGEN WORDEN IN DE AUTHCONTEXT OF EEN NIEUWE CONTEXT MAKEN DAARVOOR
 
 const Sidebar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [chats, setChats] = useState([]);
+  const { user, loading } = useAuth();
+  const { memberships, currentMembership } = useOrg();
+  // console.log(user, memberships, currentMembership)
+
+
   const { pathname } = useLocation();
   const { orgSlug } = useParams();
 
@@ -29,7 +34,6 @@ const Sidebar = () => {
     .then(data => setChats(data))
     .catch(err => console.error(err))
   }, [])
-
 
   return (
     <aside
@@ -83,7 +87,7 @@ const Sidebar = () => {
           
         </nav>
       </nav>
-      <ProfileItem isSidebarOpen={isSidebarOpen}/>
+      <ProfileItem isSidebarOpen={isSidebarOpen} user={user} membership={currentMembership}/>
     </aside>
   );
 };
@@ -116,24 +120,25 @@ function Chat({ id, label, chatPath }) {
   );
 }
 
-function ProfileItem({ isSidebarOpen }) {
-  const {openModal} = useModal()
-  
+function ProfileItem({ isSidebarOpen, user, membership }) {
+  const { openModal } = useModal()
+  const initials = user.name.split(" ").map(word => word[0]).join("")
+
   return (
     <div
-      onClick={() => openModal(<ProfileModal/>)}
+      onClick={() => openModal(<ProfileModal user={user} membership={membership}/>)}
       className={`profile-item ${
         isSidebarOpen ? "profile-open" : "profile-closed"
       }`}
     >
       <div className="profile-avatar">
-        KA
+        {initials}
       </div>
 
       {isSidebarOpen &&
         <div className="profile-item-content">
-          <span className="profile-name">Karim Ajrir</span>
-          <span className="profile-plan">Plus</span>
+          <span className="profile-name">{user?.name}</span>
+          <span className="profile-org">{membership?.name}</span>
         </div>
       }
     </div>

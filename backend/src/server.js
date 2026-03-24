@@ -11,6 +11,7 @@ config({
 
 import authRouter from "./modules/auth/auth.controller.js"
 import chatRouter from "./modules/chat/chat.controller.js"
+import userRouter from "./modules/user/user.controller.js"
 
 import { authMiddleware } from "./modules/middleware.js";
 
@@ -49,9 +50,11 @@ const chatLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-app.use("/api/chats", authMiddleware, chatRouter)
 
 app.use("/api/auth", authRouter)
+app.use("/api/users", authMiddleware, userRouter)
+app.use("/api/chats", authMiddleware, chatRouter)
+
 
 app.get("/api/chat-stream", chatLimiter, async (req, res) => {
   const message = req.query.message || "";

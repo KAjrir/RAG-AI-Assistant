@@ -4,7 +4,6 @@ import { useAuth } from '../providers/AuthProvider.jsx'
 
 
 import '../styles/auth.css'
-import API_URL from '../config/api.js'
 
 export default function Login() {
     const [form, setForm]     = useState({ email: '', password: '' })
@@ -23,9 +22,9 @@ export default function Login() {
     e.preventDefault()
     setLoading(true)
     setError('')
-    console.log(form)
+
     try {
-        await login(form.email, form.password)
+      await login(form.email, form.password)
       // auth context refresh hier, bijv: await refreshUser()
       navigate('/dashboard')
 
@@ -36,14 +35,14 @@ export default function Login() {
     }
   }
 
-    if (user) {
-        return <Navigate to="/dashboard" replace />;
-    }
+  if (user) {
+      return <Navigate to="/dashboard" replace />;
+  }
 
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <Link to="/" className="auth-logo">VLNK<span>.</span></Link>
+        <div className="auth-logo">VLNK<span>.</span></div>
 
         <Link to="/" className="auth-back">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -5,9 +5,8 @@ const AuthContext = createContext();
 
 export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [orgs, setOrgs] = useState(null);
+
   const [loading, setLoading] = useState(true);
-  console.log(user, orgs)
   
   useEffect(() => {
     fetch(`${API_URL}/api/auth/me`, {
@@ -19,7 +18,6 @@ export default function AuthProvider({ children }) {
         })
         .then(data => {
             setUser(data.user);
-            setOrgs(data.organizations);
         })
         .catch(() => {
           setUser(null);
@@ -45,7 +43,6 @@ export default function AuthProvider({ children }) {
 
     // 🔥 belangrijke keuze (zie hieronder)
     setUser(data.user);
-    setOrgs(data.organizations);
   };
 
   const login = async (email, password) => {
@@ -63,7 +60,6 @@ export default function AuthProvider({ children }) {
     const data = await res.json();
 
     setUser(data.user);
-    setOrgs(data.organizations);
   };
 
   const logout = async () => {
@@ -75,11 +71,10 @@ export default function AuthProvider({ children }) {
     if(!res.ok) throw new Error("Log out failed")
 
     setUser(null);
-    setOrgs(null)
   };
 
   return (
-    <AuthContext.Provider value={{ user, orgs, setUser, register, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, register, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

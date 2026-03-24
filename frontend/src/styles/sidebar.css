@@ -217,7 +217,7 @@ TEXT BLOCK
   color: var(--sdb-text);
 }
 
-.profile-plan{
+.profile-org{
   font-size: 13px;
   color: var(--sdb-text-muted);
 }

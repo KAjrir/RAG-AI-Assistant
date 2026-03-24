@@ -1,6 +1,7 @@
-import { useNavigate } from 'react-router'
+import { useNavigate, Link } from 'react-router'
 import { useAuth } from '../providers/AuthProvider.jsx'
 import '../styles/dashboard.css'
+import { useOrg } from '../providers/OrgProvider.jsx'
 
 function LogoutIcon() {
   return (
@@ -13,7 +14,9 @@ function LogoutIcon() {
 }
 
 export default function Dashboard() {
-  const { user, orgs, loading, logout } = useAuth()
+  const { user, loading, logout } = useAuth()
+  const { memberships, switchOrg } = useOrg();
+
   const navigate = useNavigate()
 
   if (loading) return <div>Loading...</div>
@@ -23,14 +26,17 @@ export default function Dashboard() {
     navigate('/login')
   }
 
-  function handleSelect(org) {
-    navigate(`/${org.slug}/chats`)
+  function handleSelect(mem) {
+    switchOrg(mem.slug)
+    navigate(`/${mem.slug}/chats`)
   }
 
   return (
     <>
       <nav className="dashboard-nav">
-        <div className="nav-logo">VLNK<span>.</span></div>
+        <Link to={"/"}>
+          <div className="nav-logo">VLNK<span>.</span></div>
+        </Link>
         <div className="nav-right">
           <div className="nav-user-info">
             <div className="nav-name">{user.name}</div>
@@ -53,21 +59,21 @@ export default function Dashboard() {
         <div className="section-label">Jouw workspaces</div>
 
         <div className="organizations">
-          {orgs.map(org => (
+          {memberships.map(mem => (
             <button
-              key={org.id}
+              key={mem.id}
               className="organization-card"
-              onClick={() => handleSelect(org)}
+              onClick={() => handleSelect(mem)}
             >
               <div className="org-icon" style={{ background: 'blue' }}>
-                {org.name[0]}
+                {mem.name[0]}
               </div>
               <div className="org-info">
-                <div className="org-name">{org.name}</div>
+                <div className="org-name">{mem.name}</div>
                 <div className="org-meta">
-                  <span className={`org-badge ${org.role === 'admin' ? 'admin' : ''}`}>
+                  <span className={`org-badge ${mem.role === 'admin' ? 'admin' : ''}`}>
                     {/* {org.role === 'admin' ? 'Admin' : 'Member'} */}
-                    {org.role}
+                    {mem.role}
                   </span>
                 </div>
               </div>

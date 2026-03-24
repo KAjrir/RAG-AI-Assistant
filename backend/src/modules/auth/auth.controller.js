@@ -13,7 +13,6 @@ router.get("/me", async (req, res) => {
     
     try {
         const decoded = verifyToken(auth_token)
-        const organizations = await getOrgAndMembershipInfo(decoded.id)
 
         const safeUserCredentials = {
             id: decoded.id,
@@ -22,8 +21,7 @@ router.get("/me", async (req, res) => {
         }
 
         return res.status(200).json({ 
-            user: safeUserCredentials,
-            organizations
+            user: safeUserCredentials
         })
     } catch (err) {
         console.error(err)
@@ -70,21 +68,17 @@ router.post("/register", async (req, res) => {
         // Returns id, name and email
         const createdUser = await createUser(name, email, passwordHash, invitation)
 
-        const organizations = await getOrgAndMembershipInfo(createdUser.id)
-
-
         const token = signToken(createdUser)
 
         res.cookie("auth_token", token, {
             maxAge: 1000 * 60 * 60 * 24 * 30, // 30 Dagen
             httpOnly: true,
-            sameSite: ISPROD ? "none" : "lax",
+            sameSite: "lax",
             secure: ISPROD
         })
         
         res.status(201).json({
             user: createdUser,
-            organizations
         })
 
     } catch(err) {
@@ -118,27 +112,24 @@ router.post("/login", async (req, res) => {
         email: user.email
     }
 
-    const organizations = await getOrgAndMembershipInfo(user.id)
-
     const token = signToken(safeUserCredentials)
 
     res.cookie("auth_token", token, {
         maxAge: 1000 * 60 * 60 * 24 * 30, // 30 Dagen
         httpOnly: true,
-        sameSite: ISPROD ? "none" : "lax",
+        sameSite: "lax",
         secure: ISPROD
     })
 
     res.status(200).json({
         user: safeUserCredentials,
-        organizations
     })
 })
 
 router.post("/logout", async (req, res) => {
     res.clearCookie("auth_token", {
         httpOnly: true,
-        sameSite: ISPROD ? "none" : "lax",
+        sameSite: "lax",
         secure: ISPROD,
     });
 
