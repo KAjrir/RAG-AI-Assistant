@@ -146,7 +146,7 @@ function Hero() {
 
       <div className="hero-actions fade-up delay-3">
         <a href="#hoe-het-werkt" className="btn btn-secondary btn-lg">Bekijk hoe we helpen</a>
-        <a href="#" className="btn btn-dark btn-lg">Demo aanvragen →</a>
+        <a href="https://tidycal.com/vanleadnaarklant/kennis-making" className="btn btn-dark btn-lg">Demo aanvragen →</a>
       </div>
 
       <div className="hero-social-proof fade-up delay-3">
@@ -303,7 +303,7 @@ function Pricing() {
             <ul className="pricing-features">
               {plan.features.map((f) => <li key={f}>{f}</li>)}
             </ul>
-            <a href="#" className={`btn btn-${plan.ctaVariant}`} style={{ justifyContent: "center" }}>{plan.cta}</a>
+            <a href="https://tidycal.com/vanleadnaarklant/kennis-making" className={`btn btn-${plan.ctaVariant}`} style={{ justifyContent: "center" }}>{plan.cta}</a>
           </div>
         ))}
       </div>
