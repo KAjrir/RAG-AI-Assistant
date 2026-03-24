@@ -100,7 +100,8 @@ function Nav({ scrolled }) {
       </ul>
       <div className="nav-actions">
         <Link to="/dashboard" className="btn btn-secondary" style={{ padding: "8px 18px", fontSize: "0.85rem" }}>Inloggen</Link>
-        <Link to="/dashboard" className="btn btn-primary" style={{ padding: "8px 18px", fontSize: "0.85rem" }}>Demo aanvragen</Link>
+
+        <a href="https://tidycal.com/vanleadnaarklant/kennis-making" className="btn btn-primary" style={{ padding: "8px 18px", fontSize: "0.85rem" }}>Demo aanvragen</a>
       </div>
     </nav>
   );
