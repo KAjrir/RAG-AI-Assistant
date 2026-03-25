@@ -18,7 +18,7 @@ export const getUserInfo = async ({ email }) => {
     }
 }
 
-export const updateUserLogin = async (id) => {
+export const updateUserLastLogin = async (id) => {
     try {
         const user = await db`UPDATE users SET last_login_at = now() WHERE id = ${id}`
         return user
@@ -74,7 +74,7 @@ export const createUser = async (name, email, passwordHash, invitation) => {
     }
 }
 
-export const getOrgAndMembershipInfo = async (id) => {
+export const getOrgAndMembershipInfo = async (userId) => {
     const memberships = await db`
         SELECT 
         o.id,
@@ -84,7 +84,20 @@ export const getOrgAndMembershipInfo = async (id) => {
         o.plan
         FROM memberships m
         JOIN organizations o ON o.id = m.organization_id
-        WHERE m.user_id = ${id}
+        WHERE m.user_id = ${userId}
     `
     return memberships
+}
+
+export const getOrgsId = async (userId) => {
+    const orgsId = await db`
+        SELECT 
+        o.id
+        FROM organizations o
+        JOIN memberships m ON o.id = m.organization_id
+        WHERE m.user_id = ${userId}
+    `
+
+    // Antwoord komt terug in [{ id: }, { id: }]
+    return orgsId.map(org => org.id)
 }

@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useParams } from "react-router";
 import { ChevronLeft, ChevronRight, MessageSquare, Search } from "lucide-react";
-import API_URL from "../config/api";
+import API_URL from "../lib/api";
 
 import "../styles/sidebar.css"
 import useModal from "../modals/ModalContext.jsx";
 import ProfileModal from "../modals/ProfileModal.jsx"
 
-import { useAuth } from "../providers/AuthProvider.jsx";
-import { useOrg } from "../providers/OrgProvider.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
+import { useOrg } from "../context/OrgContext.jsx";
 
 // ORGSLUG MOET OOK OPGESLAGEN WORDEN IN DE AUTHCONTEXT OF EEN NIEUWE CONTEXT MAKEN DAARVOOR
 
@@ -17,14 +17,14 @@ const Sidebar = () => {
   const [chats, setChats] = useState([]);
   const { user, loading } = useAuth();
   const { memberships, currentMembership } = useOrg();
-  // console.log(user, memberships, currentMembership)
-
 
   const { pathname } = useLocation();
   const { orgSlug } = useParams();
 
   useEffect(() => {
-    fetch(`${API_URL}/api/chats`, {
+    if(!currentMembership) return
+    
+    fetch(`${API_URL}/api/chats?currentOrg=${currentMembership?.id}`, {
       credentials: "include"
     })
     .then(res => {
@@ -33,7 +33,7 @@ const Sidebar = () => {
     })
     .then(data => setChats(data))
     .catch(err => console.error(err))
-  }, [])
+  }, [currentMembership])
 
   return (
     <aside
@@ -53,7 +53,7 @@ const Sidebar = () => {
       </div>
 
       <nav className="sidebar-content">
-        <Link to={`/${orgSlug}/chats`}>
+        <Link to={`/${orgSlug}/chat`}>
           <SidebarItem
             icon={<MessageSquare size={22} />}
             label="New Chat"
@@ -72,7 +72,7 @@ const Sidebar = () => {
         <nav className="chat-list">
           {chats && isSidebarOpen &&
             chats.map((chat) => {
-              const chatPath = `/${orgSlug}/chats/${chat.id}`
+              const chatPath = `/${orgSlug}/chat/${chat.id}`
               const currentChat = pathname === chatPath
               return (
                 <Chat

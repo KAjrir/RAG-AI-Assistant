@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, Navigate } from 'react-router'
 import '../styles/auth.css'
 
-import { useAuth } from '../providers/AuthProvider.jsx'
+import { useAuth } from '../context/AuthContext.jsx'
 
 function getStrength(password) {
   if (password.length === 0) return { score: 0, label: '' }

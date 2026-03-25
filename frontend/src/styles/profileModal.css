@@ -57,7 +57,7 @@
   width: fit-content;
 }
 
-.profile-role-badge.admin {
+.profile-role-badge.owner {
   background: #FEF3C7;
   color: #92400E;
 }

@@ -1,0 +1,236 @@
+.cs-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.cs-sidebar--open   { width: 260px; }
+.cs-sidebar--closed { width: 64px; }
+
+/* ── Header ────────────────────────────── */
+.cs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 14px;
+  border-bottom: 1px solid var(--border);
+  height: 56px;
+  flex-shrink: 0;
+}
+
+.cs-header--closed {
+  justify-content: center;
+}
+
+.cs-logo {
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cs-logo span { color: var(--accent); }
+
+.cs-toggle {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.cs-toggle:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ── Nieuw gesprek ─────────────────────── */
+.cs-new-wrap {
+  padding: 12px 10px 8px;
+  flex-shrink: 0;
+}
+
+.cs-new-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 12px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 100px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.18s;
+}
+
+.cs-new-btn:hover { background: var(--accent-hover); }
+
+/* Ingeklapt: alleen icoon, cirkel */
+.cs-new-btn--icon {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 50%;
+  margin: 0 auto;
+}
+
+/* ── Zoeken ────────────────────────────── */
+.cs-search-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: calc(100% - 20px);
+  margin: 0 10px 4px;
+  padding: 8px 12px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.cs-search-btn:hover {
+  background: var(--bg);
+  border-color: var(--border-dark);
+  color: var(--text);
+}
+
+/* ── Divider ───────────────────────────── */
+.cs-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 6px 0 4px;
+  flex-shrink: 0;
+}
+
+/* ── Gesprekslijst ─────────────────────── */
+.cs-threads {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cs-threads::-webkit-scrollbar { width: 4px; }
+.cs-threads::-webkit-scrollbar-track { background: transparent; }
+.cs-threads::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.cs-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.15s;
+  min-width: 0;
+}
+
+.cs-thread:hover { background: var(--bg); }
+
+.cs-thread--active { background: var(--accent-light); }
+
+.cs-thread-title {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cs-thread--active .cs-thread-title {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.cs-thread-date {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ── Profiel ───────────────────────────── */
+.cs-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 14px;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.cs-profile:hover { background: var(--bg); }
+
+.cs-profile--closed {
+  justify-content: center;
+  padding: 14px 0;
+}
+
+.cs-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cs-profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cs-profile-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cs-profile-org {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

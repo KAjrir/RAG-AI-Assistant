@@ -1,7 +1,7 @@
 import { Router } from "express"
 import bcrypt from "bcrypt"
 
-import { getInvitation, getUserId, createUser, getUserInfo, updateUserLogin, getOrgAndMembershipInfo} from "./auth.service.js"
+import { getInvitation, getUserId, createUser, getUserInfo, updateUserLastLogin, getOrgsId} from "./auth.service.js"
 import { signToken, verifyToken } from "./jwt.js"
 import { ISPROD } from "../../server.js"
 
@@ -67,8 +67,12 @@ router.post("/register", async (req, res) => {
 
         // Returns id, name and email
         const createdUser = await createUser(name, email, passwordHash, invitation)
+        const orgsId = await getOrgsId(createdUser.id)
 
-        const token = signToken(createdUser)
+        const token = signToken({
+            ...createdUser,
+            orgs: orgsId
+        })
 
         res.cookie("auth_token", token, {
             maxAge: 1000 * 60 * 60 * 24 * 30, // 30 Dagen
@@ -103,8 +107,9 @@ router.post("/login", async (req, res) => {
     if (!valid) {
         return res.status(401).json({ error: 'Invalid email or password' })
     }
+
     console.log(user)
-    await updateUserLogin(user.id)
+    await updateUserLastLogin(user.id)
     
     const safeUserCredentials = {
         id: user.id,
@@ -112,7 +117,12 @@ router.post("/login", async (req, res) => {
         email: user.email
     }
 
-    const token = signToken(safeUserCredentials)
+    const orgsId = await getOrgsId(user.id)
+
+    const token = signToken({
+        ...safeUserCredentials,
+        orgs: orgsId
+    })
 
     res.cookie("auth_token", token, {
         maxAge: 1000 * 60 * 60 * 24 * 30, // 30 Dagen

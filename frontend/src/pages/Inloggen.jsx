@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, Navigate } from 'react-router'
-import { useAuth } from '../providers/AuthProvider.jsx' 
-
+import { useAuth } from '../context/AuthContext.jsx' 
 
 import '../styles/auth.css'
 
@@ -108,7 +107,7 @@ export default function Login() {
         </form>
 
         <div className="auth-footer">
-          Nog geen account? <Link to="/register">Registreer gratis</Link>
+          Nog geen account? <Link to="/registreren">Registreer gratis</Link>
         </div>
       </div>
     </div>

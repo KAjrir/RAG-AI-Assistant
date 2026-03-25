@@ -2,7 +2,7 @@ import useModal from "./ModalContext.jsx";
 import "../styles/profileModal.css"
 
 import { useNavigate } from 'react-router'
-import { useAuth } from '../providers/AuthProvider.jsx'
+import { useAuth } from '../context/AuthContext.jsx'
 
 export default function ProfileModal({ user, membership }) {
   const { closeModal } = useModal()
@@ -27,11 +27,6 @@ export default function ProfileModal({ user, membership }) {
         <div className="profile-identity">
           <span className="profile-name">{user?.name}</span>
           <span className="profile-email">{user?.email}</span>
-          {membership?.role && (
-            <span className={`profile-role-badge ${membership.role === 'admin' ? 'admin' : ''}`}>
-              {membership.role === 'admin' ? 'Admin' : 'Member'}
-            </span>
-          )}
         </div>
       </div>
 
@@ -42,7 +37,9 @@ export default function ProfileModal({ user, membership }) {
         <div className="profile-org-icon">{membership?.name?.[0] ?? '?'}</div>
         <div>
           <div className="profile-org-name">{membership?.name ?? '—'}</div>
-          <div className="profile-org-role">{membership?.role ?? '—'}</div>
+          <span className={`profile-role-badge ${membership?.role === 'owner' ? 'owner' : ''}`}>
+            {membership?.role ?? '—'}
+          </span>
         </div>
       </div>
 

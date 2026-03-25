@@ -1,17 +1,51 @@
-@import '../node_modules/modern-normalize/modern-normalize.css';
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
- 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
- 
-html, body, #root {
-  height: 100%;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  background: var(--sdb-bg);
-  color: var(--sdb-text);
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg:             #EEF3FA;
+  --surface:        #FFFFFF;
+  --surface2:       #E4ECF6;
+  --border:         #D2DFEE;
+  --border-dark:    #B8CCDF;
+  --text:           #0F2040;
+  --muted:          #5A7399;
+  --accent:         #1A56DB;
+  --accent-light:   #EAF0FD;
+  --accent-hover:   #1240B0;
+  --dark-btn:       #111827;
+  --dark-btn-hover: #1F2937;
+  --serif:          'Instrument Serif', serif;
+  --sans:           'DM Sans', system-ui, sans-serif;
+  --radius:         14px;
+  --radius-lg:      20px;
+  --shadow-sm:      0 1px 3px rgba(15,32,64,0.07), 0 1px 2px rgba(15,32,64,0.04);
+  --shadow-md:      0 4px 16px rgba(15,32,64,0.10), 0 1px 4px rgba(15,32,64,0.05);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-weight: 300;
+  line-height: 1.65;
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
-a {
-  text-decoration: none;
+button { font-family: var(--sans); }
+
+.route-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-size: 0.875rem;
+  color: var(--muted);
 }

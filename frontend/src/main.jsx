@@ -1,56 +1,68 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { createBrowserRouter, Outlet, RouterProvider } from "react-router"
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router"
 import './index.css'
 
 import HomePage from './pages/HomePage.jsx'
-import ChatPage from './pages/ChatPage.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 
-import Login from './components/Login.jsx';
-import Register from './components/Register.jsx'
+import Inloggen from './pages/Inloggen.jsx';
+import Registreren from './pages/Registreren.jsx'
 import ChatUI from './components/ChatUI.jsx'
 
-import AuthProvider from './providers/AuthProvider.jsx'
-import { OrgProvider } from './providers/OrgProvider'
-import { ProtectedRoute } from './components/ProtectedRoute.jsx'
+import AuthProvider from './context/AuthContext.jsx'
+import ProtectedRoute from './router/ProtectedRoute.jsx'
+import WorkspaceRoute from "./router/WorkspaceRoute.jsx"
+
+import Overzicht from "./pages/workspace/Overzicht.jsx"
+import DocsPage from "./pages/workspace/DocsPage.jsx"
+import DocsUpload from './pages/workspace/DocsUpload.jsx'
+import DocDetail from './pages/workspace/DocDetail.jsx'
+import Connecties from './pages/workspace/Connecties.jsx'
+import Mensen from './pages/workspace/Mensen.jsx'
+import Instellingen from './pages/workspace/Instellingen.jsx'
+import WorkspaceLayout from './layout/WorkspaceLayout.jsx'
+import ChatPage from './pages/workspace/ChatPage.jsx'
 
 const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <HomePage />
-  },
-  {
-    path: "/login",
-    element: <Login />
-  },
-  {
-    path: "/register",
-    element: <Register/>
-  },
+  { path: '/',             element: <HomePage /> },
+  { path: '/inloggen',     element: <Inloggen /> },
+  { path: '/registreren',  element: <Registreren /> },
+ 
   {
     element: <ProtectedRoute />,
     children: [
+      { path: '/dashboard', element: <Dashboard /> },
+ 
       {
-        path: "/dashboard",
-        element: <Dashboard />
-      },
-      {
-        path: "/:orgSlug/chats",
-        element: <ChatPage />,
+        path: '/w/:slug',
+        element: <WorkspaceRoute />,
         children: [
           {
-            index: true,
-            element: <ChatUI />
+            element: <WorkspaceLayout />,
+            children: [
+              { index: true,          element: <Overzicht /> },
+              { path: 'docs',         element: <DocsPage /> },
+              { path: 'docs/upload',  element: <DocsUpload /> },
+              { path: 'docs/:docId',  element: <DocDetail /> },
+              { path: 'connecties',   element: <Connecties /> },
+              { path: 'mensen',       element: <Mensen /> },
+              { path: 'instellingen', element: <Instellingen /> },
+            ],
           },
           {
-            path: ":id",
-            element: <ChatUI />
-          }
-        ]
+            element: <ChatPage />,
+            children: [
+              { path: 'chat',           element: <ChatUI /> },
+              { path: 'chat/:threadId', element: <ChatUI /> },
+            ],
+          },
+        ],
       },
-    ]
-  }
+    ],
+  },
+ 
+  // { path: '*', element: <Navigate to="/" replace /> },
 ]);
 
 createRoot(document.getElementById('root')).render(

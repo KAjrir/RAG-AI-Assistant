@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router";
 import { random } from "../../utils.js"
 
-import API_URL from "../config/api";
+import { api } from "../lib/api.js";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -9,13 +10,14 @@ import rehypeHighlight from "rehype-highlight";
 import rehypeRaw from "rehype-raw";
 
 import TypingDots from "./TypingDots";
+import "../new-styles/markdown.css"
 
-import { useParams } from "react-router";
 
 const ChatUI = () => {
   const [messages, setMessages] = useState([]);
   const [chatLoading, setChatLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [chatError, setChatError] = useState(null);
   const [draft, setDraft] = useState("");
 
   const chatComposerRef = useRef(null);
@@ -26,7 +28,7 @@ const ChatUI = () => {
   const userMessageRef = useRef(null);
   const assistantMessageRef = useRef(null);
 
-  
+  const navigate = useNavigate();
   const { orgSlug, id } = useParams();
 
 
@@ -39,9 +41,9 @@ const ChatUI = () => {
     fetch(`${API_URL}/api/chats/${id}`, {
       credentials: "include"
     })
-      .then(r => r.json())
-      .then(d => {
-        setMessages(d.messages)
+      .then(res => res.json())
+      .then(data => {
+        setMessages(data)
       })
   }, [id]);
 
@@ -54,7 +56,7 @@ const ChatUI = () => {
     const userBubbleHeight = userMessageRef.current?.offsetHeight ?? 0;
 
     const availableSpace = chatBodyHeight - composerHeight - 95 - bubbleHeight - userBubbleHeight;
-    console.log(chatBodyHeight, composerHeight, bubbleHeight, userBubbleHeight)
+    // console.log(chatBodyHeight, composerHeight, bubbleHeight, userBubbleHeight)
 
     bottomRef.current.style.height = Math.max(0, availableSpace) + 'px';
   }
@@ -101,38 +103,56 @@ const ChatUI = () => {
     scrollDownSmooth(bottomRef)
   }, [messages.length]);
 
-  const sendMessage = async (text) => {
-    if (!text.trim() || chatLoading) return;
-
+  const sendMessage = async (content) => {
+    if (!content.trim() || chatLoading) return;
+    
     setChatLoading(true);
+    setChatError(null)
     setDraft("");
-
+    
     const userId = random()
     const assistantId = random()
 
-    // Placeholder assistant message (leeg)
     setMessages((prev) => [
       ...prev,
-      { id: userId, role: "user", text },
-      { id: assistantId, role: "assistant", done: false, text: "" },
+      { id: userId, role: "user", content },
+      { id: assistantId, role: "assistant", done: false, content: "" },
     ]);
-
+    
     const sessionId = localStorage.getItem("session_id");
+    let response;
 
     const url =
-      `${API_URL}/api/chat-stream` +
+      `${API_URL}/api/chats/messages` +
       `?session_id=${encodeURIComponent(sessionId)}` +
-      `&message=${encodeURIComponent(text)}`;
+      `&message=${encodeURIComponent(content)}`;
 
-    const response = await fetch(url);
+    try {
+      response = await fetch(url, {
+        credentials: "include"
+      });
+
+      if(!response.ok) throw new Error(response.statusText)
+
+    } catch (err) {
+      console.error(err)
+      setChatLoading(false);
+      setChatError("Er ging iets mis. Probeer het opnieuw...")
+      return
+    }
+
+    console.log(response)
+
     let full_text = "";
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
 
     if (!reader) return;
+
     setChatLoading(false);
     setIsStreaming(true);
+    
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -142,7 +162,7 @@ const ChatUI = () => {
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === assistantId
-            ? { ...msg, text: msg.text + bufferText }
+            ? { ...msg, content: msg.content + bufferText }
             : msg,
         ),
       );
@@ -157,9 +177,8 @@ const ChatUI = () => {
         msg.id === assistantId ? { ...msg, done: true } : msg,
       ),
     );
-
-    // console.log(full_text);
   };
+
   return (
     <>
       <main className="chatBody" ref={chatBodyRef}>
@@ -176,7 +195,7 @@ const ChatUI = () => {
                     <div
                       className={`bubble ${m.role === "user" ? "bubbleUser" : "bubbleAssistant"}`}
                     >
-                      {m.text}
+                      {m.content}
                     </div>
                   )}
                   {m.role === "assistant" &&
@@ -189,7 +208,7 @@ const ChatUI = () => {
                             rehypePlugins={[rehypeRaw, rehypeHighlight]}
                             remarkPlugins={[remarkGfm]}
                           >
-                            {m.text}
+                            {m.content}
                           </ReactMarkdown>
                         </div>
                       </div>
@@ -199,8 +218,9 @@ const ChatUI = () => {
             ) : (
               <div className="no-messages">Waar kan ik je mee helpen?</div>
             )}
-            <div ref={bottomRef}  style={{
-            }}/>
+
+            {chatError && <div className="chat-error">{chatError}</div>}
+            <div ref={bottomRef}></div>
           </div>
 
           <div className="chatComposer" ref={chatComposerRef}>

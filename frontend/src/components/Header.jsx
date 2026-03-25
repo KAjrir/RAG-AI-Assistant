@@ -1,7 +1,7 @@
 // import { Menu } from "lucide-react"
 import { Link, useNavigate } from "react-router"
 import { useEffect } from "react"
-import { useAuth } from "../providers/AuthProvider.jsx"
+import { useAuth } from "../context/AuthContext.jsx"
 
 import "../styles/header.css"
 

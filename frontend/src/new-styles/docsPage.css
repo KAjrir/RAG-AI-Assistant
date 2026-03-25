@@ -1,0 +1,233 @@
+.dp-root { max-width: 860px; }
+
+.dp-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.dp-title {
+  font-family: var(--serif);
+  font-size: 1.75rem;
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  color: var(--text);
+  line-height: 1.1;
+  margin-bottom: 3px;
+}
+
+.dp-slug {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.dp-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  background: var(--dark-btn);
+  color: #fff;
+  border: none;
+  border-radius: 100px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.18s, transform 0.18s;
+}
+
+.dp-btn-primary:hover {
+  background: var(--dark-btn-hover);
+  transform: translateY(-1px);
+}
+
+/* ── Laden / leeg ──────────────────────── */
+.dp-loading {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.dp-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 10px;
+  text-align: center;
+}
+
+.dp-empty-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.dp-empty-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.dp-empty-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.dp-empty-sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+/* ── Lijst ─────────────────────────────── */
+.dp-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dp-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.dp-item:hover {
+  border-color: var(--border-dark);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Icoon ─────────────────────────────── */
+.dp-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dp-icon--indexed {
+  background: var(--accent-light);
+  border: 1px solid rgba(26, 86, 219, 0.12);
+  color: var(--accent);
+}
+
+.dp-icon--processing {
+  background: #FEF9ED;
+  border: 1px solid rgba(180, 83, 9, 0.12);
+  color: #B45309;
+}
+
+.dp-icon--error {
+  background: #FEF2F2;
+  border: 1px solid rgba(185, 28, 28, 0.12);
+  color: #B91C1C;
+}
+
+/* ── Info ──────────────────────────────── */
+.dp-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+}
+
+.dp-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.dp-meta {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ── Pills ─────────────────────────────── */
+.dp-pill {
+  padding: 3px 9px;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.dp-pill--indexed {
+  background: var(--accent-light);
+  color: var(--accent);
+  border: 1px solid rgba(26, 86, 219, 0.18);
+}
+
+.dp-pill--processing {
+  background: #FEF9ED;
+  color: #B45309;
+  border: 1px solid rgba(180, 83, 9, 0.15);
+}
+
+.dp-pill--error {
+  background: #FEF2F2;
+  color: #B91C1C;
+  border: 1px solid rgba(185, 28, 28, 0.15);
+}
+
+/* ── Actieknoppen ──────────────────────── */
+.dp-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.dp-item:hover .dp-actions {
+  opacity: 1;
+}
+
+.dp-action-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.dp-action-btn:hover {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--border-dark);
+}
+
+.dp-action-btn--danger:hover {
+  background: #FEF2F2;
+  color: #B91C1C;
+  border-color: rgba(185, 28, 28, 0.2);
+}

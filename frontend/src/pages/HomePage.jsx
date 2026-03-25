@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import "../styles/homePage.css";
 import { Link } from "react-router";
 
-import { useAuth } from "../providers/AuthProvider.jsx"
+import { useAuth } from "../context/AuthContext.jsx"
 
 // ── DATA ─────────────────────────────────────────────────────────────────────
 const STEPS = [
@@ -116,7 +116,7 @@ function Nav({ scrolled }) {
           </>
         ) : (
           <>
-            <Link to="/login" className="btn btn-secondary" style={{ padding: "8px 18px", fontSize: "0.85rem" }}>Inloggen</Link>
+            <Link to="/inloggen" className="btn btn-secondary" style={{ padding: "8px 18px", fontSize: "0.85rem" }}>Inloggen</Link>
             <a href="https://tidycal.com/vanleadnaarklant/kennis-making" className="btn btn-primary" style={{ padding: "8px 18px", fontSize: "0.85rem" }}>Demo aanvragen</a>
           </>
         )}
