@@ -7,7 +7,12 @@ const router = Router();
 router.get("/", async (req, res) => {
     const workspaces = await getUserWorkspaces(req.user.id)
 
-    res.status(200).json(workspaces)
+    const sortedWorkspaces = workspaces.sort((a, b) => {
+        if (a.role === "owner" && b.role !== "owner") return -1;
+        if (a.role !== "owner" && b.role === "owner") return 1;
+        return 0;
+    });
+    res.status(200).json(sortedWorkspaces)
 })
 
 router.get("/:slug", async (req, res) => {

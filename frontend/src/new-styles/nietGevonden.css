@@ -1,0 +1,125 @@
+.ng-root {
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 80px;
+  padding: clamp(2rem, 8vw, 6rem);
+  font-family: var(--sans);
+}
+
+/* ── Content ───────────────────────────── */
+.ng-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 420px;
+}
+
+.ng-code {
+  font-family: var(--serif);
+  font-size: clamp(4rem, 10vw, 7rem);
+  font-weight: 400;
+  letter-spacing: -0.04em;
+  color: var(--border-dark);
+  line-height: 1;
+  display: block;
+}
+
+.ng-title {
+  font-family: var(--serif);
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  line-height: 1.15;
+  margin: 0;
+}
+
+.ng-title em {
+  font-style: italic;
+  color: var(--muted);
+}
+
+.ng-sub {
+  font-size: 0.95rem;
+  color: var(--muted);
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* ── Acties ────────────────────────────── */
+.ng-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.ng-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 22px;
+  background: var(--dark-btn);
+  color: #fff;
+  border-radius: 100px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.18s, transform 0.18s;
+}
+
+.ng-btn-primary:hover {
+  background: var(--dark-btn-hover);
+  transform: translateY(-1px);
+}
+
+.ng-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 22px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-dark);
+  border-radius: 100px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.18s;
+}
+
+.ng-btn-secondary:hover { background: var(--surface2); }
+
+/* ── Kompas ────────────────────────────── */
+.ng-visual {
+  flex-shrink: 0;
+}
+
+.ng-compass {
+  width: clamp(160px, 22vw, 260px);
+  height: clamp(160px, 22vw, 260px);
+  animation: ng-spin 18s linear infinite;
+  opacity: 0.85;
+}
+
+@keyframes ng-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── Responsive ────────────────────────── */
+@media (max-width: 680px) {
+  .ng-root {
+    flex-direction: column-reverse;
+    align-items: flex-start;
+    gap: 32px;
+  }
+
+  .ng-compass {
+    width: 120px;
+    height: 120px;
+  }
+}

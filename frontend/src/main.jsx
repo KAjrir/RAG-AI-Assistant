@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { createBrowserRouter, Navigate, RouterProvider } from "react-router"
+import { createBrowserRouter, RouterProvider } from "react-router"
 import './index.css'
 
 import HomePage from './pages/HomePage.jsx'
@@ -23,6 +23,7 @@ import Mensen from './pages/workspace/Mensen.jsx'
 import Instellingen from './pages/workspace/Instellingen.jsx'
 import WorkspaceLayout from './layout/WorkspaceLayout.jsx'
 import ChatPage from './pages/workspace/ChatPage.jsx'
+import NietGevonden from './pages/NietGevonden.jsx'
 
 const router = createBrowserRouter([
   { path: '/',             element: <HomePage /> },
@@ -62,7 +63,7 @@ const router = createBrowserRouter([
     ],
   },
  
-  // { path: '*', element: <Navigate to="/" replace /> },
+  { path: '*', element: <NietGevonden /> },
 ]);
 
 createRoot(document.getElementById('root')).render(

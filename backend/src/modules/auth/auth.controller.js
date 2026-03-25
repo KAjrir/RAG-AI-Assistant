@@ -9,7 +9,7 @@ const router = Router()
 
 router.get("/me", async (req, res) => {
     const { auth_token } = req.cookies
-    if (!auth_token) return res.status(401).json({ message: "Unauthorized"})
+    if (!auth_token) return res.status(200).json({ user: null })
     
     try {
         const decoded = verifyToken(auth_token)
@@ -23,6 +23,7 @@ router.get("/me", async (req, res) => {
         return res.status(200).json({ 
             user: safeUserCredentials
         })
+
     } catch (err) {
         console.error(err)
         return res.status(401).json({ message: "Invalid or expired token" });
