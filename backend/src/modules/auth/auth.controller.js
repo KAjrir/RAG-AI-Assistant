@@ -10,11 +10,9 @@ const router = Router()
 router.get("/me", async (req, res) => {
     const { auth_token } = req.cookies
     if (!auth_token) return res.status(200).json({ user: null })
-    console.log(auth_token)
     
     try {
         const { user } = verifyToken(auth_token)
-        console.log(user)
 
         const safeUserCredentials = {
             id: user.id,

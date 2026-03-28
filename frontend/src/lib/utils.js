@@ -33,16 +33,27 @@ export const formatTimeAgo = (date) => {
 
 export const sortDocs = (docs) => {
   const statussen = {
-    error: 3,
+    failed: 3,
     processing: 2,
-    indexed: 1
+    completed: 1
   }
 
   return (
     docs.sort((a, b) => {
-      if ( statussen[a.status] > statussen[b.status]) return -1
-      if ( statussen[a.status] < statussen[b.status]) return 1
-      if (new Date(a.uploadedAt).getTime() > new Date(b.uploadedAt).getTime()) return -1
+      const statusA = statussen[a.status]
+      const statusB = statussen[b.status]
+
+      if (statusA > statusB) return -1;
+      if (statusA < statusB) return 1;
+
+      const dateA = new Date(a.uploaded_at).getTime()
+      const dateB = new Date(b.uploaded_at).getTime()
+
+      if (dateA > dateB) return -1;
+      if (dateA < dateB) return 1;
+
+      return 0
+
     })
   )
 }
