@@ -56,7 +56,7 @@ export const getDocs = async (orgId, limit) => {
            WHEN 'failed' THEN 4
            WHEN 'processing' THEN 1
            WHEN 'completed' THEN 5
-           WHEN 'uploading' THEM 3
+           WHEN 'uploading' THEN 3
            WHEN 'queued' THEN 2
           END,
           uploaded_at DESC
