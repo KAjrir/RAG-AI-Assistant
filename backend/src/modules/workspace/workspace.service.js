@@ -51,7 +51,6 @@ export const getDocs = async (orgId, limit) => {
         SELECT id, originalname, resource_url, status, uploaded_by, uploaded_at, size
         FROM documents
         WHERE organization_id = ${orgId}
-        LIMIT ${limit}
         ORDER BY
           CASE status
            WHEN 'failed' THEN 4
@@ -61,6 +60,7 @@ export const getDocs = async (orgId, limit) => {
            WHEN 'queued' THEN 2
           END,
           uploaded_at DESC
+        LIMIT ${limit}
     `
 
     return docs
