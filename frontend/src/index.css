@@ -45,7 +45,7 @@ button { font-family: var(--sans); }
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  height: 100svh;
   font-size: 0.875rem;
   color: var(--muted);
 }

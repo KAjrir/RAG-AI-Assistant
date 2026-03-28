@@ -66,14 +66,9 @@ export default function DocsUpload() {
         formData.append('files', file);
       }
 
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/workspaces/${slug}/docs`,
-        { method: 'POST', credentials: 'include', body: formData }
-      );
-
-      if (!res.ok) throw new Error(`Upload mislukt (${res.status})`);
-
-      const { ids } = await res.json();
+      const res = await api.post(`/workspaces/${slug}/docs`, formData);
+      const { ids } = res.data;
+      
       setStatus('processing');
       pollStatus(ids);
     } catch (err) {

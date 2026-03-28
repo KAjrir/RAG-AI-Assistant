@@ -5,11 +5,13 @@ import { useAuth } from './AuthContext';
 const WorkspaceContext = createContext(null);
 
 export function WorkspaceProvider({ slug, children }) {
-  const { user }                  = useAuth();
+  const {user}                    = useAuth();
   const [workspace, setWorkspace] = useState(null);
   const [members, setMembers]     = useState([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState(null);
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   useEffect(() => {
     if (!slug) return;
@@ -46,8 +48,12 @@ export function WorkspaceProvider({ slug, children }) {
     setMembers(prev => prev.filter(m => m.id !== memberId));
   }
 
+  function toggleSidebar() {
+    setIsSidebarOpen(prev => !prev)
+  }
+
   return (
-    <WorkspaceContext.Provider value={{
+    <WorkspaceContext.Provider value={{ isSidebarOpen, toggleSidebar,
       workspace, members, loading, error,
       isOwner, currentMember,
       updateWorkspace, inviteMember, removeMember,
