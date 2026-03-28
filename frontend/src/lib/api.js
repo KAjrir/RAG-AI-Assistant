@@ -8,9 +8,9 @@ export const api = axios.create({
 api.interceptors.response.use(
   res => res,
   err => {
-    if (err.response?.status === 401) {
-      window.location.href = '/inloggen';
-    }
+    // if (err.response?.status === 401) {
+    //   window.location.href = '/inloggen';
+    // }
     return Promise.reject(err);
   }
 );
