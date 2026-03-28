@@ -1,0 +1,197 @@
+.ms-overlay {
+  display: none;
+}
+
+.ms-sheet {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .ms-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 99;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .ms-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .ms-sheet {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    z-index: 100;
+    padding: 12px 12px 32px;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(.4,0,.2,1);
+    max-height: 85svh;
+    overflow-y: auto;
+  }
+
+  .ms-sheet.open {
+    transform: translateY(0);
+  }
+
+  .ms-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 16px;
+  }
+
+  .ms-workspaces {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 4px;
+  }
+
+  .ms-ws-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: none;
+    background: none;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s;
+    width: 100%;
+  }
+
+  .ms-ws-item:hover {
+    background: var(--bg);
+  }
+
+  .ms-ws-item.active {
+    background: var(--accent-light);
+  }
+
+  .ms-ws-item.active .ms-ws-name {
+    color: var(--accent);
+  }
+
+  .ms-ws-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--accent-light);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .ms-ws-avatar-muted {
+    background: var(--bg);
+    color: var(--muted);
+  }
+
+  .ms-ws-identity {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1;
+  }
+
+  .ms-ws-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .ms-ws-slug {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .ms-ws-all .ms-ws-name {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  .ms-ws-item svg {
+    color: var(--accent);
+    margin-left: auto;
+  }
+
+  .ms-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 8px 0;
+  }
+
+  .ms-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .ms-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    color: var(--muted);
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .ms-nav-item:hover {
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  .ms-nav-item.active {
+    background: var(--accent-light);
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .ms-chat {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 4px;
+    padding: 12px;
+    background: var(--dark-btn);
+    color: #fff;
+    border: none;
+    border-radius: 100px;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.18s, transform 0.18s;
+  }
+
+  .ms-chat:hover {
+    background: var(--dark-btn-hover);
+    transform: translateY(-1px);
+  }
+
+  .ms-chat:active {
+    transform: translateY(0);
+  }
+}

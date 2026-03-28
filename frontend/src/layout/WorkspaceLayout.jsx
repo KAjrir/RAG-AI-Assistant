@@ -1,64 +1,109 @@
-import { Link, NavLink, Outlet, useNavigate, useParams } from 'react-router';
+import { NavLink, Outlet, useNavigate, useParams } from 'react-router';
+import { useState, useRef, useEffect } from 'react';
 import { useWorkspace } from '../context/WorkspaceContext.jsx';
+import { useOrg } from '../context/OrgContext.jsx';
+import MobileSheet from '../components/workspace/MobileSheet.jsx';
+import MobileBottomBar from '../components/workspace/MobileBottomBar.jsx';
 import '../styles/workspaceLayout.css';
 
 export default function WorkspaceLayout() {
   const { slug } = useParams();
   const { workspace, isOwner, loading } = useWorkspace();
+  const { workspaces } = useOrg();
   const navigate = useNavigate();
+
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   if (loading) return <div className="wl-loading">Laden…</div>;
 
   return (
     <div className="wl-root">
-      <aside className="wl-sidebar">
-        <div className="wl-ws-header">
-          <Link to="/dashboard" className="wl-ws-back" title="Terug naar dashboard">
-            <BackIcon />
-          </Link>
+
+      <aside className={`wl-sidebar ${sidebarOpen ? 'mobile-open' : ''}`}>
+        <div className="wl-ws-header" onClick={() => setDropdownOpen(prev => !prev)} ref={dropdownRef}>
           <div className="wl-ws-identity">
             <span className="wl-ws-name">{workspace?.name}</span>
             <span className="wl-ws-slug">w/{workspace?.slug}</span>
+          </div>
+          {dropdownOpen ? <ChevronUp /> : <ChevronDown />}
+          <div className={`wl-ws-dropdown ${dropdownOpen ? 'open' : ''}`}>
+            {workspaces.map(ws => (
+              <button
+                key={ws.slug}
+                className={`wl-ws-dropdown-item ${ws.slug === slug ? 'active' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDropdownOpen(false);
+                  setSidebarOpen(false);
+                  navigate(`/w/${ws.slug}`);
+                }}
+              >
+                <span className="wl-ws-dropdown-name">{ws.name}</span>
+                <span className="wl-ws-dropdown-slug">w/{ws.slug}</span>
+              </button>
+            ))}
+            <div className="wl-ws-dropdown-divider" />
+            <button
+              className="wl-ws-dropdown-item wl-ws-dropdown-dashboard"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate('/dashboard');
+              }}
+            >
+              Alle workspaces
+            </button>
           </div>
         </div>
 
         <nav className="wl-nav">
           <span className="wl-nav-section">Workspace</span>
-
-          <NavLink to={`/w/${slug}`} end className="wl-nav-item">
+          <NavLink to={`/w/${slug}`} end className="wl-nav-item" onClick={() => setSidebarOpen(false)}>
             <OverviewIcon /> Overzicht
           </NavLink>
-
-          <NavLink to={`/w/${slug}/docs`} className="wl-nav-item">
+          <NavLink to={`/w/${slug}/docs`} className="wl-nav-item" onClick={() => setSidebarOpen(false)}>
             <DocsIcon /> Documenten
           </NavLink>
-
-          <NavLink to={`/w/${slug}/connecties`} className="wl-nav-item">
+          <NavLink to={`/w/${slug}/connecties`} className="wl-nav-item" onClick={() => setSidebarOpen(false)}>
             <ConnectionsIcon /> Connecties
           </NavLink>
-
-          <NavLink to={`/w/${slug}/mensen`} className="wl-nav-item">
+          <NavLink to={`/w/${slug}/mensen`} className="wl-nav-item" onClick={() => setSidebarOpen(false)}>
             <PeopleIcon /> Mensen
           </NavLink>
-
           {isOwner && (
             <>
               <span className="wl-nav-section">Beheer</span>
-              <NavLink to={`/w/${slug}/instellingen`} className="wl-nav-item">
+              <NavLink to={`/w/${slug}/instellingen`} className="wl-nav-item" onClick={() => setSidebarOpen(false)}>
                 <SettingsIcon /> Instellingen
               </NavLink>
             </>
           )}
         </nav>
 
-        <button className="wl-cta" onClick={() => navigate(`/w/${slug}/chat`)}>
+        <button className="wl-cta" onClick={() => { navigate(`/w/${slug}/chat`); setSidebarOpen(false); }}>
           <ChatIcon /> Start chat
         </button>
       </aside>
 
-      <main className="wl-main">
-        <Outlet />
-      </main>
+      <div className="wl-content">
+        <main className="wl-main">
+          <Outlet />
+        </main>
+        <MobileBottomBar onMenuClick={() => setSidebarOpen(prev => !prev)} />
+        <MobileSheet open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      </div>
+
     </div>
   );
 }
@@ -132,4 +177,20 @@ function BackIcon() {
       <path d="M9 11L5 7l4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
+}
+
+function ChevronUp() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M6 15L12 9L18 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function ChevronDown() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
 }

@@ -4,6 +4,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 :root {
@@ -45,7 +46,7 @@ button { font-family: var(--sans); }
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  height: 100svh;
   font-size: 0.875rem;
   color: var(--muted);
 }

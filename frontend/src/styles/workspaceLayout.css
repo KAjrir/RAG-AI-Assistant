@@ -1,6 +1,6 @@
 .wl-root {
   display: flex;
-  height: 100vh;
+  height: 100svh;
   background: var(--bg);
   font-family: var(--sans);
 }
@@ -9,9 +9,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  height: 100svh;
   font-size: 0.875rem;
   color: var(--muted);
+}
+
+/* ── Content wrapper ───────────────────── */
+.wl-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* ── Sidebar ───────────────────────────── */
@@ -28,32 +36,27 @@
   padding: 18px 16px 14px;
   border-bottom: 1px solid var(--border);
   display: flex;
+  justify-content: space-between;
   align-items: center;
+  cursor: pointer;
+  position: relative;
   gap: 6px;
+  transition: background 0.15s, color 0.15s;
 }
 
-.wl-ws-back {
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
-  border: 1px solid var(--border);
-  background: none;
-  color: var(--muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  text-decoration: none;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-}
- 
-.wl-ws-back:hover {
+.wl-ws-header:hover {
   background: var(--bg);
-  color: var(--text);
-  border-color: var(--border-dark);
 }
- 
+
+.wl-ws-header svg {
+  color: var(--muted);
+  transition: color 0.15s;
+}
+
+.wl-ws-header:hover svg {
+  color: var(--text);
+}
+
 .wl-ws-identity {
   display: flex;
   flex-direction: column;
@@ -69,6 +72,76 @@
 
 .wl-ws-slug {
   font-size: 11px;
+  color: var(--muted);
+}
+
+/* ── Workspace dropdown ────────────────── */
+.wl-ws-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 8px;
+  right: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(26, 86, 219, 0.10);
+  z-index: 100;
+  overflow: hidden;
+  padding: 4px;
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.wl-ws-dropdown.open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: all;
+}
+
+.wl-ws-dropdown-item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.wl-ws-dropdown-item:hover {
+  background: var(--bg);
+}
+
+.wl-ws-dropdown-item.active {
+  background: var(--accent-light);
+}
+
+.wl-ws-dropdown-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.wl-ws-dropdown-slug {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.wl-ws-dropdown-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+.wl-ws-dropdown-dashboard .wl-ws-dropdown-name {
+  font-size: 12px;
+  font-weight: 400;
   color: var(--muted);
 }
 
@@ -129,7 +202,7 @@
 .wl-cta {
   margin: 12px;
   padding: 10px 14px;
-  background: var(--accent);
+  background: var(--dark-btn);
   color: #fff;
   border: none;
   border-radius: 100px;
@@ -145,7 +218,7 @@
 }
 
 .wl-cta:hover {
-  background: var(--accent-hover);
+  background: var(--dark-btn-hover);
   transform: translateY(-1px);
 }
 
@@ -164,35 +237,11 @@
 /* ── Responsive ────────────────────────── */
 @media (max-width: 768px) {
   .wl-sidebar {
-    width: 56px;
-    min-width: 56px;
-  }
-
-  .wl-ws-header,
-  .wl-nav-section {
     display: none;
   }
 
-  .wl-nav-item {
-    justify-content: center;
-    padding: 10px;
-  }
-
-  .wl-nav-item svg {
-    opacity: 1;
-  }
-
-  .wl-nav-item span {
-    display: none;
-  }
-
-  .wl-cta {
-    padding: 10px;
-    margin: 8px;
-    font-size: 0;
-  }
-
-  .wl-cta svg {
-    margin: 0;
+  .wl-main {
+    padding: 16px;
+    padding-bottom: 100px;
   }
 }
