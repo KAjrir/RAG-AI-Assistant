@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
 import { api } from '../../lib/api.js';
-import { formatTimeAgo, sortDocs } from '../../lib/utils.js';
+import { formatTimeAgo } from '../../lib/utils.js';
 import '../../new-styles/overzicht.css';
 
 
@@ -54,7 +54,7 @@ export default function Overzicht() {
       <section>
         <p className="ov-section-label">Recente documenten</p>
         <ul className="ov-doc-list">
-          {sortDocs(docs).map(doc => (
+          {docs.map(doc => (
             <li key={doc.id}>
               <button
                 className="ov-doc-item"

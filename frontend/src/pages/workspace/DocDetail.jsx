@@ -21,10 +21,9 @@ export default function DocDetail() {
       .then(([docRes, chunksRes]) => {
         setDoc(docRes.data);
         setChunks(chunksRes.data);
-        console.log(docRes.data)
       })
       .finally(() => setLoading(false));
-  }, [slug, docId]);
+  }, [slug, doc?.status]);
 
   useEffect(() => {
     pollStatus()
@@ -127,7 +126,7 @@ export default function DocDetail() {
       {/* Statistieken */}
       <div className="dd-stats">
         <div className="dd-stat">
-          <span className="dd-stat-num">{doc.chunkCount ?? chunks.length}</span>
+          <span className="dd-stat-num">{chunks.length ?? '-'}</span>
           <span className="dd-stat-label">Chunks</span>
         </div>
         <div className="dd-stat">
@@ -135,7 +134,7 @@ export default function DocDetail() {
           <span className="dd-stat-label">Tokens</span>
         </div>
         <div className="dd-stat">
-          <span className="dd-stat-num">{doc.pageCount ?? '—'}</span>
+          <span className="dd-stat-num">{doc.page_count ?? '—'}</span>
           <span className="dd-stat-label">Pagina's</span>
         </div>
       </div>

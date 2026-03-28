@@ -176,16 +176,6 @@ export async function chunkPdf(filePath, filename) {
 
   const chunks = buildChunks(effectivePages, { filename, numpages, info })
   console.log("CHUNKS: ", chunks)
-
-    console.log({
-    meta: {
-      filename,
-      totalPages:  numpages,
-      totalChunks: chunks.length,
-      title:       info?.Title  || filename,
-      author:      info?.Author || null,
-    }
-    })
   return {
     chunks,
     meta: {

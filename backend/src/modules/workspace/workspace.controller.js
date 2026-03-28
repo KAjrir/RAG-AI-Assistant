@@ -3,7 +3,7 @@ import { Router } from "express";
 import multer, { diskStorage } from "multer";
 import { randomUUID } from "crypto";
 
-import { getUserWorkspaces, getCurrentWorkspace, getWorkspaceMembers, getDocs, getDoc, addDoc, getStats, getDocStatus, getDocChunks } from "./workspace.service.js";
+import { getUserWorkspaces, getCurrentWorkspace, getWorkspaceMembers, getDocs, getDoc, addDoc, getStats, getDocStatus, getDocChunks, deleteDoc } from "./workspace.service.js";
 import { processDocument } from "../jobs/processDocument.js";
 import { mockStats, mockDocs, mockChunks, mockConnections } from "../mocks/stats.mock.js";
 import { assetsPath, uploadsDirectory, ISPROD } from "../../server.js";
@@ -78,25 +78,20 @@ router.get("/:slug/members", async (req, res) => {
 router.patch("/:slug", async (req, res) => {
     // Update workspace naam
 
-    res.status(200).json(memberships)
+    res.status(200).json()
 })
 
 router.post("/:slug/invites", async (req, res) => {
     // Uitnodigen van mensen
 
-    res.status(200).json(memberships)
+    res.status(200).json()
 })
 
 router.delete("/:slug/members/:memberId", async (req, res) => {
     // Verwijderen van teamgenoot
 
-    res.status(200).json(memberships)
+    res.status(200).json()
 })
-
-
-
-
-//  ============ NOG GEBRUIK MAKEN VAN MOCKDATA ============
 
 
 router.get("/:slug/docs", async (req, res) => {
@@ -112,10 +107,9 @@ router.get("/:slug/docs", async (req, res) => {
     const foundOrg = orgs.find(org => org.slug === slug)
     if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
 
-    const docs = await getDocs(foundOrg.id, limit )
+    const docs = await getDocs(foundOrg.id, limit, ISPROD )
 
     res.status(200).json(docs)
-    // res.status(200).json(mockDocs)
 })
 
 router.post("/:slug/docs", upload.array("files"), async (req, res) => {
@@ -159,7 +153,7 @@ router.post("/:slug/docs", upload.array("files"), async (req, res) => {
     
     for (const file of files) {
         processDocument(file.docId, file.organizationId, file.filepath, file.originalName)
-    } 
+    }
 
     res.status(200).json(mockDocs)
 })
@@ -173,13 +167,21 @@ router.get("/:slug/docs/:docId", async (req, res) => {
     const foundOrg = orgs.find(org => org.slug === slug)
 
     if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
-    const doc = await getDoc(docId, foundOrg.id)
+    const doc = await getDoc(docId, foundOrg.id, ISPROD)
     
     res.status(200).json(doc)
 })
 
 router.delete("/:slug/docs/:docId", async (req, res) => {
-    res.status(204).end()
+    const { slug, docId } = req.params
+    const orgs = req.orgs
+    
+    const foundOrg = orgs.find(org => org.slug === slug)
+    if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
+    const doc = await deleteDoc(foundOrg.id, docId)
+    
+    
+    res.status(200).json(doc)
 })
 
 router.get("/:slug/docs/:docId/chunks", async (req, res) => {

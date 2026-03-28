@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { api } from '../../lib/api';
-import { formatFileSize, formatTimeAgo, sortDocs } from '../../lib/utils.js';
+import { formatFileSize, formatTimeAgo } from '../../lib/utils.js';
 import '../../new-styles/docsPage.css';
 
 export default function DocsPage() {
@@ -28,7 +28,8 @@ export default function DocsPage() {
 
   async function handleDelete(docId) {
     if (!confirm('Weet je zeker dat je dit document wilt verwijderen?')) return;
-    await api.delete(`/workspaces/${slug}/docs/${docId}`);
+    const res = await api.delete(`/workspaces/${slug}/docs/${docId}`);
+    console.log(res.data)
     setDocs(prev => prev.filter(d => d.id !== docId));
   }
 
@@ -57,7 +58,7 @@ export default function DocsPage() {
         </div>
       ) : (
         <ul className="dp-list">
-          {sortDocs(docs).map(doc => (
+          {docs.map(doc => (
             <li key={doc.id} className="dp-item">
               <div className={`dp-icon dp-icon--${doc.status}`}>
                 <DocIcon />

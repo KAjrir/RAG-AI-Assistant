@@ -1,7 +1,15 @@
 import db from "../../database/db.js"
 import OpenAI from "openai"
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI();
+
+function goFunction () {
+    try {
+        
+    } catch (err) {
+
+    }
+}
 
 export const getUserWorkspaces = async (userId) => {
     const workspaces = await db`
@@ -36,28 +44,28 @@ export const getWorkspaceMembers = async (slug) => {
     return members
 }
 
-export const getDoc = async (docId, orgId) => {
+export const getDoc = async (docId, orgId, ISPROD) => {
     const docs = await db`
-        SELECT id, originalname, resource_url, status, uploaded_by, uploaded_at, size
+        SELECT id, originalname, resource_url, status, uploaded_by, uploaded_at, page_count, size
         FROM documents
-        WHERE organization_id = ${orgId} and id = ${docId}
+        WHERE organization_id = ${orgId} and id = ${docId} and isprod = ${ISPROD}
     `
 
     return docs[0]
 }
 
-export const getDocs = async (orgId, limit) => {
+export const getDocs = async (orgId, limit, ISPROD) => {
     const docs = await db`
-        SELECT id, originalname, resource_url, status, uploaded_by, uploaded_at, size
+        SELECT id, originalname, resource_url, status, uploaded_by, uploaded_at, page_count, size
         FROM documents
-        WHERE organization_id = ${orgId}
+        WHERE organization_id = ${orgId} AND isprod = ${ISPROD}
         ORDER BY
           CASE status
-           WHEN 'failed' THEN 4
-           WHEN 'processing' THEN 1
-           WHEN 'completed' THEN 5
-           WHEN 'uploading' THEN 3
-           WHEN 'queued' THEN 2
+            WHEN 'processing'  THEN 1
+            WHEN 'queued'      THEN 2
+            WHEN 'uploading'   THEN 3
+            WHEN 'failed'      THEN 4
+            WHEN 'completed'   THEN 5
           END,
           uploaded_at DESC
         LIMIT ${limit}
@@ -85,6 +93,16 @@ export const addDoc = async (files) => {
     return docs.map(({ id }) => id)
 }
 
+export const deleteDoc = async (orgId, docId) => {
+    const deletedDoc = await db`
+        DELETE FROM documents
+        WHERE organization_id = ${orgId} and id = ${docId}
+        RETURNING id
+    `
+
+    return deletedDoc
+}
+
 export const getDocStatus = async (docId, orgId) => {
     const [docStatus] = await db`
         SELECT status
@@ -101,7 +119,6 @@ export const getDocChunks = async (docId, orgId) => {
         FROM document_chunks
         WHERE organization_id = ${orgId} and document_id = ${docId}
     `
-
     return chunks
 }
 
@@ -148,7 +165,17 @@ export const getStats = async (orgId) => {
 
 export const updateDocStatus = async (documentId, status) => {
     await db`
-      UPDATE documents SET status = ${status} WHERE id = ${documentId}
+      UPDATE documents 
+      SET status = ${status}
+      WHERE id = ${documentId}
+    `
+}
+
+export const updateDocMetadata = async (documentId, pageCount) => {
+    await db`
+        UPDATE documents 
+        SET page_count = ${pageCount}
+        WHERE id = ${documentId}
     `
 }
 
@@ -166,7 +193,6 @@ export const generateEmbedding = async (chunk) => {
 }
 
 export const insertDocumentChunks = async (chunks) => {
-
     await db`
         INSERT INTO document_chunks (
             document_id,
