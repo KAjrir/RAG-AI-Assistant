@@ -162,7 +162,7 @@
 }
 
 /* ── Responsive ────────────────────────── */
-@media (max-width: 768px) {
+/* @media (max-width: 768px) {
   .wl-sidebar {
     width: 56px;
     min-width: 56px;
@@ -194,5 +194,14 @@
 
   .wl-cta svg {
     margin: 0;
+  }
+} */
+
+@media (max-width: 768px) {
+  .wl-sidebar {
+  }
+  
+  .wl-sidebar .closed {
+    transform: translateX(-100%)
   }
 }
