@@ -1,9 +1,11 @@
 import axios from 'axios';
-const relocationAttempts = 0;
+let relocationAttempts = 0;
 const MAX_RELOCATION_ATTEMPTS = 10;
 
 export const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL}/api`,
+  baseURL: import.meta.env.PROD 
+    ? `${import.meta.env.VITE_API_URL}/api`
+    : "/api",
   withCredentials: true,
 });
 
