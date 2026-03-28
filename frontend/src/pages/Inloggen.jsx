@@ -35,7 +35,7 @@ export default function Login() {
   }
 
   if (user) {
-      return <Navigate to="/" replace />;
+      return <Navigate to="/dashboard" replace />;
   }
 
   return (
