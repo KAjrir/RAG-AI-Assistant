@@ -130,10 +130,6 @@ export default function DocDetail() {
           <span className="dd-stat-label">Chunks</span>
         </div>
         <div className="dd-stat">
-          <span className="dd-stat-num">{doc.tokens ?? '—'}</span>
-          <span className="dd-stat-label">Tokens</span>
-        </div>
-        <div className="dd-stat">
           <span className="dd-stat-num">{doc.page_count ?? '—'}</span>
           <span className="dd-stat-label">Pagina's</span>
         </div>
@@ -148,7 +144,6 @@ export default function DocDetail() {
               <li key={chunk.id} className="dd-chunk">
                 <span className="dd-chunk-num">#{i + 1}</span>
                 <p className="dd-chunk-text">{chunk.content}</p>
-                <span className="dd-chunk-tokens">{chunk.tokens} tokens</span>
               </li>
             ))}
           </ul>
