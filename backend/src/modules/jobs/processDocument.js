@@ -13,15 +13,15 @@ export async function processDocument(documentId, organizationId, filepath, file
     await updateDocStatus(documentId, "processing")
 
     await db`BEGIN`
+
     // 2. PDF chunken
     const { chunks, meta } = await chunkPdf(filepath, filename)
+
     // 3. Voor elke chunk een embedding genereren en opslaan
     await updateDocMetadata(documentId, meta.totalPages)
 
     const completeChunks = [];
     for (const chunk of chunks) {
-      console.log("INDEXING CHUNK: ", chunk)
-      
       const response = await generateEmbedding(chunk)
       if(!response) continue
       const embedding = response.data[0].embedding
@@ -35,7 +35,6 @@ export async function processDocument(documentId, organizationId, filepath, file
         metadata: chunk.metadata
       })
     }
-    console.log(meta)
 
     console.log("INSERTING STATEMENT");
     await insertDocumentChunks(completeChunks);
