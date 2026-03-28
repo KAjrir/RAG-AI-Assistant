@@ -4,9 +4,10 @@ export const authMiddleware = async (req, res, next) => {
   try {
     const { auth_token } = req.cookies;
 
-    const user = verifyToken(auth_token); // jouw logic
+    const { user, orgs} = verifyToken(auth_token); // jouw logic
     // stel je haalt org uit token of database
     req.user = user;
+    req.orgs = orgs
 
     next();
   } catch (err) {

@@ -127,7 +127,7 @@
   flex-shrink: 0;
 }
 
-.dp-icon--indexed {
+.dp-icon--completed {
   background: var(--accent-light);
   border: 1px solid rgba(26, 86, 219, 0.12);
   color: var(--accent);
@@ -139,7 +139,7 @@
   color: #B45309;
 }
 
-.dp-icon--error {
+.dp-icon--failed {
   background: #FEF2F2;
   border: 1px solid rgba(185, 28, 28, 0.12);
   color: #B91C1C;
@@ -174,9 +174,11 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
+  text-align: center;
+  min-width: 100px
 }
 
-.dp-pill--indexed {
+.dp-pill--completed {
   background: var(--accent-light);
   color: var(--accent);
   border: 1px solid rgba(26, 86, 219, 0.18);
@@ -188,7 +190,7 @@
   border: 1px solid rgba(180, 83, 9, 0.15);
 }
 
-.dp-pill--error {
+.dp-pill--failed {
   background: #FEF2F2;
   color: #B91C1C;
   border: 1px solid rgba(185, 28, 28, 0.15);

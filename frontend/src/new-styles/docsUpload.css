@@ -169,7 +169,7 @@
 }
 
 /* ── Foutmelding ───────────────────────── */
-.du-error {
+.du-failed {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -279,4 +279,55 @@
 
 .du-spinner {
   animation: spin 1s linear infinite;
+}
+
+/* ── Bestandenlijst ────────────────────── */
+.du-file-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.du-file-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* ── Meer toevoegen ────────────────────── */
+.du-add-more {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  background: none;
+  border: 1px dashed var(--border-dark);
+  border-radius: var(--radius);
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  overflow: hidden;
+}
+
+.du-add-more:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+}
+
+.du-add-more .du-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
 }

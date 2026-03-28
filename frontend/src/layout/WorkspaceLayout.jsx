@@ -18,7 +18,7 @@ export default function WorkspaceLayout() {
           </Link>
           <div className="wl-ws-identity">
             <span className="wl-ws-name">{workspace?.name}</span>
-            <span className="wl-ws-slug">w/{slug}</span>
+            <span className="wl-ws-slug">w/{workspace?.slug}</span>
           </div>
         </div>
 

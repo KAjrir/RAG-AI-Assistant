@@ -1,7 +1,7 @@
 import { Router } from "express"
 import bcrypt from "bcrypt"
 
-import { getInvitation, getUserId, createUser, getUserInfo, updateUserLastLogin, getOrgsId} from "./auth.service.js"
+import { getInvitation, getUserId, createUser, getUserInfo, updateUserLastLogin, getOrgs} from "./auth.service.js"
 import { signToken, verifyToken } from "./jwt.js"
 import { ISPROD } from "../../server.js"
 
@@ -12,15 +12,15 @@ router.get("/me", async (req, res) => {
     if (!auth_token) return res.status(200).json({ user: null })
     
     try {
-        const decoded = verifyToken(auth_token)
+        const { user } = verifyToken(auth_token)
 
         const safeUserCredentials = {
-            id: decoded.id,
-            name: decoded.name,
-            email: decoded.email
+            id: user.id,
+            name: user.name,
+            email: user.email
         }
 
-        return res.status(200).json({ 
+        res.status(200).json({ 
             user: safeUserCredentials
         })
 
@@ -68,11 +68,11 @@ router.post("/register", async (req, res) => {
 
         // Returns id, name and email
         const createdUser = await createUser(name, email, passwordHash, invitation)
-        const orgsId = await getOrgsId(createdUser.id)
+        const orgs = await getOrgs(createdUser.id)
 
         const token = signToken({
-            ...createdUser,
-            orgs: orgsId
+            user: createdUser,
+            orgs: orgs
         })
 
         res.cookie("auth_token", token, {
@@ -118,11 +118,11 @@ router.post("/login", async (req, res) => {
         email: user.email
     }
 
-    const orgsId = await getOrgsId(user.id)
+    const orgs = await getOrgs(user.id)
 
     const token = signToken({
-        ...safeUserCredentials,
-        orgs: orgsId
+        user: safeUserCredentials,
+        orgs: orgs
     })
 
     res.cookie("auth_token", token, {

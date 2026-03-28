@@ -1,180 +1,240 @@
 import { useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import { api } from '../../lib/api';
+import { formatFileSize } from "../../lib/utils"
 import '../../new-styles/docsUpload.css';
 
-const ACCEPTED_TYPES = ['.pdf', '.docx', '.txt'];
+// const ACCEPTED_TYPES = ['.pdf', '.docx', '.txt'];
+const ACCEPTED_TYPES = ['.pdf'];
 const MAX_MB = 25;
 
 export default function DocsUpload() {
-  const { slug }          = useParams();
-  const navigate          = useNavigate();
-  const inputRef          = useRef(null);
+  const { slug }    = useParams();
+  const navigate    = useNavigate();
+  const inputRef    = useRef(null);
 
-  const [dragging, setDragging]   = useState(false);
-  const [file, setFile]           = useState(null);
-  const [error, setError]         = useState(null);
-  const [status, setStatus]       = useState('idle'); // idle | uploading | processing | done | error
+  const [dragging, setDragging] = useState(false);
+  const [files, setFiles]       = useState([]);
+  const [error, setError]       = useState(null);
+  const [status, setStatus]     = useState('idle'); // idle | uploading | processing | completed | failed
 
-  function validateFile(f) {
-    const ext = '.' + f.name.split('.').pop().toLowerCase();
-    if (!ACCEPTED_TYPES.includes(ext)) {
-      return `Bestandstype niet ondersteund. Gebruik ${ACCEPTED_TYPES.join(', ')}.`;
-    }
-    if (f.size > MAX_MB * 1024 * 1024) {
-      return `Bestand is te groot. Maximaal ${MAX_MB} MB toegestaan.`;
+  function validateFiles(fileList) {
+    for (const file of Array.from(fileList)) {
+      const ext = '.' + file.name.split('.').pop().toLowerCase();
+      if (!ACCEPTED_TYPES.includes(ext)) {
+        return `Bestandstype niet ondersteund. Gebruik ${ACCEPTED_TYPES.join(', ')}.`;
+      }
+      if (file.size > MAX_MB * 1024 * 1024) {
+        return `"${file.name}" is te groot. Maximaal ${MAX_MB} MB per bestand.`;
+      }
     }
     return null;
   }
 
-  function handleSelect(f) {
+  function handleSelect(fileList) {
     setError(null);
-    const validationError = validateFile(f);
+    const validationError = validateFiles(fileList);
     if (validationError) {
       setError(validationError);
       return;
     }
-    setFile(f);
+    setFiles(prev => {
+      const existing = new Set(prev.map(f => f.name));
+      const nieuweFiles = Array.from(fileList).filter(f => !existing.has(f.name));
+      return [...prev, ...nieuweFiles];
+    });
+  }
+
+  function removeFile(name) {
+    setFiles(prev => prev.filter(f => f.name !== name));
   }
 
   function handleDrop(e) {
     e.preventDefault();
     setDragging(false);
-    const dropped = e.dataTransfer.files[0];
-    if (dropped) handleSelect(dropped);
+    if (e.dataTransfer.files.length > 0) handleSelect(e.dataTransfer.files);
   }
 
   async function handleUpload() {
-    if (!file) return;
+    if (!files.length) return;
     setStatus('uploading');
     setError(null);
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      for (const file of files) {
+        formData.append('files', file);
+      }
 
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL ?? 'http://localhost:3001'}/workspaces/${slug}/docs`,
+        `${import.meta.env.VITE_API_URL}/api/workspaces/${slug}/docs`,
         { method: 'POST', credentials: 'include', body: formData }
       );
 
       if (!res.ok) throw new Error(`Upload mislukt (${res.status})`);
 
-      const { id } = await res.json();
+      const { ids } = await res.json();
       setStatus('processing');
-      pollStatus(id);
+      pollStatus(ids);
     } catch (err) {
       setError(err.message);
-      setStatus('error');
+      setStatus('failed');
     }
   }
 
-  function pollStatus(docId) {
+  function pollStatus(docIds) {
     const interval = setInterval(async () => {
       try {
-        const res = await api.get(`/workspaces/${slug}/docs/${docId}/status`);
-        if (res.data.status === 'indexed') {
+        const results = await Promise.all(
+          docIds.map(id => api.get(`/workspaces/${slug}/docs/${id}/status`))
+        );
+
+        const statuses = results.map(r => r.data.status);
+
+        if (statuses.some(s => s === 'failed')) {
           clearInterval(interval);
-          setStatus('done');
-          setTimeout(() => navigate(`/w/${slug}/docs/${docId}`), 1200);
+          setError('Een of meer documenten konden niet worden verwerkt.');
+          setStatus('failed');
+          return;
         }
-        if (res.data.status === 'error') {
+
+        if (statuses.every(s => s === 'completed')) {
           clearInterval(interval);
-          setError('Verwerking mislukt. Probeer het opnieuw.');
-          setStatus('error');
+          setStatus('completed');
+          setTimeout(() => navigate(`/w/${slug}/docs`), 1200);
         }
       } catch {
         clearInterval(interval);
-        setStatus('error');
+        setStatus('failed');
       }
     }, 3000);
   }
 
-  return (
-    <div className="du-root">
-      <header className="du-header">
-        <button className="du-back" onClick={() => navigate(`/w/${slug}/docs`)}>
-          <BackIcon /> Terug naar documenten
-        </button>
-        <h1 className="du-title">Document uploaden</h1>
-        <p className="du-sub">
-          Ondersteunde formaten: PDF, DOCX, TXT · Maximaal {MAX_MB} MB
-        </p>
-      </header>
+  // ── Dropzone scherm: nog geen bestanden of na fout ─────────────────
+  if (status === 'idle' || status === 'failed') {
+    return (
+      <div className="du-root">
+        <header className="du-header">
+          <Link to={`/w/${slug}/docs`} className="du-back">
+            <BackIcon /> Terug naar documenten
+          </Link>
+          <h1 className="du-title">Documenten uploaden</h1>
+          <p className="du-sub">
+            Ondersteunde formaten: PDF, DOCX, TXT · Maximaal {MAX_MB} MB per bestand
+          </p>
+        </header>
 
-      {status === 'idle' || status === 'error' ? (
-        <>
-          <div
-            className={`du-dropzone ${dragging ? 'du-dropzone--dragging' : ''} ${file ? 'du-dropzone--has-file' : ''}`}
-            onClick={() => inputRef.current?.click()}
-            onDragOver={e => { e.preventDefault(); setDragging(true); }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={handleDrop}
-          >
-            <input
-              ref={inputRef}
-              type="file"
-              accept={ACCEPTED_TYPES.join(',')}
-              className="du-input"
-              onChange={e => e.target.files[0] && handleSelect(e.target.files[0])}
-            />
-            {file ? (
-              <div className="du-file-preview">
-                <div className="du-file-icon"><DocIcon /></div>
-                <div className="du-file-info">
-                  <span className="du-file-name">{file.name}</span>
-                  <span className="du-file-size">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
-                </div>
-                <button
-                  className="du-file-remove"
-                  onClick={e => { e.stopPropagation(); setFile(null); }}
-                >
-                  <CloseIcon />
-                </button>
-              </div>
-            ) : (
-              <div className="du-dropzone-empty">
-                <div className="du-dropzone-icon"><UploadIcon /></div>
-                <p className="du-dropzone-label">
-                  Sleep een bestand hierheen of <span>klik om te kiezen</span>
-                </p>
-                <p className="du-dropzone-hint">PDF, DOCX of TXT · max {MAX_MB} MB</p>
-              </div>
-            )}
+        <div
+          className={`du-dropzone ${dragging ? 'du-dropzone--dragging' : ''}`}
+          onClick={() => inputRef.current?.click()}
+          onDragOver={e => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={handleDrop}
+        >
+          <input
+            ref={inputRef}
+            type="file"
+            multiple
+            accept={ACCEPTED_TYPES.join(',')}
+            className="du-input"
+            onChange={e => e.target.files.length > 0 && handleSelect(e.target.files)}
+          />
+          <div className="du-dropzone-empty">
+            <div className="du-dropzone-icon"><UploadIcon /></div>
+            <p className="du-dropzone-label">
+              Sleep bestanden hierheen of <span>klik om te kiezen</span>
+            </p>
+            <p className="du-dropzone-hint">
+              PDF, DOCX of TXT · max {MAX_MB} MB · meerdere bestanden tegelijk
+            </p>
           </div>
+        </div>
 
-          {error && <p className="du-error"><AlertIcon /> {error}</p>}
+        {error && <p className="du-failed"><AlertIcon /> {error}</p>}
 
+        {files.length > 0 && (
+          <>
+            <ul className="du-file-list">
+              {files.map(file => (
+                <li key={file.name} className="du-file-item">
+                  <div className="du-file-icon"><DocIcon /></div>
+                  <div className="du-file-info">
+                    <span className="du-file-name">{file.name}</span>
+                    <span className="du-file-size">{formatFileSize(file.size)}</span>
+                  </div>
+                  <button
+                    className="du-file-remove"
+                    onClick={() => removeFile(file.name)}
+                    title="Verwijderen"
+                  >
+                    <CloseIcon />
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+            <div className="du-footer">
+              <button className="du-btn-primary" onClick={handleUpload}>
+                Uploaden en indexeren
+              </button>
+              <button className="du-btn-secondary" onClick={() => navigate(`/w/${slug}/docs`)}>
+                Annuleren
+              </button>
+            </div>
+          </>
+        )}
+
+        {files.length === 0 && (
           <div className="du-footer">
-            <button
-              className="du-btn-primary"
-              disabled={!file}
-              onClick={handleUpload}
-            >
-              Uploaden en indexeren
-            </button>
             <button className="du-btn-secondary" onClick={() => navigate(`/w/${slug}/docs`)}>
               Annuleren
             </button>
           </div>
-        </>
-      ) : (
-        <div className="du-progress">
-          <div className={`du-progress-icon du-progress-icon--${status}`}>
-            {status === 'done' ? <CheckIcon /> : <SpinnerIcon />}
-          </div>
-          <p className="du-progress-title">
-            {status === 'uploading'   && 'Bestand uploaden…'}
-            {status === 'processing'  && 'Document verwerken en indexeren…'}
-            {status === 'done'        && 'Klaar! Document is geïndexeerd.'}
-          </p>
-          <p className="du-progress-sub">
-            {status === 'uploading'   && 'Even geduld…'}
-            {status === 'processing'  && 'Dit kan een paar seconden duren.'}
-            {status === 'done'        && 'Je wordt doorgestuurd…'}
-          </p>
+        )}
+      </div>
+    );
+  }
+
+  // ── Voortgangsscherm: uploading | processing | completed ───────────
+  return (
+    <div className="du-root">
+      <header className="du-header">
+        <Link to={`/w/${slug}/docs`} className="du-back">
+          <BackIcon /> Terug naar documenten
+        </Link>
+        <h1 className="du-title">Documenten uploaden</h1>
+        <p className="du-sub">
+          Ondersteunde formaten: PDF, DOCX, TXT · Maximaal {MAX_MB} MB per bestand
+        </p>
+      </header>
+
+      <ul className="du-file-list">
+        {files.map(file => (
+          <li key={file.name} className="du-file-item">
+            <div className="du-file-icon"><DocIcon /></div>
+            <div className="du-file-info">
+              <span className="du-file-name">{file.name}</span>
+              <span className="du-file-size">{formatFileSize(file.size)}</span>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <div className="du-progress">
+        <div className={`du-progress-icon du-progress-icon--${status}`}>
+          {status === 'completed' ? <CheckIcon /> : <SpinnerIcon />}
         </div>
-      )}
+        <p className="du-progress-title">
+          {status === 'uploading'  && 'Bestanden uploaden…'}
+          {status === 'processing' && 'Verwerken en indexeren…'}
+          {status === 'completed'  && `Klaar! ${files.length} ${files.length === 1 ? 'document' : 'documenten'} geïndexeerd.`}
+        </p>
+        <p className="du-progress-sub">
+          {status === 'uploading'  && 'Even geduld…'}
+          {status === 'processing' && 'Dit kan een paar seconden duren.'}
+          {status === 'completed'  && 'Je wordt doorgestuurd naar de documentenlijst…'}
+        </p>
+      </div>
     </div>
   );
 }
@@ -183,6 +243,15 @@ function BackIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
       <path d="M9 11L5 7l4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+      <line x1="6.5" y1="1" x2="6.5" y2="12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+      <line x1="1" y1="6.5" x2="12" y2="6.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
     </svg>
   );
 }
@@ -238,3 +307,4 @@ function SpinnerIcon() {
     </svg>
   );
 }
+

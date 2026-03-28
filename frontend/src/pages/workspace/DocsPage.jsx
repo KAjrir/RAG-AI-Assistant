@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { api } from '../../lib/api';
+import { formatFileSize, formatTimeAgo, sortDocs } from '../../lib/utils.js';
 import '../../new-styles/docsPage.css';
 
 export default function DocsPage() {
@@ -11,7 +12,10 @@ export default function DocsPage() {
 
   useEffect(() => {
     api.get(`/workspaces/${slug}/docs`)
-      .then(res => setDocs(res.data))
+      .then(res => {
+        setDocs(res.data)
+        console.log(res.data)
+      })
       .finally(() => setLoading(false));
   }, [slug]);
 
@@ -53,22 +57,19 @@ export default function DocsPage() {
         </div>
       ) : (
         <ul className="dp-list">
-          {docs.map(doc => (
+          {sortDocs(docs).map(doc => (
             <li key={doc.id} className="dp-item">
               <div className={`dp-icon dp-icon--${doc.status}`}>
                 <DocIcon />
               </div>
               <div className="dp-info" onClick={() => navigate(`/w/${slug}/docs/${doc.id}`)}>
-                <span className="dp-name">{doc.name}</span>
+                <span className="dp-name">{doc.originalname}</span>
                 <span className="dp-meta">
-                  {doc.size} · {doc.chunks ? `${doc.chunks} chunks` : doc.uploadedAt}
+                  {formatFileSize(doc.size)} · {doc.chunks ? `${doc.chunks} chunks` : formatTimeAgo(doc.uploaded_at)}
                 </span>
               </div>
-              <span className={`dp-pill dp-pill--${doc.status}`}>
-                {statusLabel(doc.status)}
-              </span>
               <div className="dp-actions">
-                {doc.status === 'error' && (
+                {doc.status === 'failed' && (
                   <button
                     className="dp-action-btn"
                     title="Opnieuw indexeren"
@@ -85,6 +86,9 @@ export default function DocsPage() {
                   <TrashIcon />
                 </button>
               </div>
+              <span className={`dp-pill dp-pill--${doc.status}`}>
+                {statusLabel(doc.status)}
+              </span>
             </li>
           ))}
         </ul>
@@ -94,7 +98,7 @@ export default function DocsPage() {
 }
 
 function statusLabel(status) {
-  const labels = { indexed: 'Geïndexeerd', processing: 'Verwerking', error: 'Fout' };
+  const labels = { completed: 'Geïndexeerd', processing: 'Verwerking', failed: 'Mislukt' };
   return labels[status] ?? status;
 }
 

@@ -31,7 +31,7 @@ async function retrieve(question, k = 3) {
   const rows = await db`
     SELECT content, videos, links, images, metadata,
            1 - (embedding <=> ${JSON.stringify(embedding)}::vector) AS similarity
-    FROM documents
+    FROM test_document_chunks
     ORDER BY embedding <=> ${JSON.stringify(embedding)}::vector
     LIMIT ${k}
   `;

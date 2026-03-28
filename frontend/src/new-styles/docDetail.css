@@ -49,7 +49,7 @@
   margin-top: 2px;
 }
 
-.dd-doc-icon--indexed {
+.dd-doc-icon--completed {
   background: var(--accent-light);
   border: 1px solid rgba(26, 86, 219, 0.12);
   color: var(--accent);
@@ -61,7 +61,7 @@
   color: #B45309;
 }
 
-.dd-doc-icon--error {
+.dd-doc-icon--failed {
   background: #FEF2F2;
   border: 1px solid rgba(185, 28, 28, 0.12);
   color: #B91C1C;
@@ -105,7 +105,7 @@
   white-space: nowrap;
 }
 
-.dd-pill--indexed {
+.dd-pill--completed {
   background: var(--accent-light);
   color: var(--accent);
   border: 1px solid rgba(26, 86, 219, 0.18);
@@ -117,7 +117,7 @@
   border: 1px solid rgba(180, 83, 9, 0.15);
 }
 
-.dd-pill--error {
+.dd-pill--failed {
   background: #FEF2F2;
   color: #B91C1C;
   border: 1px solid rgba(185, 28, 28, 0.15);

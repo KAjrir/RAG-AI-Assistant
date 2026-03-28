@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { api } from '../../lib/api';
+import { formatFileSize, formatTimeAgo } from '../../lib/utils.js';
 import '../../new-styles/docDetail.css';
 
 export default function DocDetail() {
@@ -20,9 +21,14 @@ export default function DocDetail() {
       .then(([docRes, chunksRes]) => {
         setDoc(docRes.data);
         setChunks(chunksRes.data);
+        console.log(docRes.data)
       })
       .finally(() => setLoading(false));
   }, [slug, docId]);
+
+  useEffect(() => {
+    pollStatus()
+  }, [])
 
   async function handleReindex() {
     setReindexing(true);
@@ -39,14 +45,14 @@ export default function DocDetail() {
     const interval = setInterval(async () => {
       try {
         const res = await api.get(`/workspaces/${slug}/docs/${docId}/status`);
-        if (res.data.status === 'indexed') {
+        if (res.data.status === 'completed') {
           clearInterval(interval);
-          setDoc(prev => ({ ...prev, status: 'indexed' }));
+          setDoc(prev => ({ ...prev, status: 'completed' }));
           setReindexing(false);
         }
-        if (res.data.status === 'error') {
+        if (res.data.status === 'failed') {
           clearInterval(interval);
-          setDoc(prev => ({ ...prev, status: 'error' }));
+          setDoc(prev => ({ ...prev, status: 'failed' }));
           setReindexing(false);
         }
       } catch {
@@ -83,11 +89,11 @@ export default function DocDetail() {
               <DocIcon />
             </div>
             <div>
-              <h1 className="dd-title">{doc.name}</h1>
+              <h1 className="dd-title">{doc.originalname}</h1>
               <div className="dd-meta-row">
-                <span className="dd-meta">{doc.size}</span>
+                <span className="dd-meta">{formatFileSize(doc.size)}</span>
                 <span className="dd-meta-sep">·</span>
-                <span className="dd-meta">{doc.uploadedAt}</span>
+                <span className="dd-meta">{formatTimeAgo(doc.uploaded_at)}</span>
                 <span className="dd-meta-sep">·</span>
                 <span className={`dd-pill dd-pill--${doc.status}`}>
                   {statusLabel(doc.status)}
@@ -96,7 +102,7 @@ export default function DocDetail() {
             </div>
           </div>
           <div className="dd-header-actions">
-            {(doc.status === 'error' || doc.status === 'indexed') && (
+            {(doc.status === 'failed' || doc.status === 'completed') && (
               <button
                 className="dd-btn-secondary"
                 onClick={handleReindex}
@@ -125,7 +131,7 @@ export default function DocDetail() {
           <span className="dd-stat-label">Chunks</span>
         </div>
         <div className="dd-stat">
-          <span className="dd-stat-num">{doc.tokenCount ?? '—'}</span>
+          <span className="dd-stat-num">{doc.tokens ?? '—'}</span>
           <span className="dd-stat-label">Tokens</span>
         </div>
         <div className="dd-stat">
@@ -162,7 +168,7 @@ export default function DocDetail() {
 }
 
 function statusLabel(status) {
-  const labels = { indexed: 'Geïndexeerd', processing: 'Verwerking', error: 'Fout' };
+  const labels = { completed: 'Geïndexeerd', processing: 'Verwerking', failed: 'Mislukt' };
   return labels[status] ?? status;
 }
 

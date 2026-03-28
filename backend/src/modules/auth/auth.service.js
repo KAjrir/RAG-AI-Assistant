@@ -89,15 +89,15 @@ export const getOrgAndMembershipInfo = async (userId) => {
     return memberships
 }
 
-export const getOrgsId = async (userId) => {
-    const orgsId = await db`
+export const getOrgs = async (userId) => {
+    const orgs = await db`
         SELECT 
-        o.id
+        o.id, o.slug
         FROM organizations o
         JOIN memberships m ON o.id = m.organization_id
         WHERE m.user_id = ${userId}
     `
 
     // Antwoord komt terug in [{ id: }, { id: }]
-    return orgsId.map(org => org.id)
+    return orgs
 }

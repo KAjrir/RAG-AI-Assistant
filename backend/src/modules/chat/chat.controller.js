@@ -7,7 +7,8 @@ import { getMessagesFromOrg, getChatsFromOrg } from "./chat.service.js";
 
 const router = Router();
 
-router.get("/messages", async (req, res) => {
+
+router.post("/messages", async (req, res) => {
   const message = req.query.message || "";
   const sessionId = req.query.session_id || "";
 
@@ -43,15 +44,15 @@ router.get("/", async (req, res) => {
   res.status(200).json(chats)
 })
 
-router.get("/:id", async (req, res) => {
-  const userId = req.user.id
-  const chatId = req.params.id
+// router.get("/:id", async (req, res) => {
+//   const userId = req.user.id
+//   const chatId = req.params.id
 
-  console.log(chatId)
+//   console.log(chatId)
 
-  const messages = await getMessagesFromOrg(userId, chatId) ?? []
+//   const messages = await getMessagesFromOrg(userId, chatId) ?? []
 
-  res.status(200).json(messages)
-})
+//   res.status(200).json(messages)
+// })
 
 export default router

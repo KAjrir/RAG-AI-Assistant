@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
 import { api } from '../../lib/api.js';
+import { formatTimeAgo, sortDocs } from '../../lib/utils.js';
 import '../../new-styles/overzicht.css';
 
 
@@ -53,7 +54,7 @@ export default function Overzicht() {
       <section>
         <p className="ov-section-label">Recente documenten</p>
         <ul className="ov-doc-list">
-          {docs.map(doc => (
+          {sortDocs(docs).map(doc => (
             <li key={doc.id}>
               <button
                 className="ov-doc-item"
@@ -63,8 +64,8 @@ export default function Overzicht() {
                   <DocIcon />
                 </div>
                 <div className="ov-doc-info">
-                  <span className="ov-doc-name">{doc.name}</span>
-                  <span className="ov-doc-meta">{doc.uploadedAt}</span>
+                  <span className="ov-doc-name">{doc.originalname}</span>
+                  <span className="ov-doc-meta">{formatTimeAgo(doc.uploaded_at)}</span>
                 </div>
                 <span className={`ov-pill ov-pill--${doc.status}`}>
                   {statusLabel(doc.status)}
@@ -80,9 +81,9 @@ export default function Overzicht() {
 
 function statusLabel(status) {
   const labels = {
-    indexed:    'Geïndexeerd',
+    completed:    'Geïndexeerd',
     processing: 'Verwerking',
-    error:      'Fout',
+    failed:      'Mislukt',
   };
   return labels[status] ?? status;
 }
