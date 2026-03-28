@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Outlet } from 'react-router';
 import { ModalProvider } from '../modals/ModalContext.jsx';
 import ChatSidebar from '../components/chat/ChatSidebar.jsx';
-import '../new-styles/chatPage.css';
+import '../styles/chatPage.css';
 
 export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
-import '../../new-styles/mensen.css';
+import '../../styles/mensen.css';
 
 export default function Mensen() {
   const { slug }                                         = useParams();

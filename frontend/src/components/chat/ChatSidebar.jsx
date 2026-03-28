@@ -3,7 +3,7 @@ import { NavLink, useNavigate, useParams } from 'react-router';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
 import { api } from '../../lib/api.js';
-import '../../new-styles/chatSidebar.css';
+import '../../styles/chatSidebar.css';
 
 
 export default function ChatSidebar({ isOpen, onToggle }) {

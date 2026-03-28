@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { api } from '../../lib/api';
 import { formatFileSize } from "../../lib/utils"
-import '../../new-styles/docsUpload.css';
+import '../../styles/docsUpload.css';
 
 // const ACCEPTED_TYPES = ['.pdf', '.docx', '.txt'];
 const ACCEPTED_TYPES = ['.pdf'];

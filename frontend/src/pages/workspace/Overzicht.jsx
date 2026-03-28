@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
 import { api } from '../../lib/api.js';
 import { formatTimeAgo } from '../../lib/utils.js';
-import '../../new-styles/overzicht.css';
+import '../../styles/overzicht.css';
 
 
 export default function Overzicht() {

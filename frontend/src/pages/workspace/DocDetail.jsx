@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { api } from '../../lib/api';
 import { formatFileSize, formatTimeAgo } from '../../lib/utils.js';
-import '../../new-styles/docDetail.css';
+import '../../styles/docDetail.css';
 
 export default function DocDetail() {
   const { slug, docId }   = useParams();

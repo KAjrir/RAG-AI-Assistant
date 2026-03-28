@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
 import { api } from '../../lib/api';
-import '../../new-styles/connecties.css';
+import '../../styles/connecties.css';
 
 const AVAILABLE_INTEGRATIONS = [
   { key: 'google_drive',  name: 'Google Drive',  description: 'Synchroniseer mappen vanuit Google Drive.' },

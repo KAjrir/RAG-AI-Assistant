@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useOrg } from '../context/OrgContext.jsx';
-import '../new-styles/dashboard.css';
+import '../styles/dashboard.css';
 
 export default function Dashboard() {
   const { user, logout }                                        = useAuth();

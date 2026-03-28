@@ -7,8 +7,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeRaw from 'rehype-raw';
-import '../../new-styles/chatUI.css';
-import '../../new-styles/markdown.css';
+import '../../styles/chatUI.css';
+import '../../styles/markdown.css';
 
 export default function ChatUI() {
   const { slug, threadId }            = useParams();

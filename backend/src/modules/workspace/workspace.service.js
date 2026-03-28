@@ -97,7 +97,7 @@ export const deleteDoc = async (orgId, docId) => {
     const deletedDoc = await db`
         DELETE FROM documents
         WHERE organization_id = ${orgId} and id = ${docId}
-        RETURNING id
+        RETURNING id, filepath
     `
 
     return deletedDoc
@@ -122,12 +122,12 @@ export const getDocChunks = async (docId, orgId) => {
     return chunks
 }
 
-export const getStats = async (orgId) => {
+export const getStats = async (orgId, ISPROD) => {
     const promises = await Promise.allSettled([
         await db`
             SELECT COUNT(*) as docs
             FROM documents
-            WHERE organization_id = ${orgId}
+            WHERE organization_id = ${orgId} and isprod = ${ISPROD}
         `,
         await db`
         SELECT COUNT(*) as members

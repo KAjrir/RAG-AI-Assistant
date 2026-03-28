@@ -1,3 +1,4 @@
+import fs from "fs/promises"
 import path from "path";
 import { Router } from "express";
 import multer, { diskStorage } from "multer";
@@ -7,6 +8,7 @@ import { getUserWorkspaces, getCurrentWorkspace, getWorkspaceMembers, getDocs, g
 import { processDocument } from "../jobs/processDocument.js";
 import { mockStats, mockDocs, mockChunks, mockConnections } from "../mocks/stats.mock.js";
 import { assetsPath, uploadsDirectory, ISPROD } from "../../server.js";
+import db from "../../database/db.js";
 
 const router = Router();
 const upload = multer({ 
@@ -178,10 +180,24 @@ router.delete("/:slug/docs/:docId", async (req, res) => {
     
     const foundOrg = orgs.find(org => org.slug === slug)
     if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
-    const doc = await deleteDoc(foundOrg.id, docId)
     
-    
-    res.status(200).json(doc)
+    try {
+        await db`BEGIN`
+        const [doc] = await deleteDoc(foundOrg.id, docId)
+        
+        if(!doc){
+            return res.status(404).json({ message: "Document Not Found"})
+        }
+
+        await fs.unlink(doc.filepath)
+        await db`COMMIT`
+        return res.status(200).json({id: doc.id})
+
+    } catch (err) {
+        console.error(err)
+        await db`ROLLBACK`
+        return res.status(500).json({ message: "Someting went wrong deleting the file" })
+    }
 })
 
 router.get("/:slug/docs/:docId/chunks", async (req, res) => {
@@ -220,7 +236,7 @@ router.get("/:slug/stats", async (req, res) => {
     const foundOrg = orgs.find(org => org.slug === slug)
     if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
     
-    const stats = await getStats(foundOrg.id);
+    const stats = await getStats(foundOrg.id, ISPROD);
 
     res.status(200).json(stats)
 })

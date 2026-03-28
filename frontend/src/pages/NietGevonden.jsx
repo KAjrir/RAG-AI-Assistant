@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import '../new-styles/nietGevonden.css';
+import '../styles/nietGevonden.css';
 
 export default function NietGevonden() {
   return (

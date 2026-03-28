@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { api } from '../../lib/api';
-import '../../new-styles/instellingen.css';
+import '../../styles/instellingen.css';
 
 
 export default function Instellingen() {

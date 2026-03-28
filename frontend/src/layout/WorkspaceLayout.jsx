@@ -1,6 +1,6 @@
 import { Link, NavLink, Outlet, useNavigate, useParams } from 'react-router';
 import { useWorkspace } from '../context/WorkspaceContext.jsx';
-import '../new-styles/workspaceLayout.css';
+import '../styles/workspaceLayout.css';
 
 export default function WorkspaceLayout() {
   const { slug } = useParams();
