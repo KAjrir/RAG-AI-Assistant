@@ -25,6 +25,8 @@ if (!fs.existsSync(uploadsDirectory)) {
   console.log("UPLOADS DIRECTORY INITIATED!")
 }
 
+console.log(uploadsDirectory)
+
 config({
   path: "../.env"
 })
@@ -37,7 +39,7 @@ app.use(cookieParser())
 
 app.use(
   cors({
-    origin: [FRONTEND_URL, "http://localhost:5173"],
+    origin: [FRONTEND_URL],
     credentials: true,
   })
 );
