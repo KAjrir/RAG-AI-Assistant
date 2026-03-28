@@ -39,7 +39,7 @@ app.use(cookieParser())
 
 app.use(
   cors({
-    origin: [FRONTEND_URL],
+    origin: FRONTEND_URL,
     credentials: true,
   })
 );
