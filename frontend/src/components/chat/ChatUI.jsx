@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
 import { useOutletContext } from 'react-router';
-import { api } from '../../lib/api.js';
+import { api, BASE_URL } from '../../lib/api.js';
 import { random } from '../../lib/utils.js';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -161,7 +161,7 @@ export default function ChatUI() {
 
   const startStream = async ({ chatId, message, assistantId }) => {
     const sessionId = localStorage.getItem('session_id');
-    const url = `/api/workspaces/${slug}/chats/messages`;
+    const url = `${BASE_URL}/api/workspaces/${slug}/chats/messages`;
 
     assistantIdRef.current = assistantId
 

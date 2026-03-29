@@ -2,6 +2,8 @@ import axios from 'axios';
 let relocationAttempts = 0;
 const MAX_RELOCATION_ATTEMPTS = 10;
 
+export const BASE_URL = import.meta.env.VITE_API_URL;
+
 export const api = axios.create({
   baseURL: import.meta.env.PROD 
     ? `${import.meta.env.VITE_API_URL}/api`
