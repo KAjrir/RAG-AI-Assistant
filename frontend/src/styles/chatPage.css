@@ -1,16 +1,313 @@
-/* ChatPage neemt de volledige viewport in — geen WorkspaceLayout wrapper */
-.chp-shell {
+/* ── Shell ──────────────────────────────── */
+.cpl-shell {
   display: flex;
-  height: 100vh;
+  height: 100svh;
   overflow: hidden;
   background: var(--bg);
 }
 
-/* Rechter kolom — groeit mee als sidebar inklapt */
-.chp-content {
+.cpl-overlay {
+  display: none;
+}
+
+/* ── Sidebar ────────────────────────────── */
+.cpl-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100svh;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  transition: 
+    width 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.3s cubic-bezier(.4,0,.2,1);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.cpl-sidebar--open   { width: 260px; }
+.cpl-sidebar--closed { width: 56px; }
+
+/* ── Top toggle ─────────────────────────── */
+.cpl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.cpl-logo {
+  font-family: var(--serif);
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.cpl-logo span { color: var(--accent); }
+
+.cpl-toggle {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.cpl-toggle:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.cpl-toggle--mobile  { display: none; }
+.cpl-toggle--desktop { display: flex; }
+
+/* ── Nieuw gesprek ──────────────────────── */
+.cpl-new-wrap {
+  padding: 10px 10px 8px;
+  flex-shrink: 0;
+}
+
+.cpl-new-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 12px;
+  background: var(--dark-btn);
+  color: #fff;
+  border: none;
+  border-radius: 100px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.18s;
+}
+
+.cpl-new-btn:hover { background: var(--dark-btn-hover); }
+
+.cpl-new-btn--icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  margin: 0 auto;
+}
+
+/* ── Zoeken ─────────────────────────────── */
+.cpl-search-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: calc(100% - 20px);
+  margin: 0 10px 4px;
+  padding: 8px 12px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.cpl-search-btn:hover {
+  background: var(--bg);
+  border-color: var(--border-dark);
+  color: var(--text);
+}
+
+/* ── Divider ────────────────────────────── */
+.cpl-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 6px 0 4px;
+  flex-shrink: 0;
+}
+
+/* ── Threads ────────────────────────────── */
+.cpl-threads {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cpl-threads::-webkit-scrollbar { width: 4px; }
+.cpl-threads::-webkit-scrollbar-track { background: transparent; }
+.cpl-threads::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.cpl-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: background 0.15s;
+  min-width: 0;
+  border: 1px solid transparent;
+}
+
+.cpl-thread:hover {
+  background: var(--bg);
+  border-color: var(--border);
+}
+
+.cpl-thread--active {
+  background: var(--accent-light);
+  border-color: transparent;
+}
+
+.cpl-thread-title {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cpl-thread-title.untitled {
+  color: var(--muted);
+
+}
+
+.cpl-thread--active .cpl-thread-title {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.cpl-thread-date {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ── Profiel ────────────────────────────── */
+.cpl-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.cpl-profile:hover { background: var(--bg); }
+
+.cpl-profile--closed {
+  justify-content: center;
+  padding: 14px 0;
+}
+
+.cpl-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent-light);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+
+.cpl-profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cpl-profile-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cpl-profile-org {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Content ────────────────────────────── */
+.cpl-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   min-width: 0;
+}
+
+/* ── Mobiel ─────────────────────────────── */
+@media (max-width: 768px) {
+  .cpl-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 99;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .cpl-overlay--open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .cpl-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    z-index: 100;
+    width: 280px;
+    transform: translateX(-100%);
+  }
+
+  .cpl-sidebar--mobile-open {
+    transform: translateX(0);
+  }
+
+  .cpl-toggle--desktop { display: none; }
+  .cpl-toggle--mobile  { display: flex; }
+
+  .cpl-top {
+    justify-content: flex-end;
+    padding: 12px 12px 0;
+  }
 }

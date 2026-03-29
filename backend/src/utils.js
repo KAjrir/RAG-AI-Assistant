@@ -1,0 +1,1 @@
+export const toJsonLine = (data) => JSON.stringify(data) + "\n";

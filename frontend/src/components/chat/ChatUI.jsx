@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
+import { useOutletContext } from 'react-router';
 import { api } from '../../lib/api.js';
 import { random } from '../../lib/utils.js';
 import ReactMarkdown from 'react-markdown';
@@ -11,48 +12,62 @@ import '../../styles/chatUI.css';
 import '../../styles/markdown.css';
 
 export default function ChatUI() {
-  const { slug, threadId }            = useParams();
-  const { workspace }                 = useWorkspace();
-  const navigate                      = useNavigate();
+  const { slug, chatId }                        = useParams();
+  const { workspace }                           = useWorkspace();
+  const { onMenuClick }                         = useOutletContext();
+  const navigate                                = useNavigate();
 
-  const [thread, setThread]           = useState(null);
-  const [messages, setMessages]       = useState([]);
-  const [draft, setDraft]             = useState('');
-  const [chatLoading, setChatLoading] = useState(false);
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [thread, setThread]                     = useState(null)
+  const [messages, setMessages]                 = useState([]);
+  const [draft, setDraft]                       = useState('');
+  const [chatLoading, setChatLoading]           = useState(false);
+  const [isStreaming, setIsStreaming]           = useState(false);
 
-  const chatBodyRef         = useRef(null);
-  const chatComposerRef     = useRef(null);
-  const inputRef            = useRef(null);
-  const bottomRef           = useRef(null);
-  const userMessageRef      = useRef(null);
-  const assistantMessageRef = useRef(null);
+  const assistantIdRef = useRef(null)
+  const pendingStreamRef = useRef(null);
 
-  // ── Session id in localStorage ────────────────────────────────────
+  const chatBodyRef                             = useRef(null);
+  const chatComposerRef                         = useRef(null);
+  const inputRef                                = useRef(null);
+  const bottomRef                               = useRef(null);
+  const userMessageRef                          = useRef(null);
+  const assistantMessageRef                     = useRef(null);
+
   useEffect(() => {
     if (!localStorage.getItem('session_id')) {
       localStorage.setItem('session_id', random());
     }
   }, []);
 
-  // ── Laad gesprek + berichten ──────────────────────────────────────
-  useEffect(() => {
-    if (!threadId) {
-      setThread(null);
-      setMessages([]);
-      if (bottomRef.current) bottomRef.current.style.height = '0px';
-      return;
-    }
-    Promise.all([
-      api.get(`/workspaces/${slug}/chat/threads/${threadId}`),
-      api.get(`/workspaces/${slug}/chat/threads/${threadId}/messages`),
-    ]).then(([threadRes, msgsRes]) => {
-      setThread(threadRes.data);
-      setMessages(msgsRes.data);
-    });
-  }, [slug, threadId]);
+ useEffect(() => {
+  if (!chatId) {
+    setMessages([]);
+    if (bottomRef.current) bottomRef.current.style.height = '0px';
+    return;
+  }
 
-  // ── Spacer berekening ─────────────────────────────────────────────
+  // Check of er een pending stream klaarstaat (van nieuwe chat flow)
+  if (pendingStreamRef.current) {
+    const pending = pendingStreamRef.current;
+    pendingStreamRef.current = null;
+    // Geen fetch nodig — messages staan al in state via optimistic update
+    startStream(pending);
+    return;
+  }
+
+  // Normale load van bestaande chat
+  api.get(`/workspaces/${slug}/chats/${chatId}`).then(res => {
+    setMessages(res.data);
+
+    const streamingMsg = res.data.find(m => m.status === 'streaming');
+    if (streamingMsg) {
+      assistantIdRef.current = streamingMsg.id;
+      // Hier geen message nodig want we hervatten een bestaande stream
+      startStream({ chatId, message: null, assistantId: streamingMsg.id });
+    }
+  });
+}, [slug, chatId]);
+
   function updateSpacer() {
     if (
       !bottomRef.current ||
@@ -66,11 +81,10 @@ export default function ChatUI() {
     const bubbleHeight     = assistantMessageRef.current.offsetHeight;
     const userBubbleHeight = userMessageRef.current?.offsetHeight ?? 0;
 
-    const availableSpace = chatBodyHeight - composerHeight - 95 - bubbleHeight - userBubbleHeight;
+    const availableSpace = chatBodyHeight - composerHeight - 130 - bubbleHeight - userBubbleHeight;
     bottomRef.current.style.height = Math.max(0, availableSpace) + 'px';
   }
 
-  // ── ResizeObserver ────────────────────────────────────────────────
   useEffect(() => {
     if (!chatBodyRef.current) return;
     const observer = new ResizeObserver(() => updateSpacer());
@@ -78,13 +92,11 @@ export default function ChatUI() {
     return () => observer.disconnect();
   }, []);
 
-  // ── Scroll + spacer bij nieuwe berichten ─────────────────────────
   useEffect(() => {
     updateSpacer();
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
 
-  // ── Globale keydown ───────────────────────────────────────────────
   useEffect(() => {
     function handleKeyDown(e) {
       if (document.activeElement !== inputRef.current && e.key.length === 1) {
@@ -96,41 +108,75 @@ export default function ChatUI() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // ── Versturen ─────────────────────────────────────────────────────
-  const sendMessage = async (text) => {
-    if (!text.trim() || chatLoading) return;
-
+  const handleSubmit = async (text) => {
+    if (!text.trim() || chatLoading || isStreaming) return;
     setChatLoading(true);
     setDraft('');
 
-    const userId      = random();
-    const assistantId = random();
-
-    // let activeThreadId = threadId;
-    // if (!activeThreadId) {
-    //   const res = await api.post(`/workspaces/${slug}/chat/threads`, {
-    //     title: text.slice(0, 60),
-    //   });
-    //   activeThreadId = res.data.id;
-    //   setThread(res.data);
-    //   navigate(`/w/${slug}/chat/${activeThreadId}`, { replace: true });
-    // }
-
+    // Optimistisch de user bubble + lege assistant bubble toevoegen
+    const tempAssistantId = random();
     setMessages(prev => [
       ...prev,
-      { id: userId,      role: 'user',      content: text, done: true  },
-      { id: assistantId, role: 'assistant',  content: '',   done: false },
+      { id: random(), role: 'user', content: text },
+      { id: tempAssistantId, role: 'assistant', content: '' },
     ]);
 
+    if (chatId) {
+      // Bestaande chat — direct messages aanmaken en streamen
+      const res = await api.post(`/workspaces/${slug}/chats/${chatId}/messages`, { message: text });
+      assistantIdRef.current = res.data.assistantMessageId;
+
+      // Update de tijdelijke assistant bubble met het echte ID
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === tempAssistantId
+            ? { ...msg, id: res.data.assistantMessageId }
+            : msg
+        )
+      );
+
+      startStream({ chatId, message: text, assistantId: res.data.assistantMessageId });
+    } else {
+      // Nieuwe chat — maak aan, sla stream op als pending, navigeer
+      const res = await api.post(`/workspaces/${slug}/chats`, { message: text });
+      const { chatId: newChatId, assistantMessageId } = res.data;
+
+      assistantIdRef.current = assistantMessageId;
+
+      // Update de tijdelijke assistant bubble met het echte ID
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === tempAssistantId
+            ? { ...msg, id: assistantMessageId }
+            : msg
+        )
+      );
+
+      // Sla de stream op als pending — de useEffect pikt dit op na navigate
+      pendingStreamRef.current = { chatId: newChatId, message: text, assistantId: assistantMessageId };
+
+      navigate(`/w/${slug}/chat/${newChatId}`);
+    }
+  };
+
+  const startStream = async ({ chatId, message, assistantId }) => {
     const sessionId = localStorage.getItem('session_id');
+    const url = `/api/workspaces/${slug}/chats/messages`;
 
-    const url =
-      `${import.meta.env.VITE_API_URL}/api/chats/messages?session_id=${encodeURIComponent(sessionId)}&message=${encodeURIComponent(text)}`
-      // &thread_id=${encodeURIComponent(activeThreadId)}
+    assistantIdRef.current = assistantId
 
-    const response = await fetch(url, { 
+    const response = await fetch(url, {
       method: "POST",
       credentials: 'include',
+      headers: {
+        'Content-Type': "application/json"
+      },
+      body: JSON.stringify({
+        message,
+        chatId,
+        sessionId,
+        assistantId
+      })
     });
 
     const reader  = response.body.getReader();
@@ -141,43 +187,143 @@ export default function ChatUI() {
     setChatLoading(false);
     setIsStreaming(true);
 
+    let buffer = "";
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      const chunk = decoder.decode(value, { stream: true });
-      setMessages(prev =>
-        prev.map(msg =>
-          msg.id === assistantId
-            ? { ...msg, content: msg.content + chunk }
-            : msg
-        )
-      );
-      updateSpacer();
+      buffer = buffer + decoder.decode(value, { stream: true });
+
+      const parts = buffer.split("\n")
+      buffer = parts.pop()
+
+      for (const part of parts) {
+        if (!part.trim()) continue
+
+        const data = JSON.parse(part);
+
+        if(data.event === "token"){
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === assistantIdRef.current
+                ? { ...msg, content: msg.content + data.content }
+                : msg
+            )
+          );
+          updateSpacer();
+        }
+
+        if (data.event === "done") {
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === assistantIdRef.current
+                ? { ...msg, status: "done" }
+                : msg
+            )
+          );
+        }
+      }
+    }
+    setIsStreaming(false);
+  }
+
+  const sendMessage = async (text) => {
+    if (!text.trim() || chatLoading) return;
+
+
+    const userId      = random();
+    const assistantId = random();
+
+    setMessages(prev => [
+      ...prev,
+      { id: userId,      role: 'user',      content: text},
+      { id: assistantId, role: 'assistant',  content: ''},
+    ]);
+
+    const sessionId = localStorage.getItem('session_id');
+    const url = `/api/workspaces/${slug}/chats/messages`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      credentials: 'include',
+      headers: {
+        'Content-Type': "application/json"
+      },
+      body: JSON.stringify({
+        message: text,
+        chatId: chatId ?? null,
+        sessionId
+      })
+    });
+
+    const reader  = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    if (!reader) return;
+
+    setChatLoading(false);
+    setIsStreaming(true);
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer = buffer + decoder.decode(value, { stream: true });
+
+      const parts = buffer.split("\n")
+      buffer = parts.pop()
+
+      for (const part of parts) {
+        if (!part.trim()) continue
+        // console.log(part)
+        const data = JSON.parse(part);
+        console.log(data)
+
+        if(data.event === "token"){
+          const { content } = data
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === assistantId
+                ? { ...msg, content: msg.content + content }
+                : msg
+            )
+          );
+          updateSpacer();
+        }
+
+        if (data.event === "chat_created") {
+          navigate(`/w/${slug}/chat/${data.id}`)
+        }
+
+      }
     }
 
     setIsStreaming(false);
-    setMessages(prev =>
-      prev.map(msg =>
-        msg.id === assistantId ? { ...msg, done: true } : msg
-      )
-    );
   };
 
   return (
     <main className="chatBody" ref={chatBodyRef}>
-      <div className="chatBodyWrapper">
 
-        {/* Breadcrumb header */}
-        <div className="chatBreadcrumb">
-          <span className="chatBreadcrumb-org">{workspace?.name}</span>
-          {thread && (
-            <>
-              <span className="chatBreadcrumb-sep">›</span>
-              <span className="chatBreadcrumb-thread">{thread.title}</span>
-            </>
+      <div className="chatHeader">
+        <div className="chatHeader-left">
+          <button className="chatHeader-hamburger" onClick={onMenuClick}>
+            <HamburgerIcon />
+          </button>
+          {!thread && (
+            <div className="chatHeader-identity">
+              <span className="chatHeader-title">{thread?.title || "hallo"}</span>
+              <span className="chatHeader-workspace" onClick={() => navigate(`/w/${slug}`)}>
+                {workspace?.name}
+              </span>
+            </div>
           )}
         </div>
+        <button className="chatHeader-share">
+          <ShareIcon /> Delen
+        </button>
+      </div>
 
+      <div className="chatBodyWrapper">
         <div className="chatMessages">
           {messages.length === 0 ? (
             <div className="no-messages">Waar kan ik je mee helpen?</div>
@@ -197,9 +343,10 @@ export default function ChatUI() {
                     {m.content}
                   </div>
                 )}
+                
 
                 {m.role === 'assistant' && (
-                  chatLoading && !m.done ? (
+                  chatLoading && index === messages.length - 1 ? (
                     <TypingDots />
                   ) : (
                     <div className="bubble bubbleAssistant">
@@ -232,13 +379,14 @@ export default function ChatUI() {
               onKeyDown={e => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  sendMessage(draft);
+                  handleSubmit(draft)
+                  // sendMessage(draft);
                 }
               }}
             />
             <button
               className="chatSend"
-              onClick={() => sendMessage(draft)}
+              onClick={() => handleSubmit(draft)}
               disabled={chatLoading || isStreaming}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -248,7 +396,6 @@ export default function ChatUI() {
             </button>
           </div>
         </div>
-
       </div>
     </main>
   );
@@ -261,5 +408,24 @@ function TypingDots() {
       <span className="dot" />
       <span className="dot" />
     </div>
+  );
+}
+
+function HamburgerIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <line x1="2" y1="4" x2="14" y2="4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+      <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+      <line x1="2" y1="12" x2="14" y2="12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function ShareIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M10 1.5L12.5 4L10 6.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M12.5 4H5.5C3.8 4 2.5 5.3 2.5 7v3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    </svg>
   );
 }

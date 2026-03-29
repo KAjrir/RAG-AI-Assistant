@@ -3,14 +3,6 @@ import OpenAI from "openai"
 
 const openai = new OpenAI();
 
-function goFunction () {
-    try {
-        
-    } catch (err) {
-
-    }
-}
-
 export const getUserWorkspaces = async (userId) => {
     const workspaces = await db`
         SELECT o.id, o.name, o.slug, m.role, o.plan

@@ -106,10 +106,14 @@ Follow the RESPONSE FORMAT strictly and render media properly.`;
 
   async function* trackAndStream() {
     for await (const chunk of stream) {
-      const token = chunk.choices[0]?.delta?.content || "";
-      if (token) {
-        fullResponse += token;
-        yield token
+      
+      const content = chunk.choices[0]?.delta?.content || "";
+      if (content) {
+        fullResponse += content;
+        yield {
+          event: "token",
+          content: content
+        };
       }
     }
 

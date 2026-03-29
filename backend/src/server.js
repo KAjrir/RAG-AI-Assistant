@@ -68,7 +68,7 @@ app.use(assetsPath, express.static(uploadsDirectory))
 
 app.use("/api/auth", authRouter)
 app.use("/api/users", authMiddleware, userRouter)
-app.use("/api/chats", authMiddleware, chatRouter)
+// app.use("/api/chats", authMiddleware, chatRouter)
 app.use("/api/workspaces", authMiddleware, workspaceRouter)
 app.use("/api/docs", authMiddleware, docRouter)
 

@@ -1,0 +1,75 @@
+  const sendMessage = async (text) => {
+    if (!text.trim() || chatLoading) return;
+
+    setChatLoading(true);
+    setDraft('');
+
+    const userId      = random();
+    const assistantId = random();
+
+    setMessages(prev => [
+      ...prev,
+      { id: userId,      role: 'user',      content: text},
+      { id: assistantId, role: 'assistant',  content: ''},
+    ]);
+
+    const sessionId = localStorage.getItem('session_id');
+    const url = `/api/workspaces/${slug}/chats/messages`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      credentials: 'include',
+      headers: {
+        'Content-Type': "application/json"
+      },
+      body: JSON.stringify({
+        message: text,
+        chatId: chatId ?? null,
+        sessionId
+      })
+    });
+
+    const reader  = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    if (!reader) return;
+
+    setChatLoading(false);
+    setIsStreaming(true);
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer = buffer + decoder.decode(value, { stream: true });
+
+      const parts = buffer.split("\n")
+      buffer = parts.pop()
+
+      for (const part of parts) {
+        if (!part.trim()) continue
+        // console.log(part)
+        const data = JSON.parse(part);
+        console.log(data)
+
+        if(data.event === "token"){
+          const { content } = data
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === assistantId
+                ? { ...msg, content: msg.content + content }
+                : msg
+            )
+          );
+          updateSpacer();
+        }
+
+        if (data.event === "chat_created") {
+          navigate(`/w/${slug}/chat/${data.id}`)
+        }
+
+      }
+    }
+
+    setIsStreaming(false);
+  };

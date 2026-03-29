@@ -55,7 +55,7 @@ const router = createBrowserRouter([
             element: <ChatPage />,
             children: [
               { path: 'chat',           element: <ChatUI /> },
-              { path: 'chat/:threadId', element: <ChatUI /> },
+              { path: 'chat/:chatId', element: <ChatUI /> },
             ],
           },
         ],

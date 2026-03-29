@@ -4,6 +4,7 @@ import { Router } from "express";
 import multer, { diskStorage } from "multer";
 import { randomUUID } from "crypto";
 
+import chatRouter from "../chat/chat.controller.js"
 import { getUserWorkspaces, getCurrentWorkspace, getWorkspaceMembers, getDocs, getDoc, addDoc, getStats, getDocStatus, getDocChunks, deleteDoc } from "./workspace.service.js";
 import { processDocument } from "../jobs/processDocument.js";
 import { mockStats, mockDocs, mockChunks, mockConnections } from "../mocks/stats.mock.js";
@@ -38,6 +39,15 @@ const upload = multer({
 
     }
 })
+
+const miniMiddleware = (req, res, next) => {
+    req.slug = req.params.slug
+
+    next()
+}
+
+router.use("/:slug/chats", miniMiddleware, chatRouter)
+
 
 
 router.get("/", async (req, res) => {
