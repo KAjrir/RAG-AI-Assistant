@@ -59,7 +59,10 @@ function cleanText(text) {
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .replace(/^\s+|\s+$/gm, '')
-    .trim()
+    .replace(/\x00/g, "")
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, "")
+    .normalize("NFKC")
+    .trim();
 }
 
 // ============================================================

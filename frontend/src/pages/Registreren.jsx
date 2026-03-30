@@ -150,7 +150,7 @@ export default function Register() {
         </form>
 
         <div className="auth-footer">
-          Al een account? <Link to="/login">Inloggen</Link>
+          Al een account? <Link to="/inloggen">Inloggen</Link>
         </div>
       </div>
     </div>
