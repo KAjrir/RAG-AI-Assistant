@@ -98,7 +98,7 @@ router.post("/messages", async (req, res) => {
 
   try {
     let assistantContent = "";
-    const stream = await promptAI(userContent, sessionId);
+    const stream = await promptAI(userContent, sessionId, foundOrg.id);
 
     for await (const token of stream) {
         assistantContent += token.content

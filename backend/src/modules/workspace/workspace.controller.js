@@ -179,9 +179,9 @@ router.get("/:slug/docs/:docId", async (req, res) => {
     const foundOrg = orgs.find(org => org.slug === slug)
 
     if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
-    const doc = await getDoc(docId, foundOrg.id, ISPROD)
+    const { filepath, uploaded_by, ...restDoc} = await getDoc(docId, foundOrg.id, ISPROD)
     
-    res.status(200).json(doc)
+    res.status(200).json(restDoc)
 })
 
 router.delete("/:slug/docs/:docId", async (req, res) => {
@@ -208,6 +208,19 @@ router.delete("/:slug/docs/:docId", async (req, res) => {
         await db`ROLLBACK`
         return res.status(500).json({ message: "Someting went wrong deleting the file" })
     }
+})
+
+router.post("/:slug/docs/:docId/reindex", async (req, res) => {
+    const { slug, docId } = req.params;
+    const orgs = req.orgs
+
+    const foundOrg = orgs.find(org => org.slug === slug)
+    if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
+    const { filepath, originalname } = await getDoc(docId, foundOrg.id, ISPROD)
+
+    processDocument(docId, foundOrg.id, filepath, originalname)
+    
+    res.status(204).end()
 })
 
 router.get("/:slug/docs/:docId/chunks", async (req, res) => {

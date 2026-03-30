@@ -38,7 +38,7 @@ export const getWorkspaceMembers = async (slug) => {
 
 export const getDoc = async (docId, orgId, ISPROD) => {
     const docs = await db`
-        SELECT id, originalname, resource_url, status, uploaded_by, uploaded_at, page_count, size
+        SELECT *
         FROM documents
         WHERE organization_id = ${orgId} and id = ${docId} and isprod = ${ISPROD}
     `
@@ -177,9 +177,10 @@ export const generateEmbedding = async (chunk) => {
     }
 
     const embedding = await openai.embeddings.create({
-        model: 'text-embedding-3-small',  // goedkoopste, werkt prima voor RAG
+        model: 'text-embedding-3-small',
         input: chunk.content,
     })
+    console.log(JSON.stringify(embedding, null, 2))
 
     return embedding
 }

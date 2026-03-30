@@ -25,21 +25,32 @@ async function embed(text) {
   return res.data[0].embedding;
 }
 
-async function retrieve(question, k = 3) {
+async function retrieve(question, orgId) {
   const embedding = await embed(question);
 
+  // const rows = await db`
+  //   SELECT content, videos, links, images, metadata,
+  //          1 - (embedding <=> ${JSON.stringify(embedding)}::vector) AS similarity
+  //   FROM test_document_chunks
+  //   ORDER BY embedding <=> ${JSON.stringify(embedding)}::vector
+  //   LIMIT ${k}
+  // `;
+
   const rows = await db`
-    SELECT content, videos, links, images, metadata,
+    SELECT content, metadata,
            1 - (embedding <=> ${JSON.stringify(embedding)}::vector) AS similarity
-    FROM test_document_chunks
+    FROM document_chunks
+    WHERE organization_id = ${orgId}
     ORDER BY embedding <=> ${JSON.stringify(embedding)}::vector
-    LIMIT ${k}
+    LIMIT 3
   `;
+
+  console.log(rows)
 
   return rows;
 }
 
-export async function promptAI(question, sessionId) {
+export async function promptAI(question, sessionId, orgId) {
   // 1. Chat history ophalen
   if (!chatMemory.has(sessionId)) {
     chatMemory.set(sessionId, []);
@@ -47,7 +58,7 @@ export async function promptAI(question, sessionId) {
   const history = chatMemory.get(sessionId);
 
   // 2. Retrieval via pgvector
-  const docs = await retrieve(question);
+  const docs = await retrieve(question, orgId);
   const context = docs.map((d) => d.content).join("\n\n");
 
   const allVideos = docs.flatMap((d) => d.videos ?? []);
