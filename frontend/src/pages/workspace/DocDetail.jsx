@@ -92,7 +92,7 @@ export default function DocDetail() {
               <div className="dd-meta-row">
                 <span className="dd-meta">{formatFileSize(doc.size)}</span>
                 <span className="dd-meta-sep">·</span>
-                <span className="dd-meta">{formatTimeAgo(doc.uploaded_at)}</span>
+                <span className="dd-meta">{formatTimeAgo(( doc.uploaded_at || new Date() ))}</span>
                 <span className="dd-meta-sep">·</span>
                 <span className={`dd-pill dd-pill--${doc.status}`}>
                   {statusLabel(doc.status)}

@@ -4,8 +4,8 @@ import { api } from '../../lib/api';
 import { formatFileSize } from "../../lib/utils"
 import '../../styles/docsUpload.css';
 
-// const ACCEPTED_TYPES = ['.pdf', '.docx', '.txt'];
-const ACCEPTED_TYPES = ['.pdf'];
+const ACCEPTED_TYPES = ['.pdf', '.docx', '.txt'];
+// const ACCEPTED_TYPES = ['.pdf'];
 const MAX_MB = 25;
 
 export default function DocsUpload() {

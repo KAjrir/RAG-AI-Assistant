@@ -65,7 +65,7 @@ export default function Overzicht() {
                 </div>
                 <div className="ov-doc-info">
                   <span className="ov-doc-name">{doc.originalname}</span>
-                  <span className="ov-doc-meta">{formatTimeAgo(doc.uploaded_at)}</span>
+                  <span className="ov-doc-meta">{formatTimeAgo(( doc.uploaded_at || new Date() ))}</span>
                 </div>
                 <span className={`ov-pill ov-pill--${doc.status}`}>
                   {statusLabel(doc.status)}

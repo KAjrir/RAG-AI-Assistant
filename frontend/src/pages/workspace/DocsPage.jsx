@@ -66,7 +66,7 @@ export default function DocsPage() {
               <div className="dp-info" onClick={() => navigate(`/w/${slug}/docs/${doc.id}`)}>
                 <span className="dp-name">{doc.originalname}</span>
                 <span className="dp-meta">
-                  {formatFileSize(doc.size)} · {doc.chunks ? `${doc.chunks} chunks` : formatTimeAgo(doc.uploaded_at)}
+                  {formatFileSize(doc.size)} · {doc.chunks ? `${doc.chunks} chunks` : (formatTimeAgo((doc.uploaded_at || new Date())))}
                 </span>
               </div>
               <div className="dp-actions">
