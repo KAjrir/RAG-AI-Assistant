@@ -1,44 +1,19 @@
 import fs from "fs/promises"
-import path from "path";
+
 import { Router } from "express";
-import multer, { diskStorage } from "multer";
-import { randomUUID } from "crypto";
 
 import chatRouter from "../chat/chat.controller.js"
 import { getUserWorkspaces, getCurrentWorkspace, getWorkspaceMembers, getDocs, getDoc, addDoc, getStats, getDocStatus, getDocChunks, deleteDoc } from "./workspace.service.js";
 import { processDocument } from "../jobs/processDocument.js";
 import { mockStats, mockDocs, mockChunks, mockConnections } from "../mocks/stats.mock.js";
-import { assetsPath, uploadsDirectory, ISPROD } from "../../server.js";
+import { assetsPath, uploadsDirectory, ISPROD } from "../../constants.js";
+
 import db from "../../database/db.js";
+import myStorage from "./MyStorageEngine.js";
+
 
 const router = Router();
-const upload = multer({ 
-    storage: diskStorage({
-        destination: (req, file, cb) => {
-            cb(null, uploadsDirectory)
-        },
-        filename: (req, file, cb) => {
-            const uuid = randomUUID();
-            const lastIndexPoint = file.originalname.lastIndexOf(".")
-            const extname =  file.originalname.slice(lastIndexPoint)
 
-            cb(null, `${uuid}${extname}`)
-        }
-    }),
-    fileFilter: (req, file, cb) => {
-        const fileTypes = /.pdf|.docx|.txt|.jpeg/
-        const fileExt = path.extname(file.originalname).toLowerCase()
-        file.ext = fileExt
-        const extname = fileTypes.test(path.extname(file.originalname).toLowerCase())
-
-        if(extname){
-            return cb(null, true)
-        } else {
-            cb("ERRORRR")
-        }
-
-    }
-})
 
 const miniMiddleware = (req, res, next) => {
     req.slug = req.params.slug
@@ -124,7 +99,7 @@ router.get("/:slug/docs", async (req, res) => {
     res.status(200).json(docs)
 })
 
-router.post("/:slug/docs", upload.array("files"), async (req, res) => {
+router.post("/:slug/docs", myStorage.array("files"), async (req, res) => {
     const { slug } = req.params
     const userId = req.user.id
     const orgs = req.orgs
@@ -147,6 +122,7 @@ router.post("/:slug/docs", upload.array("files"), async (req, res) => {
         const resource_url = `${assetsPath}/${file.filename}`
         const filepath = file.path
         // const status = -- Deze per default bij db
+        const hash = file.hash
 
         files.push({
             docId,
@@ -156,7 +132,8 @@ router.post("/:slug/docs", upload.array("files"), async (req, res) => {
             size,
             resource_url,
             filepath,
-            isprod: ISPROD
+            isprod: ISPROD,
+            documentHash: hash
         })
     }
 

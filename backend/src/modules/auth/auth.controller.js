@@ -3,7 +3,7 @@ import bcrypt from "bcrypt"
 
 import { getInvitation, getUserId, createUser, getUserInfo, updateUserLastLogin, getOrgs} from "./auth.service.js"
 import { signToken, verifyToken } from "./jwt.js"
-import { ISPROD } from "../../server.js"
+import { ISPROD } from "../../constants.js"
 
 const router = Router()
 

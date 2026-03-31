@@ -68,7 +68,7 @@ export const getDocs = async (orgId, limit, ISPROD) => {
 
 export const addDoc = async (files) => {
     const docs = await db`
-        INSERT INTO documents (id, organization_id, uploaded_by, originalname, size, resource_url, filepath, isprod)
+        INSERT INTO documents (id, organization_id, uploaded_by, originalname, size, resource_url, filepath, isprod, document_hash)
         SELECT * FROM unnest(
             ${files.map(f => f.docId)}::uuid[],
             ${files.map(f => f.organizationId)}::uuid[],
@@ -77,7 +77,8 @@ export const addDoc = async (files) => {
             ${files.map(f => f.size)}::int[],
             ${files.map(f => f.resource_url)}::text[],
             ${files.map(f => f.filepath)}::text[],
-            ${files.map(f => f.isprod)}::boolean[]
+            ${files.map(f => f.isprod)}::boolean[],
+            ${files.map(f => f.documentHash)}::text[]
         )
         RETURNING id
     `;
@@ -180,7 +181,7 @@ export const generateEmbedding = async (chunk) => {
         model: 'text-embedding-3-small',
         input: chunk.content,
     })
-    console.log(JSON.stringify(embedding, null, 2))
+    // console.log(JSON.stringify(embedding, null, 2))
 
     return embedding
 }

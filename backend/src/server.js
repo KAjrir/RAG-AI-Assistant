@@ -13,12 +13,8 @@ import docRouter from "./modules/doc/doc.controller.js"
 
 import { authMiddleware } from "./modules/middleware.js";
 
-const __filename = import.meta.filename
-const __dirname = import.meta.dirname
+import { assetsPath, uploadsDirectory, ISPROD } from "./constants.js";
 
-export const ISPROD = process.env.NODE_ENV === "production";
-export const assetsPath = "/uploads"
-export const uploadsDirectory = ISPROD ? `${__dirname}/prodUploads` : `${__dirname}/uploads`
 
 if (!fs.existsSync(uploadsDirectory)) {
   fs.mkdirSync(uploadsDirectory)
