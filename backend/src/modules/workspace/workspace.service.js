@@ -185,6 +185,23 @@ export const generateEmbedding = async (chunk) => {
     return embedding
 }
 
+export const getDocumentChunks = async (documentId, organizationId) => {
+    const documentChunks = await db`
+        SELECT *
+        FROM document_chunks
+        WHERE document_id = ${documentId} and organization_id = ${organizationId}
+    `
+
+    return documentChunks
+}
+
+export const deleteDocumentChunks = async (documentId, organizationId) => {
+    await db`
+        DELETE FROM document_chunks
+        WHERE document_id = ${documentId} and organization_id = ${organizationId}
+    `
+}
+
 export const insertDocumentChunks = async (chunks) => {
     await db`
         INSERT INTO document_chunks (

@@ -1,6 +1,6 @@
 import { chunkPdf } from './pdfChunker.js'
 import db from '../../database/db.js'
-import { updateDocStatus, generateEmbedding, insertDocumentChunks, updateDocMetadata } from '../workspace/workspace.service.js'
+import { updateDocStatus, generateEmbedding, insertDocumentChunks, updateDocMetadata, getDocumentChunks, deleteDocumentChunks } from '../workspace/workspace.service.js'
 
 // ============================================================
 // Hoe je dit integreert in je processDocument functie
@@ -10,6 +10,9 @@ import { updateDocStatus, generateEmbedding, insertDocumentChunks, updateDocMeta
 export async function processDocument(documentId, organizationId, filepath, filename) {
   try {
     // 1. Status naar processing
+    const document_chunks = await getDocumentChunks(documentId, organizationId)
+    if(document_chunks.length > 0) await deleteDocumentChunks(documentId, organizationId)
+
     await updateDocStatus(documentId, "processing")
 
     await db`BEGIN`
