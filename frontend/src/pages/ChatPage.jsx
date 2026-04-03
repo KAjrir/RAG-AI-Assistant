@@ -11,7 +11,8 @@ export default function ChatPage() {
   const { workspace }                       = useWorkspace();
   const { user }                            = useAuth();
   const navigate                            = useNavigate();
-  const { chats, deleteChat, updateChatTitle } = useChat();
+  const { chats, deleteChat, updateChatTitle, titleLoading } = useChat();
+
 
   const [sidebarOpen, setSidebarOpen]       = useState(true);
   const [mobileSidebarOpen, setMobileOpen]  = useState(false);
@@ -123,59 +124,69 @@ export default function ChatPage() {
         <hr className="cpl-divider" />
 
         <nav className="cpl-chats">
-          {sidebarOpen && chats.map(chat => (
-            <div key={chat.id} className="cpl-chat-wrap">
-              {editingChat?.id === chat.id ? (
-                <div className="cpl-chat-edit">
-                  <input
-                    ref={editInputRef}
-                    className="cpl-chat-edit-input"
-                    value={editingTitle}
-                    onChange={e => {
-                      setEditingTitle(e.target.value)
-                    }}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter')  confirmEdit();
-                      if (e.key === 'Escape') cancelEdit();
-                    }}
-                    onBlur={confirmEdit}
-                  />
-                  <div className="cpl-chat-edit-actions">
-                    <button
-                      className="cpl-chat-edit-btn"
-                      onMouseDown={e => { e.preventDefault(); confirmEdit(); }}
-                    >
-                      <CheckIcon />
-                    </button>
-                    <button
-                      className="cpl-chat-edit-btn cpl-chat-edit-btn--cancel"
-                      onMouseDown={e => { e.preventDefault(); cancelEdit(); }}
-                    >
-                      <CloseSmallIcon />
-                    </button>
+          {sidebarOpen && chats.map(chat => {
+            const isActive = chat.id === chatId;
+            const showSkeleton = isActive && titleLoading;
+
+            return (
+              <div key={chat.id} className="cpl-chat-wrap">
+                {editingChat?.id === chat.id ? (
+                  <div className="cpl-chat-edit">
+                    <input
+                      ref={editInputRef}
+                      className="cpl-chat-edit-input"
+                      value={editingTitle}
+                      onChange={e => {
+                        setEditingTitle(e.target.value)
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter')  confirmEdit();
+                        if (e.key === 'Escape') cancelEdit();
+                      }}
+                      onBlur={confirmEdit}
+                    />
+                    <div className="cpl-chat-edit-actions">
+                      <button
+                        className="cpl-chat-edit-btn"
+                        onMouseDown={e => { e.preventDefault(); confirmEdit(); }}
+                      >
+                        <CheckIcon />
+                      </button>
+                      <button
+                        className="cpl-chat-edit-btn cpl-chat-edit-btn--cancel"
+                        onMouseDown={e => { e.preventDefault(); cancelEdit(); }}
+                      >
+                        <CloseSmallIcon />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <>
-                  <NavLink
-                    to={`/w/${slug}/chat/${chat.id}`}
-                    className={({ isActive }) => `cpl-chat ${isActive ? 'cpl-chat--active' : ''}`}
-                    onClick={closeMobile}
-                  >
-                    <span className={`cpl-chat-title ${!chat.title ? 'untitled' : ''}`}>
-                      {chat.title || 'Geen titel'}
-                    </span>
-                  </NavLink>
-                  <button
-                    className="cpl-chat-menu-btn"
-                    onClick={(e) => openMenu(e, chat.id)}
-                  >
-                    <DotsIcon />
-                  </button>
-                </>
-              )}
-            </div>
-          ))}
+                ) : (
+                  <>
+                    <NavLink
+                      to={`/w/${slug}/chat/${chat.id}`}
+                      className={({ isActive }) => `cpl-chat ${isActive ? 'cpl-chat--active' : ''}`}
+                      onClick={closeMobile}
+                    >
+
+                      {showSkeleton ? (
+                        <span className="cpl-chat-title-skeleton" />
+                      ) : (
+                        <span className={`cpl-chat-title ${!chat.title ? 'untitled' : ''}`}>
+                          {chat.title || 'Geen titel'}
+                        </span>
+                      )}
+                    </NavLink>
+                    <button
+                      className="cpl-chat-menu-btn"
+                      onClick={(e) => openMenu(e, chat.id)}
+                    >
+                      <DotsIcon />
+                    </button>
+                  </>
+                )}
+              </div>
+            )
+          })}
         </nav>
 
         <div

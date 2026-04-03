@@ -6,9 +6,10 @@ import { useParams } from 'react-router';
 const ChatContext = createContext(null);
 
 export function ChatProvider({ slug, children }) {
-  const { chatId }                  = useParams();
-  const [chats, setChats]           = useState([]);
-  const [activeChat, setActiveChat] = useState(null);
+  const { chatId }                        = useParams();
+  const [chats, setChats]                 = useState([]);
+  const [activeChat, setActiveChat]       = useState(null);
+  const [titleLoading, setTitleLoading] = useState([])
 
   useEffect(() => {
     if (!slug) return;
@@ -61,6 +62,7 @@ export function ChatProvider({ slug, children }) {
     <ChatContext.Provider value={{
       chats, setChats, activeChat, setActiveChat,
       addChat, refreshChat, updateChatTitle, deleteChat,
+      titleLoading, setTitleLoading
     }}>
       {children}
     </ChatContext.Provider>

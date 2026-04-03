@@ -65,8 +65,21 @@ export const generateChatTitle = async (userContent, chatId) => {
     const response = await openai.responses.create({
         model: "gpt-4o-mini",
         max_output_tokens: 16,
-        instructions: "Give a neutral, short but descriptive title",
-        input: `Short title (max 6 words):\n\n${userContent.slice(0,300)}`
+        instructions: `
+        You generate short chat titles.
+
+        Rules:
+        - Max 6 words
+        - No quotes
+        - No punctuation at the start or end
+        - No trailing period
+        - Plain text only
+        - Summarize the core topic clearly
+        - Use normal capitalization
+
+        Output only the title, nothing else.
+        `,
+        input: userContent.slice(0, 300)
     });
 
     await db`
