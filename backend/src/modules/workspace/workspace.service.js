@@ -66,7 +66,7 @@ export const getDocs = async (orgId, limit, ISPROD) => {
     return docs
 }
 
-export const addDoc = async (files) => {
+export const addDocs = async (files) => {
     const docs = await db`
         INSERT INTO documents (id, organization_id, uploaded_by, originalname, size, resource_url, filepath, isprod, document_hash)
         SELECT * FROM unnest(
@@ -80,10 +80,9 @@ export const addDoc = async (files) => {
             ${files.map(f => f.isprod)}::boolean[],
             ${files.map(f => f.documentHash)}::text[]
         )
-        RETURNING id
+        RETURNING *
     `;
-
-    return docs.map(({ id }) => id)
+    return docs
 }
 
 export const deleteDoc = async (orgId, docId) => {

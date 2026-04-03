@@ -26,7 +26,7 @@ export const formatTimeAgo = (date) => {
 
   if (hours >= 1) return `${hours}u geleden`;
   if (minutes >= 1) return `${minutes}m geleden`;
-  if (seconds >= 1) return `${seconds}s geleden`;
+  if (seconds >= 0) return `${seconds}s geleden`;
 
   return 'net';
 }

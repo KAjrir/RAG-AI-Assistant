@@ -128,8 +128,6 @@ Follow the RESPONSE FORMAT strictly and render media properly.`;
       }
     }
 
-    console.log(fullResponse);
-
     // 5. History updaten
     history.push(["user", question]);
     history.push(["assistant", fullResponse]);

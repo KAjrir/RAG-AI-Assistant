@@ -152,12 +152,16 @@
   flex-direction: column;
   gap: 2px;
   cursor: pointer;
+  min-width: 0;
 }
 
 .dp-name {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dp-meta {
@@ -167,35 +171,52 @@
 
 /* ── Pills ─────────────────────────────── */
 .dp-pill {
-  padding: 3px 9px;
-  border-radius: 100px;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  text-align: center;
-  min-width: 100px
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  flex-shrink: 0;
 }
 
-.dp-pill--completed {
+.dp-pill--green {
   background: var(--accent-light);
   color: var(--accent);
   border: 1px solid rgba(26, 86, 219, 0.18);
 }
 
-.dp-pill--processing {
-  background: #FEF9ED;
-  color: #B45309;
+.dp-pill--blue {
+  background: #E6F1FB;
+  color: #0C447C;
+  border: 1px solid rgba(26, 86, 219, 0.15);
+}
+
+.dp-pill--amber {
+  background: #FAEEDA;
+  color: #633806;
   border: 1px solid rgba(180, 83, 9, 0.15);
 }
 
-.dp-pill--failed {
+.dp-pill--red {
   background: #FEF2F2;
   color: #B91C1C;
   border: 1px solid rgba(185, 28, 28, 0.15);
 }
 
+.dp-pill--gray {
+  background: #F1EFE8;
+  color: #444441;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+@keyframes dp-spin {
+  to { transform: rotate(360deg); }
+}
+
+.dp-spin {
+  animation: dp-spin 1s linear infinite;
+}
 /* ── Actieknoppen ──────────────────────── */
 .dp-actions {
   display: flex;
@@ -232,4 +253,15 @@
   background: #FEF2F2;
   color: #B91C1C;
   border-color: rgba(185, 28, 28, 0.2);
+}
+
+@media (max-width: 768px) {
+  .dp-actions {
+    opacity: 1;
+  }
+
+  .dp-action-btn--danger {
+    color: #B91C1C;
+    border-color: rgba(185, 28, 28, 0.2);
+  }
 }

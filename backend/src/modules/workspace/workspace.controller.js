@@ -3,7 +3,7 @@ import fs from "fs/promises"
 import { Router } from "express";
 
 import chatRouter from "../chat/chat.controller.js"
-import { getUserWorkspaces, getCurrentWorkspace, getWorkspaceMembers, getDocs, getDoc, addDoc, getStats, getDocStatus, getDocChunks, deleteDoc } from "./workspace.service.js";
+import { getUserWorkspaces, getCurrentWorkspace, getWorkspaceMembers, getDocs, getDoc, addDocs, getStats, getDocStatus, getDocChunks, deleteDoc } from "./workspace.service.js";
 import { processDocument } from "../jobs/processDocument.js";
 import { mockStats, mockDocs, mockChunks, mockConnections } from "../mocks/stats.mock.js";
 import { assetsPath, uploadsDirectory, ISPROD } from "../../constants.js";
@@ -137,14 +137,21 @@ router.post("/:slug/docs", myStorage.array("files"), async (req, res) => {
         })
     }
 
-    const ids = await addDoc(files)
-    console.log(ids)
+    const docs = await addDocs(files)
+    const publicDocs = [];
+
+    for (const doc of docs) {
+        const {document_hash, filepath, isprod, tokens, organization_id, ...restDoc} = doc
+        publicDocs.push(restDoc)
+    }
+
+    console.log("POST ROUTE ADDED DOCS: ", publicDocs)
     
     for (const file of files) {
         processDocument(file.docId, file.organizationId, file.filepath, file.originalName)
     }
 
-    res.status(200).json(mockDocs)
+    res.status(200).json(publicDocs)
 })
 
 

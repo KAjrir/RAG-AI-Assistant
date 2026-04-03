@@ -67,6 +67,30 @@
   color: #B91C1C;
 }
 
+.dd-title-link {
+  position: relative;
+  text-decoration: none;
+  color: inherit;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+
+.dd-title-link::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -2px;
+  width: 0;
+  transform: translateX(-50%);
+  height: 2px;
+  background: currentColor;
+  transition: width 0.2s ease;
+}
+
+.dd-title-link:hover::after {
+  width: 100%;
+}
+
 .dd-title {
   font-family: var(--serif);
   font-size: 1.5rem;
@@ -74,7 +98,6 @@
   letter-spacing: -0.025em;
   color: var(--text);
   line-height: 1.2;
-  margin-bottom: 6px;
 }
 
 .dd-meta-row {

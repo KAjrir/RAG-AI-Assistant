@@ -258,3 +258,268 @@
   color: var(--muted);
   margin-top: 4px;
 }
+
+/* auth.css — voeg toe aan je bestaande auth stylesheet */
+
+.auth-bg {
+  min-height: 100svh;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.auth-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 48px 48px 40px;
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.auth-logo {
+  font-family: var(--serif);
+  font-size: 1.4rem;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  margin-bottom: 28px;
+}
+
+.auth-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  margin-bottom: 24px;
+  transition: color 0.15s;
+}
+
+.auth-back:hover {
+  color: var(--text);
+}
+
+.auth-title {
+  font-family: var(--serif);
+  font-size: 2rem;
+  font-weight: 400;
+  color: var(--text);
+  line-height: 1.15;
+  margin-bottom: 10px;
+}
+
+.auth-title-italic {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.auth-sub {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 28px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.auth-input {
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  background: var(--surface2);
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.auth-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
+}
+
+.auth-input::placeholder {
+  color: var(--muted);
+}
+
+.auth-error {
+  font-size: 13px;
+  color: #B91C1C;
+  background: #FEF2F2;
+  border: 1px solid rgba(185, 28, 28, 0.15);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.auth-btn-primary {
+  width: 100%;
+  padding: 13px;
+  background: var(--dark-btn);
+  color: #fff;
+  border: none;
+  border-radius: 100px;
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.18s;
+}
+
+.auth-btn-primary:hover:not(:disabled) {
+  background: var(--dark-btn-hover);
+  transform: translateY(-1px);
+}
+
+.auth-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Bevestiging scherm ──────────────────── */
+.auth-sent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-sent-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: var(--accent-light);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.auth-hint {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-top: 4px;
+}
+
+.auth-link-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-family: var(--sans);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.auth-link-btn:hover {
+  color: var(--accent-hover);
+}
+
+/* Voeg toe aan auth.css */
+
+.auth-code-wrap {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.auth-code-input {
+  width: 48px;
+  height: 56px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface2);
+  font-family: var(--sans);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--text);
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  caret-color: transparent;
+}
+
+.auth-code-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
+  background: var(--surface);
+}
+
+.field-password-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.field-password-wrap input {
+  width: 100%;
+  padding-right: 42px;
+}
+
+.field-password-toggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.field-password-toggle:hover {
+  color: var(--text);
+  background: var(--surface2);
+}
+
+@media (max-width: 400px) {
+  .auth-code-input {
+    width: 40px;
+    height: 48px;
+    font-size: 18px;
+    border-radius: 10px;
+  }
+
+  .auth-code-wrap {
+    gap: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 36px 24px 32px;
+  }
+
+  .auth-title {
+    font-size: 1.6rem;
+  }
+}

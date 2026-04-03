@@ -1,9 +1,13 @@
 import { Router } from "express"
+import fs from "fs/promises"
+import path from "path"
 import bcrypt from "bcrypt"
 
-import { getInvitation, getUserId, createUser, getUserInfo, updateUserLastLogin, getOrgs} from "./auth.service.js"
+import { getInvitation, getUserId, createUser, getUserInfo, updateUserLastLogin, getOrgs, createResetToken, getPasswordResetToken, updateUserPassword} from "./auth.service.js"
 import { signToken, verifyToken } from "./jwt.js"
 import { ISPROD } from "../../constants.js"
+import { formatTimeForUser, hash, generateRandomToken, getExpirationDate } from "../../utils.js"
+import sgMail from "./mailer.js"
 
 const router = Router()
 
@@ -145,6 +149,92 @@ router.post("/logout", async (req, res) => {
     });
 
     res.status(200).json({ message: "Logged out succesfully"} )
+})
+
+router.post("/forgot-password", async (req, res) => {
+    const email = req.body.email;
+    const [user] = await getUserInfo({ email })
+
+    if(!user) return res.status(202).end()
+
+    const resetToken = generateRandomToken()
+    const expires_at = getExpirationDate(15)
+    const resetUrl = `${process.env.FRONTEND_URL}/reset?token=${resetToken}`
+
+
+    try {
+        const hashedResetToken = hash(resetToken)
+        await createResetToken(hashedResetToken, user.id, expires_at)
+    } catch (err) {
+        console.error(err)
+    }
+
+    const templateData = {
+        reset_url: resetUrl,
+        expires_at: formatTimeForUser(expires_at)
+    }
+    
+    const templatesDir = path.resolve(import.meta.dirname, "../../email-templates");
+    const filePath = path.join(templatesDir, "forgot-password.html");
+    const emailTemplate = await fs.readFile(filePath, "utf8")
+    
+    const filledTemplate = emailTemplate.replace(/{{\s*(\w+)\s*}}/g, (_, key) => {
+        return templateData[key] ?? ""
+    })
+
+    const msg = {
+        to: email, 
+        from: process.env.EMAIL_USER, 
+        subject: 'Hierbij uw herstelcode',
+        html: filledTemplate,
+    }
+
+    await sgMail.send(msg)
+
+    res.status(204).end()
+})
+
+router.post("/verify-reset-token", async (req, res) => {
+    const resetToken = req.body.resetToken;
+
+    if(!resetToken) {
+        return res.status(400).json({ success: false })
+    }
+
+    const hashedResetToken = hash(resetToken)
+
+    const token = await getPasswordResetToken(hashedResetToken)
+    
+    if(!token) {
+        return res.status(400).json({ success: false })
+    }
+
+    
+
+    res.status(200).json({ success: true })
+})
+
+router.post("/reset-password", async (req, res) => {
+    const { resetToken, password} = req.body;
+    if(!resetToken || !password) {
+        return res.status(400).json({ success: false })
+    }
+
+    const hashedResetToken = hash(resetToken)
+
+    const token = await getPasswordResetToken(hashedResetToken)
+
+    if(!token) {
+        return res.status(400).json({ success: false })
+        console.log("TOKEN FOUT")
+    }
+
+    const userId = token.user_id
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    await updateUserPassword(userId, hashedPassword)
+
+    res.status(200).json({ success: true })
 })
 
 export default router

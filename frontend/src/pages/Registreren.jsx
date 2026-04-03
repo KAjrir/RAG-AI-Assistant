@@ -84,7 +84,7 @@ export default function Register() {
               name="name"
               type="text"
               autoComplete="name"
-              placeholder="Karim"
+              placeholder="Jan de Vries"
               value={form.name}
               onChange={handleChange}
               required
@@ -98,7 +98,7 @@ export default function Register() {
               name="email"
               type="email"
               autoComplete="email"
-              placeholder="jij@bedrijf.nl"
+              placeholder="jan@bedrijf.nl"
               value={form.email}
               onChange={handleChange}
               required

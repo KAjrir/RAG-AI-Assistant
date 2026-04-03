@@ -13,6 +13,7 @@ import ChatUI from './components/chat/ChatUI.jsx'
 import AuthProvider from './context/AuthContext.jsx'
 import ProtectedRoute from './router/ProtectedRoute.jsx'
 import WorkspaceRoute from "./router/WorkspaceRoute.jsx"
+import ChatRoute from './router/ChatRoute.jsx'
 
 import Overzicht from "./pages/workspace/Overzicht.jsx"
 import DocsPage from "./pages/workspace/DocsPage.jsx"
@@ -24,12 +25,15 @@ import Instellingen from './pages/workspace/Instellingen.jsx'
 import WorkspaceLayout from './layout/WorkspaceLayout.jsx'
 import ChatPage from './pages/ChatPage.jsx'
 import NietGevonden from './pages/NietGevonden.jsx'
+import WachtwoordVergeten from './pages/WachtwoordVergeten.jsx'
+import Reset from './pages/Reset.jsx'
 
 const router = createBrowserRouter([
-  { path: '/',             element: <HomePage /> },
-  { path: '/inloggen',     element: <Inloggen /> },
-  { path: '/registreren',  element: <Registreren /> },
- 
+  { path: '/',                    element: <HomePage /> },
+  { path: '/inloggen',            element: <Inloggen /> },
+  { path: '/registreren',         element: <Registreren /> },
+  { path: '/wachtwoord-vergeten', element: <WachtwoordVergeten />},
+  { path: '/reset',               element: <Reset />},
   {
     element: <ProtectedRoute />,
     children: [
@@ -52,11 +56,16 @@ const router = createBrowserRouter([
             ],
           },
           {
-            element: <ChatPage />,
+            element: <ChatRoute />,
             children: [
-              { path: 'chat',           element: <ChatUI /> },
-              { path: 'chat/:chatId', element: <ChatUI /> },
-            ],
+              {
+                element: <ChatPage />,
+                children: [
+                  { path: 'chat',         element: <ChatUI /> },
+                  { path: 'chat/:chatId', element: <ChatUI /> },
+                ],
+              }
+            ]
           },
         ],
       },

@@ -1,36 +1,32 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { api } from '../../lib/api';
 import { formatFileSize, formatTimeAgo } from '../../lib/utils.js';
+import { useWorkspace } from '../../context/WorkspaceContext.jsx';
 import '../../styles/docsPage.css';
 
 export default function DocsPage() {
-  const { slug }            = useParams();
-  const navigate            = useNavigate();
-  const [docs, setDocs]     = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { slug }                              = useParams();
+  const navigate                              = useNavigate();
+  const { documents, loading, refreshDocuments, deleteDocument } = useWorkspace();
 
+  // Refresh zodra de pagina mount — haalt verse data op
+  // polling in context neemt het daarna over bij processing docs
   useEffect(() => {
-    api.get(`/workspaces/${slug}/docs`)
-      .then(res => {
-        setDocs(res.data)
-        console.log(res.data)
-      })
-      .finally(() => setLoading(false));
-  }, [slug]);
+    refreshDocuments();
+  }, []);
 
   async function handleReindex(docId) {
     await api.post(`/workspaces/${slug}/docs/${docId}/reindex`);
-    setDocs(prev =>
+    // Zet lokaal op processing zodat de UI direct reageert
+    // polling pikt de echte status daarna op
+    setDocuments(prev =>
       prev.map(d => d.id === docId ? { ...d, status: 'processing' } : d)
     );
   }
 
   async function handleDelete(docId) {
     if (!confirm('Weet je zeker dat je dit document wilt verwijderen?')) return;
-    const res = await api.delete(`/workspaces/${slug}/docs/${docId}`);
-    console.log(res.data)
-    setDocs(prev => prev.filter(d => d.id !== docId));
+    await deleteDocument(docId);
   }
 
   return (
@@ -47,7 +43,7 @@ export default function DocsPage() {
 
       {loading ? (
         <p className="dp-loading">Laden…</p>
-      ) : docs.length === 0 ? (
+      ) : documents.length === 0 ? (
         <div className="dp-empty">
           <div className="dp-empty-icon"><DocIcon /></div>
           <p className="dp-empty-title">Nog geen documenten</p>
@@ -58,15 +54,18 @@ export default function DocsPage() {
         </div>
       ) : (
         <ul className="dp-list">
-          {docs.map(doc => (
-            <li key={doc.id} className="dp-item">
+          {documents.map(doc => (
+            <li key={doc.id} className="dp-item"  onClick={() => navigate(`/w/${slug}/docs/${doc.id}`)}>
               <div className={`dp-icon dp-icon--${doc.status}`}>
                 <DocIcon />
               </div>
-              <div className="dp-info" onClick={() => navigate(`/w/${slug}/docs/${doc.id}`)}>
+              <div className="dp-info">
                 <span className="dp-name">{doc.originalname}</span>
                 <span className="dp-meta">
-                  {formatFileSize(doc.size)} · {doc.chunks ? `${doc.chunks} chunks` : (formatTimeAgo((doc.uploaded_at || new Date())))}
+                  {formatFileSize(doc.size)} · {doc.chunks
+                    ? `${doc.chunks} chunks`
+                    : formatTimeAgo(doc.uploaded_at)
+                  }
                 </span>
               </div>
               <div className="dp-actions">
@@ -74,7 +73,10 @@ export default function DocsPage() {
                   <button
                     className="dp-action-btn"
                     title="Opnieuw indexeren"
-                    onClick={() => handleReindex(doc.id)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleReindex(doc.id)
+                    }}
                   >
                     <ReindexIcon />
                   </button>
@@ -82,14 +84,15 @@ export default function DocsPage() {
                 <button
                   className="dp-action-btn dp-action-btn--danger"
                   title="Verwijderen"
-                  onClick={() => handleDelete(doc.id)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                      handleDelete(doc.id)
+                  }}
                 >
                   <TrashIcon />
                 </button>
               </div>
-              <span className={`dp-pill dp-pill--${doc.status}`}>
-                {statusLabel(doc.status)}
-              </span>
+              <StatusPill status={doc.status}/>
             </li>
           ))}
         </ul>
@@ -98,9 +101,53 @@ export default function DocsPage() {
   );
 }
 
-function statusLabel(status) {
-  const labels = { completed: 'Geïndexeerd', processing: 'Verwerking', failed: 'Mislukt' };
-  return labels[status] ?? status;
+function StatusPill({ status }) {
+  const config = {
+    uploading: {
+      color: 'blue',
+      title: 'Uploaden',
+      icon: <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <path d="M6 9V3M6 3L3 6M6 3l3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    },
+    queued: {
+      color: 'yellow',
+      title: 'Wachtrij',
+      icon: <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.2"/>
+        <path d="M6 3.5V6l1.5 1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+      </svg>
+    },
+    processing: {
+      color: 'amber',
+      title: 'Verwerking',
+      icon: <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="dp-spin">
+        <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.4" strokeDasharray="16 8" strokeLinecap="round"/>
+      </svg>
+    },
+    completed: {
+      color: 'green',
+      title: 'Geïndexeerd',
+      icon: <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <path d="M2 6.5l2.5 2.5L10 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    },
+    failed: {
+      color: 'red',
+      title: 'Mislukt',
+      icon: <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+      </svg>
+    },
+  }
+
+  const { icon, title, color } = config[status] ?? { icon: '?', title: status, color: 'gray' }
+
+  return (
+    <span className={`dp-pill dp-pill--${color}`} title={title}>
+      {icon}
+    </span>
+  )
 }
 
 function PlusIcon() {

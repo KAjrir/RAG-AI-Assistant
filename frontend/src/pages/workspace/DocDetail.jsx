@@ -1,83 +1,61 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { api } from '../../lib/api';
+import { api, BASE_URL } from '../../lib/api';
 import { formatFileSize, formatTimeAgo } from '../../lib/utils.js';
+import { useWorkspace } from '../../context/WorkspaceContext.jsx';
 import '../../styles/docDetail.css';
 
 export default function DocDetail() {
-  const { slug, docId }   = useParams();
-  const navigate          = useNavigate();
-  const [doc, setDoc]     = useState(null);
-  const [chunks, setChunks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [reindexing, setReindexing] = useState(false);
-  const [deleting, setDeleting]     = useState(false);
+  const { slug, docId }               = useParams();
+  const navigate                      = useNavigate();
+  const { documents, loading, deleteDocument, reindexDocument } = useWorkspace();
 
+  const [chunks, setChunks]           = useState([]);
+  const [chunksLoading, setChunksLoading] = useState(true);
+  const [reindexing, setReindexing]   = useState(false);
+  const [deleting, setDeleting]       = useState(false);
+
+  // Haal het document op uit de context — wordt automatisch bijgewerkt door polling
+  const doc = documents.find(d => d.id === docId);
+
+  // Chunks ophalen — alleen als het document completed is
   useEffect(() => {
-    Promise.all([
-      api.get(`/workspaces/${slug}/docs/${docId}`),
-      api.get(`/workspaces/${slug}/docs/${docId}/chunks`),
-    ])
-      .then(([docRes, chunksRes]) => {
-        setDoc(docRes.data);
-        setChunks(chunksRes.data);
+    if (!doc || doc.status !== 'completed') return;
+
+    api.get(`/workspaces/${slug}/docs/${docId}/chunks`)
+      .then(res => {
+        console.log(res.data)
+        setChunks(res.data)
       })
-      .finally(() => setLoading(false));
-  }, [slug, doc?.status]);
-
-  useEffect(() => {
-    pollStatus()
-  }, [])
+      .finally(() => setChunksLoading(false));
+  }, [doc?.status]);
 
   async function handleReindex() {
     setReindexing(true);
+    setChunks([]);
     try {
-      await api.post(`/workspaces/${slug}/docs/${docId}/reindex`);
-      setDoc(prev => ({ ...prev, status: 'processing' }));
-      pollStatus();
-    } catch {
+      await reindexDocument(docId);
+    } finally {
       setReindexing(false);
     }
-  }
-
-  function pollStatus() {
-    const interval = setInterval(async () => {
-      try {
-        const res = await api.get(`/workspaces/${slug}/docs/${docId}/status`);
-        if (res.data.status === 'completed') {
-          clearInterval(interval);
-          setDoc(prev => ({ ...prev, status: 'completed' }));
-          setReindexing(false);
-        }
-        if (res.data.status === 'failed') {
-          clearInterval(interval);
-          setDoc(prev => ({ ...prev, status: 'failed' }));
-          setReindexing(false);
-        }
-      } catch {
-        clearInterval(interval);
-        setReindexing(false);
-      }
-    }, 3000);
   }
 
   async function handleDelete() {
     if (!confirm('Weet je zeker dat je dit document wilt verwijderen? Dit kan niet ongedaan worden gemaakt.')) return;
     setDeleting(true);
     try {
-      await api.delete(`/workspaces/${slug}/docs/${docId}`);
+      await deleteDocument(docId);
       navigate(`/w/${slug}/docs`);
     } catch {
       setDeleting(false);
     }
   }
 
-  if (loading) return <p className="dd-loading">Laden…</p>;
-  if (!doc)    return <p className="dd-loading">Document niet gevonden.</p>;
+  if (loading)  return <p className="dd-loading">Laden…</p>;
+  if (!doc)     return <p className="dd-loading">Document niet gevonden.</p>;
 
   return (
     <div className="dd-root">
-      {/* Header */}
       <header className="dd-header">
         <button className="dd-back" onClick={() => navigate(`/w/${slug}/docs`)}>
           <BackIcon /> Terug naar documenten
@@ -88,11 +66,11 @@ export default function DocDetail() {
               <DocIcon />
             </div>
             <div>
-              <h1 className="dd-title">{doc.originalname}</h1>
+              <a href={`${BASE_URL}${doc.resource_url}`} target="_blank" rel="noopener noreferrer" className='dd-title-link'><h1 className="dd-title">{doc.originalname}</h1></a>
               <div className="dd-meta-row">
                 <span className="dd-meta">{formatFileSize(doc.size)}</span>
                 <span className="dd-meta-sep">·</span>
-                <span className="dd-meta">{formatTimeAgo(( doc.uploaded_at || new Date() ))}</span>
+                <span className="dd-meta">{formatTimeAgo(doc.uploaded_at)}</span>
                 <span className="dd-meta-sep">·</span>
                 <span className={`dd-pill dd-pill--${doc.status}`}>
                   {statusLabel(doc.status)}
@@ -123,10 +101,9 @@ export default function DocDetail() {
         </div>
       </header>
 
-      {/* Statistieken */}
       <div className="dd-stats">
         <div className="dd-stat">
-          <span className="dd-stat-num">{chunks.length ?? '-'}</span>
+          <span className="dd-stat-num">{chunks.length || '—'}</span>
           <span className="dd-stat-label">Chunks</span>
         </div>
         <div className="dd-stat">
@@ -135,13 +112,19 @@ export default function DocDetail() {
         </div>
       </div>
 
-      {/* Chunks */}
-      {chunks.length > 0 && (
+      {doc.status === 'processing' && (
+        <div className="dd-processing">
+          <SpinnerIcon />
+          <p>Document wordt verwerkt en geïndexeerd…</p>
+        </div>
+      )}
+
+      {doc.status === 'completed' && chunks.length > 0 && (
         <section className="dd-chunks-section">
           <p className="dd-section-label">Chunks ({chunks.length})</p>
           <ul className="dd-chunk-list">
             {chunks.map((chunk, i) => (
-              <li key={chunk.id} className="dd-chunk">
+              <li key={i} className="dd-chunk">
                 <span className="dd-chunk-num">#{i + 1}</span>
                 <p className="dd-chunk-text">{chunk.content}</p>
               </li>
@@ -149,20 +132,18 @@ export default function DocDetail() {
           </ul>
         </section>
       )}
-
-      {/* Verwerking bezig */}
-      {doc.status === 'processing' && (
-        <div className="dd-processing">
-          <SpinnerIcon />
-          <p>Document wordt verwerkt en geïndexeerd…</p>
-        </div>
-      )}
     </div>
   );
 }
 
 function statusLabel(status) {
-  const labels = { completed: 'Geïndexeerd', processing: 'Verwerking', failed: 'Mislukt' };
+  const labels = {
+    uploading:  'Uploaden',
+    queued:     'Wachtrij',
+    processing: 'Verwerking',
+    completed:  'Geïndexeerd',
+    failed:     'Mislukt',
+  };
   return labels[status] ?? status;
 }
 

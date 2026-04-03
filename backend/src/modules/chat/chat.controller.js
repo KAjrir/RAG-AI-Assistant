@@ -1,13 +1,10 @@
 import { Router } from "express";
 import { promptAI } from "../../ai-bot/vectorized_ai_chatbot.js";
 
-import { mockChats } from "../mocks/chat.mock.js";
-
-import { getMessagesFromOrg, getChatsFromOrg, saveMessage, createChat, generateChatTitle, updateAssistantMessage, getChatId } from "./chat.service.js";
+import { getMessagesFromOrg, getChatsFromOrg, saveMessage, createChat, generateChatTitle, updateAssistantMessage, getChatId, deleteChat, updateChatTitle } from "./chat.service.js";
 import { toJsonLine } from "../../utils.js";
+
 const router = Router();
-
-
 
 
 router.get("/", async (req, res) => {
@@ -37,6 +34,7 @@ router.post("/", async (req, res) => {
   
   const [{ id }] = await createChat(foundOrg.id, userId);
   await saveMessage("user", userContent, id)
+  
   generateChatTitle(userContent, id)
   const [assistantMessageId] = await saveMessage("assistant", "", id, "streaming")
 
@@ -56,12 +54,26 @@ router.get("/:chatId", async (req, res) => {
   const foundOrg = orgs.find(org => org.slug === slug)
   if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
   const chat = await getChatId(chatId)
-  console.log(chat)
   if (chat.length < 1) return res.status(404).json({ message: "Chat not found"})
   
   const messages = await getMessagesFromOrg(userId, chatId)
 
   res.status(200).json(messages)
+})
+
+router.patch("/:chatId", async (req, res) => {
+  const chatId = req.params.chatId
+  const newTitle = req.body.title
+  const { title } = await updateChatTitle(chatId, newTitle)
+
+  res.status(200).json({title})
+})
+
+router.delete("/:chatId", async (req, res) => {
+  const chatId = req.params.chatId
+  await deleteChat(chatId)
+
+  res.status(204).end()
 })
 
 router.post("/:chatId/messages", async (req, res) => {

@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useState, useMemo } from 'react';
-import { api } from '../lib/api';
-import { useAuth } from './AuthContext';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { api } from '../lib/api.js';
+import { useAuth } from './AuthContext.jsx';
 
 const WorkspaceContext = createContext(null);
 
@@ -8,6 +8,7 @@ export function WorkspaceProvider({ slug, children }) {
   const {user}                    = useAuth();
   const [workspace, setWorkspace] = useState(null);
   const [members, setMembers]     = useState([]);
+  const [documents, setDocuments] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState(null);
 
@@ -19,15 +20,29 @@ export function WorkspaceProvider({ slug, children }) {
     Promise.all([
       api.get(`/workspaces/${slug}`),
       api.get(`/workspaces/${slug}/members`),
+      api.get(`/workspaces/${slug}/docs`),
     ])
-      .then(([wsRes, membersRes]) => {
+      .then(([wsRes, membersRes, docsRes]) => {
         setWorkspace(wsRes.data);
-        console.log(wsRes.data)
         setMembers(membersRes.data);
+        setDocuments(docsRes.data);
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }, [slug]);
+
+  useEffect(() => {
+    const hasProcessing = documents.some(doc => ['uploading', 'queued', 'processing'].includes(doc.status))
+    if(!hasProcessing) return;
+
+    const interval = setInterval(() => {
+      api.get(`/workspaces/${slug}/docs`)
+        .then(res => setDocuments(res.data))
+        .catch(err => console.error('Polling failed:', err))
+    }, 3000)
+
+    return () => clearInterval(interval)
+  }, [documents, slug])
 
 
   const currentMember = members.find(m => m.id === user?.id);
@@ -52,11 +67,43 @@ export function WorkspaceProvider({ slug, children }) {
     setIsSidebarOpen(prev => !prev)
   }
 
+  async function uploadDocuments (files) {
+    const formData = new FormData()
+
+    files.forEach(file => formData.append("files", file))
+
+    const res = await api.post(`/workspaces/${slug}/docs`, formData)
+    console.log(res)
+
+    setDocuments(prev => [...prev, ...res.data])
+    return res.data
+  }
+
+  const refreshDocuments = useCallback(async () => {
+    const res = await api.get(`/workspaces/${slug}/docs`)
+    setDocuments(res.data)
+  }, [slug])
+
+  const deleteDocument = async (docId) => {
+    await api.delete(`/workspaces/${slug}/docs/${docId}`)
+    setDocuments(prev => (
+      prev.filter(p => p.id !== docId)
+    ))
+  }
+
+  const reindexDocument = async (docId) => {
+    await api.post(`/workspaces/${slug}/docs/${docId}/reindex`)
+    setDocuments(prev =>
+      prev.map(d => d.id === docId ? { ...d, status: 'queued' } : d)
+    )
+  }
+
   return (
     <WorkspaceContext.Provider value={{ isSidebarOpen, toggleSidebar,
       workspace, members, loading, error,
       isOwner, currentMember,
-      updateWorkspace, inviteMember, removeMember,
+      updateWorkspace, inviteMember, removeMember, 
+      documents, reindexDocument, deleteDocument, uploadDocuments, refreshDocuments
     }}>
       {children}
     </WorkspaceContext.Provider>

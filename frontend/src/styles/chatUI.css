@@ -20,6 +20,11 @@
   background: var(--bg);
   flex-shrink: 0;
   gap: 12px;
+  transition: box-shadow 0.2s ease;
+}
+
+.chatHeader.scrolled {
+  box-shadow: rgba(33, 35, 38, 0.1) 0px 10px 10px -10px;
 }
 
 .chatHeader-left {
@@ -83,7 +88,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 6px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: none;
@@ -118,7 +123,7 @@
   display: flex;
   flex-direction: column;
   flex: 1;
-  gap: 28px;
+  gap: 22px;
 }
 
 /* ===== ROW ALIGNMENT ===== */

@@ -101,3 +101,37 @@ export const getOrgs = async (userId) => {
     // Antwoord komt terug in [{ id: }, { id: }]
     return orgs
 }
+
+export const createResetToken = async (hashedResetToken, userId) => {
+    await db`
+        DELETE FROM password_reset_tokens
+        WHERE user_id = ${userId}
+    `;
+
+    await db`
+        INSERT INTO password_reset_tokens (token_hash, user_id, expires_at)
+        VALUES (${hashedResetToken}, ${userId}, NOW() + INTERVAL '15 minutes')
+    `
+}
+
+export const getPasswordResetToken = async (hashedToken) => {
+    const [resetToken] = await db`
+        SELECT *
+        FROM password_reset_tokens
+        WHERE token_hash = ${hashedToken} AND expires_at > NOW();
+    `
+    return resetToken
+}
+
+export const updateUserPassword = async (userId, hashedPassword) => {
+    await db`
+        UPDATE users
+        SET password = ${hashedPassword}
+        WHERE id = ${userId}
+    `
+
+    await db`
+        DELETE FROM password_reset_tokens
+        WHERE user_id = ${userId}
+    `;
+} 

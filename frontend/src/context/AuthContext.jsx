@@ -11,7 +11,6 @@ export default function AuthProvider({ children }) {
     api.get('/auth/me')
       .then(res => {
         setUser(res.data.user)
-        console.log(res.data)
       })
       .catch(() => setUser(null))
       .finally(() => setLoading(false));

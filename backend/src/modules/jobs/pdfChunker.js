@@ -37,9 +37,9 @@ async function extractPages(filePath) {
       })
 
       return pageText
-    }
+    },
   }
-
+  
   const data = await pdf(buffer, options)
 
   return {

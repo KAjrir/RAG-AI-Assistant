@@ -28,6 +28,7 @@ export const getMessagesFromOrg = async (userId, chatId) => {
         SELECT id, role, content, status
         FROM messages
         WHERE chat_id = ${chatId}
+        ORDER BY created_at ASC
     `
 
     return messages
@@ -73,4 +74,21 @@ export const generateChatTitle = async (userContent, chatId) => {
         SET title = ${response.output_text}
         WHERE id = ${chatId}
     `
+}
+
+export const deleteChat = async (chatId) => {
+    await db`
+        DELETE FROM chats
+        WHERE id = ${chatId}
+    `
+}
+
+export const updateChatTitle = async (chatId, title) => {
+    const [newTitle] = await db`
+        UPDATE chats
+        SET title = ${title}
+        WHERE id = ${chatId}
+        RETURNING title
+    `
+    return newTitle
 }

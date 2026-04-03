@@ -1,28 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
 import { api } from '../../lib/api.js';
 import { formatTimeAgo } from '../../lib/utils.js';
 import '../../styles/overzicht.css';
 
-
 export default function Overzicht() {
-  const { slug }          = useParams();
-  const { workspace }     = useWorkspace();
-  const navigate          = useNavigate();
-
-  const [docs, setDocs]   = useState([]);
-  const [stats, setStats] = useState({ docs: 0, connections: 0, members: 0 });
+  const { slug }              = useParams();
+  const { workspace, documents, members } = useWorkspace();
+  const navigate              = useNavigate();
+  const [stats, setStats]     = useState({ docs: 0, connections: 0, members: 0 });
 
   useEffect(() => {
-    Promise.all([
-      api.get(`/workspaces/${slug}/docs?limit=5`),
-      api.get(`/workspaces/${slug}/stats`),
-    ]).then(([docsRes, statsRes]) => {
-      setDocs(docsRes.data);
-      setStats(statsRes.data);
-    });
+    api.get(`/workspaces/${slug}/stats`)
+      .then(res => setStats(res.data));
   }, [slug]);
+
+  // Laatste 5 documenten uit context — geen aparte fetch nodig
+  const recentDocs = documents.slice(0, 5);
 
   return (
     <div className="ov-root">
@@ -46,7 +41,7 @@ export default function Overzicht() {
           <span className="ov-stat-label">Connecties</span>
         </button>
         <button className="ov-stat" onClick={() => navigate(`/w/${slug}/mensen`)}>
-          <span className="ov-stat-num">{stats.members}</span>
+          <span className="ov-stat-num">{members.length}</span>
           <span className="ov-stat-label">Teamleden</span>
         </button>
       </section>
@@ -54,7 +49,7 @@ export default function Overzicht() {
       <section>
         <p className="ov-section-label">Recente documenten</p>
         <ul className="ov-doc-list">
-          {docs.map(doc => (
+          {recentDocs.map(doc => (
             <li key={doc.id}>
               <button
                 className="ov-doc-item"
@@ -65,7 +60,7 @@ export default function Overzicht() {
                 </div>
                 <div className="ov-doc-info">
                   <span className="ov-doc-name">{doc.originalname}</span>
-                  <span className="ov-doc-meta">{formatTimeAgo(( doc.uploaded_at || new Date() ))}</span>
+                  <span className="ov-doc-meta">{formatTimeAgo(doc.uploaded_at)}</span>
                 </div>
                 <span className={`ov-pill ov-pill--${doc.status}`}>
                   {statusLabel(doc.status)}
@@ -81,9 +76,11 @@ export default function Overzicht() {
 
 function statusLabel(status) {
   const labels = {
-    completed:    'Geïndexeerd',
+    uploading:  'Uploaden',
+    queued:     'Wachtrij',
     processing: 'Verwerking',
-    failed:      'Mislukt',
+    completed:  'Geïndexeerd',
+    failed:     'Mislukt',
   };
   return labels[status] ?? status;
 }

@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
+import { useChat } from '../../context/ChatContext.jsx';
 import { useOutletContext } from 'react-router';
 import { api, BASE_URL } from '../../lib/api.js';
 import { random } from '../../lib/utils.js';
+
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -14,10 +16,11 @@ import '../../styles/markdown.css';
 export default function ChatUI() {
   const { slug, chatId }                        = useParams();
   const { workspace }                           = useWorkspace();
+  const { activeChat, setActiveChat, addChat, updateChat } = useChat();
   const { onMenuClick }                         = useOutletContext();
   const navigate                                = useNavigate();
-
-  const [thread, setThread]                     = useState(null)
+  
+  const [scrolled, setScrolled]                 = useState(false)
   const [messages, setMessages]                 = useState([]);
   const [draft, setDraft]                       = useState('');
   const [chatLoading, setChatLoading]           = useState(false);
@@ -39,34 +42,34 @@ export default function ChatUI() {
     }
   }, []);
 
- useEffect(() => {
-  if (!chatId) {
-    setMessages([]);
-    if (bottomRef.current) bottomRef.current.style.height = '0px';
-    return;
-  }
-
-  // Check of er een pending stream klaarstaat (van nieuwe chat flow)
-  if (pendingStreamRef.current) {
-    const pending = pendingStreamRef.current;
-    pendingStreamRef.current = null;
-    // Geen fetch nodig — messages staan al in state via optimistic update
-    startStream(pending);
-    return;
-  }
-
-  // Normale load van bestaande chat
-  api.get(`/workspaces/${slug}/chats/${chatId}`).then(res => {
-    setMessages(res.data);
-
-    const streamingMsg = res.data.find(m => m.status === 'streaming');
-    if (streamingMsg) {
-      assistantIdRef.current = streamingMsg.id;
-      // Hier geen message nodig want we hervatten een bestaande stream
-      startStream({ chatId, message: null, assistantId: streamingMsg.id });
+  useEffect(() => {
+    if (!chatId) {
+      setMessages([]);
+      if (bottomRef.current) bottomRef.current.style.height = '0px';
+      return;
     }
-  });
-}, [slug, chatId]);
+
+    // Check of er een pending stream klaarstaat (van nieuwe chat flow)
+    if (pendingStreamRef.current) {
+      const pending = pendingStreamRef.current;
+      pendingStreamRef.current = null;
+      // Geen fetch nodig — messages staan al in state via optimistic update
+      startStream(pending);
+      return;
+    }
+
+    // Normale load van bestaande chat
+    api.get(`/workspaces/${slug}/chats/${chatId}`).then(res => {
+      setMessages(res.data);
+
+      const streamingMsg = res.data.find(m => m.status === 'streaming');
+      if (streamingMsg) {
+        assistantIdRef.current = streamingMsg.id;
+        // Hier geen message nodig want we hervatten een bestaande stream
+        startStream({ chatId, message: null, assistantId: streamingMsg.id });
+      }
+    });
+  }, [slug, chatId]);
 
   function updateSpacer() {
     if (
@@ -81,7 +84,7 @@ export default function ChatUI() {
     const bubbleHeight     = assistantMessageRef.current.offsetHeight;
     const userBubbleHeight = userMessageRef.current?.offsetHeight ?? 0;
 
-    const availableSpace = chatBodyHeight - composerHeight - 130 - bubbleHeight - userBubbleHeight;
+    const availableSpace = chatBodyHeight - composerHeight - 140 - bubbleHeight - userBubbleHeight;
     bottomRef.current.style.height = Math.max(0, availableSpace) + 'px';
   }
 
@@ -99,6 +102,16 @@ export default function ChatUI() {
 
   useEffect(() => {
     function handleKeyDown(e) {
+      const tag = e.target.tagName;
+
+      if (
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        e.target.isContentEditable
+      ) {
+        return; // 👉 NIET ingrijpen
+      }
+
       if (document.activeElement !== inputRef.current && e.key.length === 1) {
         inputRef.current?.focus();
       }
@@ -107,6 +120,16 @@ export default function ChatUI() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  const handleScroll = (e) => {
+    const scrollTop = e.currentTarget.scrollTop;
+
+    if (scrollTop > 0 && !scrolled) {
+      setScrolled(true);
+    } else if (scrollTop === 0 && scrolled) {
+      setScrolled(false);
+    }
+  };
 
   const handleSubmit = async (text) => {
     if (!text.trim() || chatLoading || isStreaming) return;
@@ -227,99 +250,23 @@ export default function ChatUI() {
     setIsStreaming(false);
   }
 
-  const sendMessage = async (text) => {
-    if (!text.trim() || chatLoading) return;
-
-
-    const userId      = random();
-    const assistantId = random();
-
-    setMessages(prev => [
-      ...prev,
-      { id: userId,      role: 'user',      content: text},
-      { id: assistantId, role: 'assistant',  content: ''},
-    ]);
-
-    const sessionId = localStorage.getItem('session_id');
-    const url = `/api/workspaces/${slug}/chats/messages`;
-
-    const response = await fetch(url, {
-      method: "POST",
-      credentials: 'include',
-      headers: {
-        'Content-Type': "application/json"
-      },
-      body: JSON.stringify({
-        message: text,
-        chatId: chatId ?? null,
-        sessionId
-      })
-    });
-
-    const reader  = response.body.getReader();
-    const decoder = new TextDecoder();
-
-    if (!reader) return;
-
-    setChatLoading(false);
-    setIsStreaming(true);
-    let buffer = "";
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer = buffer + decoder.decode(value, { stream: true });
-
-      const parts = buffer.split("\n")
-      buffer = parts.pop()
-
-      for (const part of parts) {
-        if (!part.trim()) continue
-        // console.log(part)
-        const data = JSON.parse(part);
-        console.log(data)
-
-        if(data.event === "token"){
-          const { content } = data
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.id === assistantId
-                ? { ...msg, content: msg.content + content }
-                : msg
-            )
-          );
-          updateSpacer();
-        }
-
-        if (data.event === "chat_created") {
-          navigate(`/w/${slug}/chat/${data.id}`)
-        }
-
-      }
-    }
-
-    setIsStreaming(false);
-  };
-
   return (
-    <main className="chatBody" ref={chatBodyRef}>
+    <main className="chatBody" ref={chatBodyRef} onScroll={handleScroll}>
 
-      <div className="chatHeader">
+      <div className={`chatHeader ${scrolled ? "scrolled" : ""}`}>
         <div className="chatHeader-left">
           <button className="chatHeader-hamburger" onClick={onMenuClick}>
             <HamburgerIcon />
           </button>
-          {!thread && (
             <div className="chatHeader-identity">
-              <span className="chatHeader-title">{thread?.title || "hallo"}</span>
+              {activeChat && <span className="chatHeader-title">{activeChat?.title || ""}</span> }
               <span className="chatHeader-workspace" onClick={() => navigate(`/w/${slug}`)}>
                 {workspace?.name}
               </span>
             </div>
-          )}
         </div>
         <button className="chatHeader-share">
-          <ShareIcon /> Delen
+          <ShareIcon />
         </button>
       </div>
 
@@ -380,7 +327,6 @@ export default function ChatUI() {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
                   handleSubmit(draft)
-                  // sendMessage(draft);
                 }
               }}
             />
