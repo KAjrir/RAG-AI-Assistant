@@ -7,23 +7,27 @@ export default function AuthProvider({ children }) {
   const [user, setUser]       = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const getAuth = () => {
     api.get('/auth/me')
       .then(res => {
         setUser(res.data.user)
       })
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    getAuth()
   }, []);
 
   async function register(name, email, password) {
     const res = await api.post('/auth/register', { name, email, password });
-    // setUser(res.data.user);
+    if(res.data.success) getAuth()
   }
 
   async function login(email, password) {
     const res = await api.post('/auth/login', { email, password });
-    // setUser(res.data.user);
+    if(res.data.success) getAuth()
   }
 
   async function logout() {
@@ -31,8 +35,28 @@ export default function AuthProvider({ children }) {
     setUser(null);
   }
 
+  async function createOrg(data) {
+    const res = await api.post('/users/create-org', data);
+    if (res.data.success) getAuth();
+    return res.data;
+  }
+
+  async function joinOrg(token) {
+    const res = await api.post('/users/join-org', { token });
+    if (res.data.success) getAuth(); // zelfde
+    return res.data;
+  }
+
+  async function inviteMembers(emails) {
+    const res = await api.post('/users/invite-members', { emails });
+    return res.data;
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ 
+      user, loading, login, register, logout,
+      createOrg, joinOrg, inviteMembers
+    }}>
       {children}
     </AuthContext.Provider>
   );

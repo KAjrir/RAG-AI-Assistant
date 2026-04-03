@@ -1,7 +1,6 @@
 import { NavLink, Outlet, useNavigate, useParams } from 'react-router';
 import { useState, useRef, useEffect } from 'react';
 import { useWorkspace } from '../context/WorkspaceContext.jsx';
-import { useOrg } from '../context/OrgContext.jsx';
 import MobileSheet from '../components/workspace/MobileSheet.jsx';
 import MobileBottomBar from '../components/workspace/MobileBottomBar.jsx';
 import '../styles/workspaceLayout.css';
@@ -12,7 +11,6 @@ export default function WorkspaceLayout() {
   const { workspace, isOwner, loading } = useWorkspace();
   const { user } = useAuth();
   const navigate = useNavigate();
-  console.log(workspace)
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -49,7 +47,7 @@ export default function WorkspaceLayout() {
                   e.stopPropagation();
                   setDropdownOpen(false);
                   setSidebarOpen(false);
-                  navigate(`/w/${ws.slug}`);
+                  navigate(`/w/${ws.orgSlug}`);
                 }}
               >
                 <span className="wl-ws-dropdown-name">{ws.orgName}</span>

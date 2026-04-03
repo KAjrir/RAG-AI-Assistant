@@ -33,14 +33,14 @@ const router = createBrowserRouter([
   { path: '/',                    element: <HomePage /> },
   { path: '/inloggen',            element: <Inloggen /> },
   { path: '/registreren',         element: <Registreren /> },
-  { path: '/onboarding',          element: <Onboarding />},
   { path: '/wachtwoord-vergeten', element: <WachtwoordVergeten />},
   { path: '/reset',               element: <Reset />},
   {
     element: <ProtectedRoute />,
     children: [
-      { path: '/dashboard', element: <Dashboard /> },
- 
+      { path: '/dashboard',       element: <Dashboard /> },
+      { path: '/onboarding',      element: <Onboarding />},
+      
       {
         path: '/w/:slug',
         element: <WorkspaceRoute />,

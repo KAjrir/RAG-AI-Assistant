@@ -3,11 +3,12 @@ import { useNavigate, useParams } from 'react-router';
 import { formatFileSize, formatTimeAgo } from '../../lib/utils.js';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
 import '../../styles/docsPage.css';
+import { api } from '../../lib/api.js';
 
 export default function DocsPage() {
   const { slug }                              = useParams();
   const navigate                              = useNavigate();
-  const { documents, loading, refreshDocuments, deleteDocument } = useWorkspace();
+  const { documents, loading, refreshDocuments, reindexDocument, deleteDocument } = useWorkspace();
 
   // Refresh zodra de pagina mount — haalt verse data op
   // polling in context neemt het daarna over bij processing docs
@@ -16,12 +17,7 @@ export default function DocsPage() {
   }, []);
 
   async function handleReindex(docId) {
-    await api.post(`/workspaces/${slug}/docs/${docId}/reindex`);
-    // Zet lokaal op processing zodat de UI direct reageert
-    // polling pikt de echte status daarna op
-    setDocuments(prev =>
-      prev.map(d => d.id === docId ? { ...d, status: 'processing' } : d)
-    );
+    await reindexDocument(docId) 
   }
 
   async function handleDelete(docId) {

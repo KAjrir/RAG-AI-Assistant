@@ -68,27 +68,15 @@
 }
 
 .dd-title-link {
-  position: relative;
   text-decoration: none;
   color: inherit;
   display: inline-block;
   margin-bottom: 6px;
+  transition: color 0.15s;
 }
 
-.dd-title-link::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: -2px;
-  width: 0;
-  transform: translateX(-50%);
-  height: 2px;
-  background: currentColor;
-  transition: width 0.2s ease;
-}
-
-.dd-title-link:hover::after {
-  width: 100%;
+.dd-title-link:hover {
+  color: var(--text);
 }
 
 .dd-title {
@@ -311,7 +299,12 @@
   flex-shrink: 0;
 }
 
-@media (max-width: 600px) {
+/* Op telefoon geen hover — toon altijd een subtiele underline */
+@media (max-width: 768px) {
+  .dd-title-link:active {
+    color: var(--text);
+  }
+
   .dd-stats { grid-template-columns: 1fr; }
   .dd-header-main { flex-direction: column; }
   .dd-chunk { grid-template-columns: 28px 1fr; }

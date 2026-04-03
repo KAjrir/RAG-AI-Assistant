@@ -1,6 +1,6 @@
 import { chunkPdf } from './pdfChunker.js'
 import db from '../../database/db.js'
-import { updateDocStatus, generateEmbedding, insertDocumentChunks, updateDocMetadata, getDocumentChunks, deleteDocumentChunks } from '../workspace/workspace.service.js'
+import { updateDocStatus, generateEmbedding, insertDocumentChunks, updateDocMetadata, getDocumentChunks, deleteDocumentChunks } from '../doc/doc.service.js'
 
 // ============================================================
 // Hoe je dit integreert in je processDocument functie

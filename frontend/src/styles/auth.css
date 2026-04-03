@@ -41,6 +41,11 @@
   text-decoration: none;
   margin-bottom: 20px;
   transition: color 0.15s;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--sans);
 }
 
 .auth-back:hover { color: var(--accent); }
