@@ -117,7 +117,11 @@ router.post("/messages", async (req, res) => {
         res.write(toJsonLine(token))
     }
     
-    await updateAssistantMessage(assistantId, assistantContent,"done")
+    await updateAssistantMessage(assistantId, assistantContent, "done")
+    res.write(toJsonLine({
+      event: "done",
+    }))
+    
   } catch (err) {
     console.error("Stream error:", err);
     return res.status(500).json({ message: "Server Error, probeer later opnieuw."})

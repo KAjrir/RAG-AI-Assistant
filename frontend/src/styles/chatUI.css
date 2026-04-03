@@ -113,7 +113,7 @@
   flex-direction: column;
   flex: 1;
   gap: 16px;
-  width: clamp(300px, 90%, 900px);
+  width: clamp(300px, 99%, 900px);
   margin: 0 auto;
   padding: 20px 24px 0;
 }
@@ -143,8 +143,8 @@
 
 /* ===== USER BUBBLE ===== */
 .bubbleUser {
-  background: var(--accent);
-  color: white;
+  background: var(--surface2);
+  color: var(--text);
   /* border: none; */
   border-bottom-right-radius: 6px;
   padding: 8px 16px;

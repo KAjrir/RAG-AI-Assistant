@@ -13,7 +13,7 @@ import docRouter from "./modules/doc/doc.controller.js"
 
 import { authMiddleware } from "./modules/middleware.js";
 
-import { assetsPath, uploadsDirectory, ISPROD } from "./constants.js";
+import { assetsPath, uploadsDirectory, ISPROD, FRONTEND_URL } from "./constants.js";
 
 
 if (!fs.existsSync(uploadsDirectory)) {
@@ -21,13 +21,9 @@ if (!fs.existsSync(uploadsDirectory)) {
   console.log("UPLOADS DIRECTORY INITIATED!")
 }
 
-console.log(uploadsDirectory)
-
 config({
   path: "../.env"
 })
-
-const FRONTEND_URL = process.env.FRONTEND_URL;
 
 const app = express();
 app.use(express.json())
@@ -72,5 +68,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-const sleep = ms => new Promise(r => setTimeout(r, ms))

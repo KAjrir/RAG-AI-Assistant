@@ -248,8 +248,10 @@ export default function ChatUI() {
           api.get(`/workspaces/${slug}/chats`)
           .then(res => {
             setChats(res.data);
+            console.log(res.data)
             const updated = res.data.find(c => c.id === chatId);
             if (updated) setActiveChat(updated); 
+            console.log(updated);
           })
         }
       }
