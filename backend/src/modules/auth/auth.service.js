@@ -1,18 +1,50 @@
 import db from "../../database/db.js"
 
-export const getUserId = async ({ email }) => {
+export const getUser = async ({ id, email }) => {
     try {
-        const user = await db`SELECT id FROM users WHERE email = ${email}`
-        return user
+        if(id) {
+            const user = await db`
+                SELECT *
+                FROM users 
+                WHERE id = ${id}
+            `
+            return user[0]
+        }
+        
+        if(email) {
+            const user = await db`
+                SELECT * 
+                FROM users 
+                WHERE email = ${email}
+            `
+            return user[0]
+        }
     } catch (err) {
         console.error(err)
     }
 }
 
-export const getUserInfo = async ({ email }) => {
+export const getUserInfo = async ( userId ) => {
     try {
-        const user = await db`SELECT * FROM users WHERE email = ${email}`
-        return user
+        const user = await db`
+            SELECT
+                u.id,
+                u.name,
+                u.email,
+                u.onboarding_completed,
+                json_agg(json_build_object(
+                'orgId', m.organization_id,
+                'orgName',        o.name,
+                'orgSlug',        o.slug,
+                'role',            m.role
+                )) FILTER (WHERE m.organization_id IS NOT NULL) AS memberships
+            FROM users u
+            LEFT JOIN memberships m ON m.user_id = u.id
+            LEFT JOIN organizations o ON o.id = m.organization_id
+            WHERE u.id = ${userId}
+            GROUP BY u.id
+        `
+        return user[0]
     } catch (err) {
         console.error(err)
     }

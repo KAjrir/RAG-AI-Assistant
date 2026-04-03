@@ -5,7 +5,7 @@ import { Router } from "express";
 import chatRouter from "../chat/chat.controller.js"
 import { getUserWorkspaces, getCurrentWorkspace, getWorkspaceMembers, getDocs, getDoc, addDocs, getStats, getDocStatus, getDocChunks, deleteDoc } from "./workspace.service.js";
 import { processDocument } from "../jobs/processDocument.js";
-import { mockStats, mockDocs, mockChunks, mockConnections } from "../mocks/stats.mock.js";
+import { mockConnections } from "../mocks/stats.mock.js";
 import { assetsPath, uploadsDirectory, ISPROD } from "../../constants.js";
 
 import db from "../../database/db.js";
@@ -14,104 +14,67 @@ import myStorage from "./MyStorageEngine.js";
 
 const router = Router();
 
-
-const miniMiddleware = (req, res, next) => {
-    req.slug = req.params.slug
-
-    next()
-}
-
-router.use("/:slug/chats", miniMiddleware, chatRouter)
-
-
+router.use("/chats", chatRouter)
 
 router.get("/", async (req, res) => {
-    const workspaces = await getUserWorkspaces(req.user.id)
+    const userId = req.userId
+    const orgId = req.orgId;
 
-    const sortedWorkspaces = workspaces.sort((a, b) => {
-        if (a.role === "owner" && b.role !== "owner") return -1;
-        if (a.role !== "owner" && b.role === "owner") return 1;
-        return 0;
-    });
-    
-    res.status(200).json(sortedWorkspaces)
-})
-
-router.get("/:slug", async (req, res) => {
-    const { slug } = req.params;
-    const userId = req.user.id
-    const orgs = req.orgs
-
-    const foundOrg = orgs.find(org => org.slug === slug)
-    if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
-
-    const [workspace] = await getCurrentWorkspace(slug, userId)
+    const [workspace] = await getCurrentWorkspace(orgId, userId)
     
     res.status(200).json(workspace)
 })
 
-router.get("/:slug/members", async (req, res) => {
-    const { slug } = req.params;
-    const orgs = req.orgs
+router.get("/members", async (req, res) => {
+    const orgId = req.orgId
 
-    const foundOrg = orgs.find(org => org.slug === slug)
-    if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
-
-    const members = await getWorkspaceMembers(slug)
+    const members = await getWorkspaceMembers(orgId)
     res.status(200).json(members)
 })
 
 
-router.patch("/:slug", async (req, res) => {
+router.patch("/", async (req, res) => {
     // Update workspace naam
 
     res.status(200).json()
 })
 
-router.post("/:slug/invites", async (req, res) => {
+router.post("/invites", async (req, res) => {
     // Uitnodigen van mensen
 
     res.status(200).json()
 })
 
-router.delete("/:slug/members/:memberId", async (req, res) => {
+router.delete("/members/:memberId", async (req, res) => {
     // Verwijderen van teamgenoot
 
     res.status(200).json()
 })
 
 
-router.get("/:slug/docs", async (req, res) => {
+router.get("/docs", async (req, res) => {
     const { limit } = req.query
+    const orgId = req.orgId
 
     if (limit && isNaN(Number(limit))) {
         return res.status(400).json( { message: "Limit not specified" })
     }
 
-    const { slug } = req.params;
-    const orgs = req.orgs
-
-    const foundOrg = orgs.find(org => org.slug === slug)
-    if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
-
-    const docs = await getDocs(foundOrg.id, limit, ISPROD )
+    const docs = await getDocs(orgId, limit, ISPROD )
 
     res.status(200).json(docs)
 })
 
-router.post("/:slug/docs", myStorage.array("files"), async (req, res) => {
-    const { slug } = req.params
-    const userId = req.user.id
-    const orgs = req.orgs
+router.post("/docs", myStorage.array("files"), async (req, res) => {
+    const userId = req.userId
+    const orgId = req.orgId
 
-    const foundOrg = orgs.find(org => org.slug === slug)
-    if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
     console.log(req.files)
     
     const files = []
     for (const file of req.files) {
         const docId = file.filename.split(".")[0];
-        const organizationId = foundOrg.id
+        const organizationId = orgId
         const uploadedBy = userId;
         // const uploadedAt -- Deze per default bij db
         // const pageCount = -- hoeft nog niet
@@ -156,28 +119,23 @@ router.post("/:slug/docs", myStorage.array("files"), async (req, res) => {
 
 
 
-router.get("/:slug/docs/:docId", async (req, res) => {
-    const { slug, docId } = req.params;
-    const orgs = req.orgs
+router.get("/docs/:docId", async (req, res) => {
+    const { docId } = req.params;
+    const orgId = req.orgId
 
-    const foundOrg = orgs.find(org => org.slug === slug)
 
-    if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
-    const { filepath, uploaded_by, ...restDoc} = await getDoc(docId, foundOrg.id, ISPROD)
+    const { filepath, uploaded_by, ...restDoc} = await getDoc(docId, orgId, ISPROD)
     
     res.status(200).json(restDoc)
 })
 
-router.delete("/:slug/docs/:docId", async (req, res) => {
-    const { slug, docId } = req.params
-    const orgs = req.orgs
-    
-    const foundOrg = orgs.find(org => org.slug === slug)
-    if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
+router.delete("/docs/:docId", async (req, res) => {
+    const { docId } = req.params
+    const orgId = req.orgId
     
     try {
         await db`BEGIN`
-        const [doc] = await deleteDoc(foundOrg.id, docId)
+        const [doc] = await deleteDoc(orgId, docId)
         
         if(!doc){
             return res.status(404).json({ message: "Document Not Found"})
@@ -194,56 +152,44 @@ router.delete("/:slug/docs/:docId", async (req, res) => {
     }
 })
 
-router.post("/:slug/docs/:docId/reindex", async (req, res) => {
-    const { slug, docId } = req.params;
-    const orgs = req.orgs
+router.post("/docs/:docId/reindex", async (req, res) => {
+    const { docId } = req.params;
+    const orgId = req.orgId
 
-    const foundOrg = orgs.find(org => org.slug === slug)
-    if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
-    const { filepath, originalname } = await getDoc(docId, foundOrg.id, ISPROD)
+    const { filepath, originalname } = await getDoc(docId, orgId, ISPROD)
 
-    processDocument(docId, foundOrg.id, filepath, originalname)
+    processDocument(docId, orgId, filepath, originalname)
     
     res.status(204).end()
 })
 
-router.get("/:slug/docs/:docId/chunks", async (req, res) => {
-    const { slug, docId } = req.params
-    const orgs = req.orgs
-    
-    const foundOrg = orgs.find(org => org.slug === slug)
-    if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
+router.get("/docs/:docId/chunks", async (req, res) => {
+    const { docId } = req.params
+    const orgId = req.orgId
 
-    const chunks = await getDocChunks(docId, foundOrg.id)
+    const chunks = await getDocChunks(docId, orgId)
     
     res.status(200).json(chunks)
 })
 
-router.get("/:slug/docs/:docId/status", async (req, res) => {
-    const { slug, docId } = req.params;
-    const orgs = req.orgs
-
-    const foundOrg = orgs.find(org => org.slug === slug)
-    if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
+router.get("/docs/:docId/status", async (req, res) => {
+    const { docId } = req.params;
+    const orgId = req.orgId
     
-    const status = await getDocStatus(docId, foundOrg.id);
+    const status = await getDocStatus(docId, orgId);
 
     res.status(200).json( status)
 })
 
-router.get("/:slug/connections", async (req, res) => {
+router.get("/connections", async (req, res) => {
 
     res.status(200).json(mockConnections)
 })
 
-router.get("/:slug/stats", async (req, res) => {
-    const { slug } = req.params;
-    const orgs = req.orgs
-
-    const foundOrg = orgs.find(org => org.slug === slug)
-    if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
+router.get("/stats", async (req, res) => {
+    const orgId = req.orgId
     
-    const stats = await getStats(foundOrg.id, ISPROD);
+    const stats = await getStats(orgId, ISPROD);
 
     res.status(200).json(stats)
 })

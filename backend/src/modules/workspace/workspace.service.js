@@ -13,24 +13,39 @@ export const getUserWorkspaces = async (userId) => {
     return workspaces
 }
 
-export const getCurrentWorkspace = async (slug, userId) => {
+export const getCurrentMiddlewareWorkspace = async (userId, slug) => {
+    const memberships = await db`
+      SELECT
+        m.role,
+        m.organization_id
+      FROM memberships m
+      JOIN organizations o ON o.id = m.organization_id
+      WHERE m.user_id   = ${userId}
+      AND   o.slug      = ${slug}
+    `
+    // AND   m.status    = 'active'
+    // AND   o.is_active = true
+    return memberships[0]
+}
+
+export const getCurrentWorkspace = async (orgId, userId) => {
     const workspace = db`
         SELECT m.organization_id, m.role, m.status, o.name, o.slug
         FROM memberships m
         JOIN organizations o ON o.id = m.organization_id
-        WHERE o.slug = ${slug} and m.user_id = ${userId}
+        WHERE o.id = ${orgId} and m.user_id = ${userId}
     `
 
     return workspace
 }
 
-export const getWorkspaceMembers = async (slug) => {
+export const getWorkspaceMembers = async (orgId) => {
     const members = db`
         SELECT u.id, u.name, u.email, m.role
         FROM users u
         JOIN memberships m ON u.id = m.user_id
         JOIN organizations o ON o.id = m.organization_id
-        WHERE o.slug = ${slug}
+        WHERE o.id = ${orgId}
     `
 
     return members

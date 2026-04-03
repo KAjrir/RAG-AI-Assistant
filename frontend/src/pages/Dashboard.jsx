@@ -6,7 +6,7 @@ import '../styles/dashboard.css';
 
 export default function Dashboard() {
   const { user, logout }                                        = useAuth();
-  const { workspaces, loading, createWorkspace, joinWorkspace } = useOrg();
+  const { loading, createWorkspace, joinWorkspace }             = useOrg();
   const navigate                                                = useNavigate();
 
   const [showCreate, setShowCreate] = useState(false);
@@ -70,15 +70,15 @@ export default function Dashboard() {
           <>
             <p className="db-ws-label">Jouw workspaces</p>
             <ul className="db-ws-list">
-              {workspaces.map(ws => (
-                <li key={ws.id}>
+              {user.memberships.map(ws => (
+                <li key={ws.orgId}>
                   <button
                     className={`db-ws-card ${ws.role === 'owner' ? 'db-ws-card--owner' : ''}`}
-                    onClick={() => navigate(`/w/${ws.slug}`)}
+                    onClick={() => navigate(`/w/${ws.orgSlug}`)}
                   >
-                    <div className="db-ws-icon">{ws.name[0].toUpperCase()}</div>
+                    <div className="db-ws-icon">{ws.orgName[0].toUpperCase()}</div>
                     <div className="db-ws-info">
-                      <span className="db-ws-name">{ws.name}</span>
+                      <span className="db-ws-name">{ws.orgName}</span>
                       <span className={`db-ws-role db-ws-role--${ws.role}`}>
                         {ws.role === 'owner' ? 'Eigenaar' : 'Lid'}
                       </span>

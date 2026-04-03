@@ -5,12 +5,14 @@ import { useOrg } from '../context/OrgContext.jsx';
 import MobileSheet from '../components/workspace/MobileSheet.jsx';
 import MobileBottomBar from '../components/workspace/MobileBottomBar.jsx';
 import '../styles/workspaceLayout.css';
+import { useAuth } from '../context/AuthContext.jsx';
 
 export default function WorkspaceLayout() {
   const { slug } = useParams();
   const { workspace, isOwner, loading } = useWorkspace();
-  const { workspaces } = useOrg();
+  const { user } = useAuth();
   const navigate = useNavigate();
+  console.log(workspace)
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -39,10 +41,10 @@ export default function WorkspaceLayout() {
           </div>
           {dropdownOpen ? <ChevronUp /> : <ChevronDown />}
           <div className={`wl-ws-dropdown ${dropdownOpen ? 'open' : ''}`}>
-            {workspaces.map(ws => (
+            {user.memberships.map(ws => (
               <button
-                key={ws.slug}
-                className={`wl-ws-dropdown-item ${ws.slug === slug ? 'active' : ''}`}
+                key={ws.orgSlug}
+                className={`wl-ws-dropdown-item ${ws.orgSlug === slug ? 'active' : ''}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   setDropdownOpen(false);
@@ -50,8 +52,8 @@ export default function WorkspaceLayout() {
                   navigate(`/w/${ws.slug}`);
                 }}
               >
-                <span className="wl-ws-dropdown-name">{ws.name}</span>
-                <span className="wl-ws-dropdown-slug">w/{ws.slug}</span>
+                <span className="wl-ws-dropdown-name">{ws.orgName}</span>
+                <span className="wl-ws-dropdown-slug">w/{ws.orgSlug}</span>
               </button>
             ))}
             <div className="wl-ws-dropdown-divider" />

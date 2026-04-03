@@ -5,15 +5,15 @@ const OrgContext = createContext(null);
 
 export function OrgProvider({ children }) {
   const [workspaces, setWorkspaces] = useState([]);
-  const [loading, setLoading]       = useState(true);
+  const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState(null);
 
-  useEffect(() => {
-    api.get('/workspaces')
-      .then(res => setWorkspaces(res.data))
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false));
-  }, []);
+  // useEffect(() => {
+  //   api.get('/workspaces')
+  //     .then(res => setWorkspaces(res.data))
+  //     .catch(err => setError(err.message))
+  //     .finally(() => setLoading(false));
+  // }, []);
 
   async function createWorkspace(name) {
     const res = await api.post('/workspaces', { name });

@@ -8,31 +8,20 @@ const router = Router();
 
 
 router.get("/", async (req, res) => {
-  const slug = req.slug
-  const userId = req.user.id
-  const orgs = req.orgs
+  const userId = req.userId
+  const orgId = req.orgId
 
-  const foundOrg = orgs.find(org => org.slug === slug)
-  if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
-
-  const chats = await getChatsFromOrg(userId, foundOrg.id) ?? []
+  const chats = await getChatsFromOrg(userId, orgId) ?? []
 
   res.status(200).json(chats)
 })
 
 router.post("/", async (req, res) => {
-  const slug = req.slug
-  const orgs = req.orgs
-  const userId = req.user.id
-  const userContent = req.body.message;
-
-  console.log(userContent, userId)
-
-  const foundOrg = orgs.find(org => org.slug === slug)
-  if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
+  const orgId = req.orgId
+  const userId = req.userId
+  const userContent = req.body.message;  
   
-  
-  const [{ id }] = await createChat(foundOrg.id, userId);
+  const [{ id }] = await createChat(orgId, userId);
   await saveMessage("user", userContent, id)
   
   generateChatTitle(userContent, id)
@@ -46,13 +35,11 @@ router.post("/", async (req, res) => {
 })
 
 router.get("/:chatId", async (req, res) => {
-  const slug = req.slug
-  const userId = req.user.id
-  const orgs = req.orgs
+  const userId = req.userId
+  const orgId = req.orgId
   const chatId = req.params.chatId
 
-  const foundOrg = orgs.find(org => org.slug === slug)
-  if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
+
   const chat = await getChatId(chatId)
   if (chat.length < 1) return res.status(404).json({ message: "Chat not found"})
   
@@ -78,14 +65,10 @@ router.delete("/:chatId", async (req, res) => {
 
 router.post("/:chatId/messages", async (req, res) => {
   const userContent = req.body.message
-  const slug = req.slug
-  const userId = req.user.id
-  const orgs = req.orgs
+  const userId = req.userId
+  const orgId = req.orgId
   const chatId = req.params.chatId
 
-  const foundOrg = orgs.find(org => org.slug === slug)
-  if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
-  
   await saveMessage("user", userContent, chatId)
   const [assistantMessageId] = await saveMessage("assistant", "", chatId)
 
@@ -97,12 +80,11 @@ router.post("/messages", async (req, res) => {
   const sessionId = req.body.session_id || "";
   let chatId = req.body.chatId
   const assistantId = req.body.assistantId
-  const userId = req.user.id
-  const orgs = req.orgs
+  const userId = req.userId
+  const orgId = req.orgId
   const slug = req.slug
 
-  const foundOrg = orgs.find(org => org.slug === slug)
-  if (!foundOrg) return res.status(403).json({ message: "Unauthorized" })
+
 
   res.setHeader("Content-Type", "text/plain");
   res.setHeader("Cache-Control", "no-cache");
@@ -110,7 +92,7 @@ router.post("/messages", async (req, res) => {
 
   try {
     let assistantContent = "";
-    const stream = await promptAI(userContent, sessionId, foundOrg.id);
+    const stream = await promptAI(userContent, sessionId, orgId);
 
     for await (const token of stream) {
         assistantContent += token.content

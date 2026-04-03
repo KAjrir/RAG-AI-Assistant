@@ -27,11 +27,13 @@ import ChatPage from './pages/ChatPage.jsx'
 import NietGevonden from './pages/NietGevonden.jsx'
 import WachtwoordVergeten from './pages/WachtwoordVergeten.jsx'
 import Reset from './pages/Reset.jsx'
+import Onboarding from './pages/Onboarding.jsx'
 
 const router = createBrowserRouter([
   { path: '/',                    element: <HomePage /> },
   { path: '/inloggen',            element: <Inloggen /> },
   { path: '/registreren',         element: <Registreren /> },
+  { path: '/onboarding',          element: <Onboarding />},
   { path: '/wachtwoord-vergeten', element: <WachtwoordVergeten />},
   { path: '/reset',               element: <Reset />},
   {

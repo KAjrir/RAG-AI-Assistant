@@ -9,7 +9,7 @@ export function ChatProvider({ slug, children }) {
   const { chatId }                        = useParams();
   const [chats, setChats]                 = useState([]);
   const [activeChat, setActiveChat]       = useState(null);
-  const [titleLoading, setTitleLoading] = useState([])
+  const [titleLoading, setTitleLoading]   = useState(false)
 
   useEffect(() => {
     if (!slug) return;
@@ -42,7 +42,6 @@ export function ChatProvider({ slug, children }) {
     }
   }
 
-  // Chat verwijderen — API call + uit sidebar halen
   async function deleteChat(chatId) {
     await api.delete(`/workspaces/${slug}/chats/${chatId}`);
     setChats(prev => prev.filter(c => c.id !== chatId));

@@ -18,12 +18,12 @@ export default function AuthProvider({ children }) {
 
   async function register(name, email, password) {
     const res = await api.post('/auth/register', { name, email, password });
-    setUser(res.data.user);
+    // setUser(res.data.user);
   }
 
   async function login(email, password) {
     const res = await api.post('/auth/login', { email, password });
-    setUser(res.data.user);
+    // setUser(res.data.user);
   }
 
   async function logout() {

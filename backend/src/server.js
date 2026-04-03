@@ -11,7 +11,7 @@ import userRouter from "./modules/user/user.controller.js"
 import workspaceRouter from "./modules/workspace/workspace.controller.js"
 import docRouter from "./modules/doc/doc.controller.js"
 
-import { authMiddleware } from "./modules/middleware.js";
+import { requireAuth, requireWorkspace } from "./modules/middleware.js";
 
 import { assetsPath, uploadsDirectory, ISPROD, FRONTEND_URL } from "./constants.js";
 
@@ -29,7 +29,7 @@ const app = express();
 app.use(express.json())
 app.use(cookieParser())
 
-app.set( "trust proxy", 1);
+app.set("trust proxy", 1);
 
 app.use(
   cors({
@@ -59,10 +59,10 @@ const chatLimiter = rateLimit({
 app.use(assetsPath, express.static(uploadsDirectory))
 
 app.use("/api/auth", authRouter)
-app.use("/api/users", authMiddleware, userRouter)
+app.use("/api/users", requireAuth, userRouter)
 // app.use("/api/chats", authMiddleware, chatRouter)
-app.use("/api/workspaces", authMiddleware, workspaceRouter)
-app.use("/api/docs", authMiddleware, docRouter)
+app.use("/api/workspaces/:slug", requireAuth, requireWorkspace, workspaceRouter)
+app.use("/api/docs", requireAuth, requireWorkspace, docRouter)
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {

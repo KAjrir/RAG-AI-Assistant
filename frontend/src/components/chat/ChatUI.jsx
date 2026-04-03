@@ -252,12 +252,12 @@ export default function ChatUI() {
             const updated = res.data.find(c => c.id === chatId);
             if (updated) setActiveChat(updated); 
             console.log(updated);
-
-            setTitleLoading(false)
           })
+          setTitleLoading(false)
         }
       }
     }
+    setTitleLoading(false)
     setIsStreaming(false);
   }
 

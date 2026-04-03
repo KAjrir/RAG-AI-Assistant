@@ -3,7 +3,7 @@ import fs from "fs/promises"
 import path from "path"
 import bcrypt from "bcrypt"
 
-import { getInvitation, getUserId, createUser, getUserInfo, updateUserLastLogin, getOrgs, createResetToken, getPasswordResetToken, updateUserPassword} from "./auth.service.js"
+import { getInvitation, getUser, createUser, getUserInfo, updateUserLastLogin, getOrgs, createResetToken, getPasswordResetToken, updateUserPassword} from "./auth.service.js"
 import { signToken, verifyToken } from "./jwt.js"
 import { ISPROD } from "../../constants.js"
 import { formatTimeForUser, hash, generateRandomToken, getExpirationDate } from "../../utils.js"
@@ -16,16 +16,11 @@ router.get("/me", async (req, res) => {
     if (!auth_token) return res.status(200).json({ user: null })
     
     try {
-        const { user } = verifyToken(auth_token)
-
-        const safeUserCredentials = {
-            id: user.id,
-            name: user.name,
-            email: user.email
-        }
+        const { userId } = verifyToken(auth_token)
+        const user = await getUserInfo(userId)
 
         res.status(200).json({ 
-            user: safeUserCredentials
+            user
         })
 
     } catch (err) {
@@ -47,7 +42,7 @@ router.post("/register", async (req, res) => {
         return res.status(400).json({ error: 'Password must be at least 8 characters' })
     }
 
-    const [existingUser] = await getUserId({ email });
+    const existingUser = await getUser ({ email });
 
     if(existingUser){
         return res.status(400).json({ error: 'Email already in use' });
@@ -72,27 +67,21 @@ router.post("/register", async (req, res) => {
 
         // Returns id, name and email
         const createdUser = await createUser(name, email, passwordHash, invitation)
-        const orgs = await getOrgs(createdUser.id)
 
-        const token = signToken({
-            user: createdUser,
-            orgs: orgs
-        })
+        const token = signToken({ userId: createdUser.id })
 
         res.cookie("auth_token", token, {
-            maxAge: 1000 * 60 * 60 * 24 * 30, // 30 Dagen
+            maxAge: 1000 * 60 * 60 * 24 * 7, // 7 Dagen
             httpOnly: true,
             sameSite: "lax",
             secure: ISPROD
         })
         
-        res.status(201).json({
-            user: createdUser,
-        })
+        res.status(201).json({ success: true })
 
     } catch(err) {
-        console.log(err)
-        return res.status(500).json({error: err.message})
+        console.error(err)
+        return res.status(500).json({ error: err.message })
     }
 })
 
@@ -103,7 +92,7 @@ router.post("/login", async (req, res) => {
         return res.status(400).json({ error: 'Email and password are required' })
     }
 
-    const [user] = await getUserInfo( {email} )
+    const user = await getUser({ email })
     if(!user){
         return res.status(401).json({ error: 'Invalid email or password' })
     }
@@ -113,32 +102,18 @@ router.post("/login", async (req, res) => {
         return res.status(401).json({ error: 'Invalid email or password' })
     }
 
-    console.log(user)
     await updateUserLastLogin(user.id)
-    
-    const safeUserCredentials = {
-        id: user.id,
-        name: user.name,
-        email: user.email
-    }
 
-    const orgs = await getOrgs(user.id)
-
-    const token = signToken({
-        user: safeUserCredentials,
-        orgs: orgs
-    })
+    const token = signToken({ userId: user.id })
 
     res.cookie("auth_token", token, {
-        maxAge: 1000 * 60 * 60 * 24 * 30, // 30 Dagen
+        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 Dagen
         httpOnly: true,
         sameSite: "lax",
         secure: ISPROD
     })
 
-    res.status(200).json({
-        user: safeUserCredentials,
-    })
+    res.status(200).json({ success: true })
 })
 
 router.post("/logout", async (req, res) => {
@@ -148,7 +123,7 @@ router.post("/logout", async (req, res) => {
         secure: ISPROD,
     });
 
-    res.status(200).json({ message: "Logged out succesfully"} )
+    res.status(200).json({ success: true })
 })
 
 router.post("/forgot-password", async (req, res) => {
@@ -209,8 +184,6 @@ router.post("/verify-reset-token", async (req, res) => {
         return res.status(400).json({ success: false })
     }
 
-    
-
     res.status(200).json({ success: true })
 })
 
@@ -226,7 +199,6 @@ router.post("/reset-password", async (req, res) => {
 
     if(!token) {
         return res.status(400).json({ success: false })
-        console.log("TOKEN FOUT")
     }
 
     const userId = token.user_id
