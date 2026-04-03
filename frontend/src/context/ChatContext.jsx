@@ -48,10 +48,19 @@ export function ChatProvider({ slug, children }) {
     if (activeChat?.id === chatId) setActiveChat(null);
   }
 
+  function refreshChat(chatId, data) {
+    setChats(prev =>
+      prev.map(c => c.id === chatId ? { ...c, ...data } : c)
+    );
+    if (activeChat?.id === chatId) {
+      setActiveChat(prev => ({ ...prev, ...data }));
+    }
+  }
+
   return (
     <ChatContext.Provider value={{
-      chats, activeChat, setActiveChat,
-      addChat, updateChatTitle, deleteChat,
+      chats, setChats, activeChat, setActiveChat,
+      addChat, refreshChat, updateChatTitle, deleteChat,
     }}>
       {children}
     </ChatContext.Provider>

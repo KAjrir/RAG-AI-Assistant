@@ -16,7 +16,7 @@ import '../../styles/markdown.css';
 export default function ChatUI() {
   const { slug, chatId }                        = useParams();
   const { workspace }                           = useWorkspace();
-  const { activeChat, setActiveChat, addChat, updateChat } = useChat();
+  const { activeChat, setChats, setActiveChat } = useChat();
   const { onMenuClick }                         = useOutletContext();
   const navigate                                = useNavigate();
   
@@ -244,6 +244,13 @@ export default function ChatUI() {
                 : msg
             )
           );
+          
+          api.get(`/workspaces/${slug}/chats`)
+          .then(res => {
+            setChats(res.data);
+            const updated = res.data.find(c => c.id === chatId);
+            if (updated) setActiveChat(updated); 
+          })
         }
       }
     }
