@@ -200,6 +200,13 @@
   flex-shrink: 0;
 }
 
+.db-ws-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
 .db-ws-info {
   flex: 1;
   display: flex;
@@ -329,4 +336,307 @@
 .db-form-actions {
   display: flex;
   gap: 8px;
+}
+
+.db-invites {
+  margin-bottom: 28px;
+}
+
+.db-invite-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.db-invite-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--accent-light);
+  border: 1px solid rgba(26, 86, 219, 0.18);
+  border-radius: var(--radius);
+}
+
+.db-invite-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid rgba(26, 86, 219, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.db-invite-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.db-invite-org {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.db-invite-role {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.db-invite-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.db-btn-sm {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+.db-slug-preview {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: -8px;
+  padding-left: 2px;
+}
+
+.db-error {
+  font-size: 13px;
+  color: #B91C1C;
+  background: #FEF2F2;
+  border: 1px solid rgba(185, 28, 28, 0.15);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+/* ── Avatar knop ─────────────────────────── */
+.db-avatar-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: opacity 0.15s;
+}
+
+.db-avatar-btn:hover {
+  opacity: 0.85;
+}
+
+.db-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.db-input--readonly {
+  background: var(--surface2);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+/* ── Modal ───────────────────────────────── */
+.db-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  backdrop-filter: blur(2px);
+}
+
+.db-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 101;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  width: min(480px, calc(100vw - 32px));
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.db-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.db-modal-title {
+  font-family: var(--serif);
+  font-size: 1.3rem;
+  font-weight: 400;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.db-modal-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.db-modal-close:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ── Modal avatar ────────────────────────── */
+.db-modal-avatar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.db-modal-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--accent-light);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.db-modal-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.db-modal-avatar-initials {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.db-modal-avatar-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.db-modal-avatar:hover .db-modal-avatar-overlay {
+  opacity: 1;
+}
+
+.db-modal-avatar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.db-modal-avatar-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.db-modal-avatar-sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.db-modal-avatar-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+/* ── Modal form ──────────────────────────── */
+.db-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.db-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.db-modal-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.db-modal-hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.db-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* ── Danger sm knop ──────────────────────── */
+.db-btn-danger-sm {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  background: none;
+  color: #B91C1C;
+  border: 1px solid rgba(185, 28, 28, 0.25);
+  border-radius: 100px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.db-btn-danger-sm:hover {
+  background: #FEF2F2;
+}
+
+/* ── Spinner ─────────────────────────────── */
+@keyframes spinning {
+  to { transform: rotate(360deg); }
+}
+
+.spinning {
+  animation: spinning 0.8s linear infinite;
 }

@@ -12,7 +12,7 @@ export default function WorkspaceRoute() {
   if (!hasAccess) return <Navigate to="/dashboard" replace />;
 
   return (
-    <WorkspaceProvider >
+    <WorkspaceProvider slug={slug}>
       <Outlet />
     </WorkspaceProvider>
   );

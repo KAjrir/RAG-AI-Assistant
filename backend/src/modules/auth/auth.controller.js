@@ -107,7 +107,7 @@ router.post("/login", async (req, res) => {
     const token = signToken({ userId: user.id })
 
     res.cookie("auth_token", token, {
-        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 Dagen
+        maxAge: 1000 * 60 * 60 * 24 * 30, // 30 Dagen
         httpOnly: true,
         sameSite: "lax",
         secure: ISPROD

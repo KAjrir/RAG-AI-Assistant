@@ -32,12 +32,17 @@ export const getUserInfo = async ( userId ) => {
                 u.name,
                 u.email,
                 u.onboarding_completed,
-                json_agg(json_build_object(
-                'orgId', m.organization_id,
-                'orgName',        o.name,
-                'orgSlug',        o.slug,
-                'role',            m.role
-                )) FILTER (WHERE m.organization_id IS NOT NULL) AS memberships
+                u.profile_picture_resource_url,
+                COALESCE(
+                    json_agg(json_build_object(
+                        'orgId', m.organization_id,
+                        'orgName',        o.name,
+                        'orgSlug',        o.slug,
+                        'role',            m.role,
+                        'logo_resource_url', o.logo_resource_url
+                    )) FILTER (WHERE m.organization_id IS NOT NULL),
+                    '[]'::json
+                ) AS memberships
             FROM users u
             LEFT JOIN memberships m ON m.user_id = u.id
             LEFT JOIN organizations o ON o.id = m.organization_id

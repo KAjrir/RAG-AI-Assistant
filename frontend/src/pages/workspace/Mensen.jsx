@@ -1,29 +1,71 @@
 import { useState } from 'react';
 import { useParams } from 'react-router';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
+import { api, BASE_URL } from '../../lib/api.js';
 import '../../styles/mensen.css';
 
 export default function Mensen() {
-  const { slug }                                         = useParams();
-  const { members, isOwner, inviteMember, removeMember } = useWorkspace();
+  const { slug } = useParams();
+  const {
+    members, invitations, currentMember,
+    inviteMember, revokeInvite, removeMember,
+  } = useWorkspace();
 
-  const [showInvite, setShowInvite] = useState(false);
-  const [email, setEmail]           = useState('');
-  const [busy, setBusy]             = useState(false);
-  const [inviteCode, setInviteCode] = useState(null);
-  const [copied, setCopied]         = useState(false);
+  const isAdmin = ['admin', 'owner'].includes(currentMember?.role);
+  const isOwner = currentMember?.role === 'owner';
+
+  const [showInvite, setShowInvite]           = useState(false);
+  const [inviteTab, setInviteTab]             = useState('pending');
+  const [allInvites, setAllInvites]           = useState([]);
+  const [loadingAll, setLoadingAll]           = useState(false);
+  const [email, setEmail]                     = useState('');
+  const [role, setRole]                       = useState('member');
+  const [busy, setBusy]                       = useState(false);
+  const [error, setError]                     = useState(null);
+  const [success, setSuccess]                 = useState(false);
+  const [revoking, setRevoking]               = useState(null);
+  const [pendingRoleChange, setPendingRoleChange] = useState(null);
+  const [savingRole, setSavingRole]           = useState(false);
+
+  async function handleTabChange(tab) {
+    setInviteTab(tab);
+    if (tab === 'all' && allInvites.length === 0) {
+      setLoadingAll(true);
+      try {
+        const res = await api.get(`/workspaces/${slug}/invites?all=true`);
+        setAllInvites(res.data.invites ?? []);
+      } catch {}
+      finally { setLoadingAll(false); }
+    }
+  }
 
   async function handleInvite(e) {
     e.preventDefault();
     if (!email.trim()) return;
     setBusy(true);
+    setError(null);
+    setSuccess(false);
     try {
-      const res = await inviteMember(email);
-      setInviteCode(res.code);
+      await inviteMember(email, role);
       setEmail('');
+      setRole('member');
+      setSuccess(true);
+    } catch (err) {
+      setError(err.message);
     } finally {
       setBusy(false);
     }
+  }
+
+  async function handleRevoke(inviteId) {
+    setRevoking(inviteId);
+    try {
+      await revokeInvite(inviteId);
+      setAllInvites(prev =>
+        prev.map(i => i.id === inviteId ? { ...i, status: 'revoked' } : i)
+      );
+    } catch {}
+    finally { setRevoking(null); }
   }
 
   async function handleRemove(memberId) {
@@ -31,15 +73,34 @@ export default function Mensen() {
     await removeMember(memberId);
   }
 
-  function copyCode() {
-    navigator.clipboard.writeText(inviteCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  async function confirmRoleChange() {
+    if (!pendingRoleChange) return;
+    setSavingRole(true);
+    try {
+      await api.patch(
+        `/workspaces/${slug}/members/${pendingRoleChange.memberId}`,
+        { role: pendingRoleChange.newRole }
+      );
+    } catch {}
+    finally {
+      setPendingRoleChange(null);
+      setSavingRole(false);
+    }
   }
 
-  // Afleiden van het domein voor de domain-join banner
-  const ownerEmail  = members.find(m => m.role === 'owner')?.email ?? '';
-  const domain      = ownerEmail.split('@')[1] ?? null;
+  const statusLabel = {
+    pending:  'Wacht op acceptatie',
+    accepted: 'Geaccepteerd',
+    expired:  'Verlopen',
+    revoked:  'Ingetrokken',
+  };
+
+  const statusClass = {
+    pending:  'mn-role--pending',
+    accepted: 'mn-role--accepted',
+    expired:  'mn-role--expired',
+    revoked:  'mn-role--revoked',
+  };
 
   return (
     <div className="mn-root">
@@ -48,20 +109,22 @@ export default function Mensen() {
           <h1 className="mn-title">Mensen</h1>
           <p className="mn-slug">w/{slug} · /mensen</p>
         </div>
-        {isOwner && (
-          <button className="mn-btn-primary" onClick={() => setShowInvite(v => !v)}>
+        {isAdmin && (
+          <button
+            className="mn-btn-primary"
+            onClick={() => { setShowInvite(v => !v); setError(null); setSuccess(false); }}
+          >
             <PlusIcon /> Uitnodigen
           </button>
         )}
       </header>
 
       {/* Uitnodigingsformulier */}
-      {showInvite && (
+      {isAdmin && showInvite && (
         <div className="mn-invite-box">
           <p className="mn-invite-title">Teamlid uitnodigen</p>
           <p className="mn-invite-sub">
-            Verstuur een uitnodiging via e-mail. Iedereen met een
-            <strong> @{domain}</strong> adres sluit automatisch aan.
+            De uitgenodigde ontvangt een mail met een link om zich aan te sluiten.
           </p>
           <form className="mn-invite-form" onSubmit={handleInvite}>
             <input
@@ -71,27 +134,128 @@ export default function Mensen() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               autoFocus
+              required
             />
+            {isOwner && (
+              <select
+                className="mn-input mn-select"
+                value={role}
+                onChange={e => setRole(e.target.value)}
+              >
+                <option value="member">Lid</option>
+                <option value="admin">Beheerder</option>
+              </select>
+            )}
             <button type="submit" className="mn-btn-primary" disabled={busy}>
               {busy ? 'Versturen…' : 'Versturen'}
             </button>
             <button
               type="button"
               className="mn-btn-secondary"
-              onClick={() => { setShowInvite(false); setInviteCode(null); }}
+              onClick={() => { setShowInvite(false); setError(null); setSuccess(false); }}
             >
               Sluiten
             </button>
           </form>
+          {error   && <p className="mn-error">{error}</p>}
+          {success && <p className="mn-success">Uitnodiging verstuurd!</p>}
+        </div>
+      )}
 
-          {inviteCode && (
-            <div className="mn-code-row">
-              <code className="mn-code">{inviteCode}</code>
-              <button className="mn-copy-btn" onClick={copyCode}>
-                {copied ? <CheckIcon /> : <CopyIcon />}
-                {copied ? 'Gekopieerd' : 'Kopiëren'}
+      {/* Uitnodigingen sectie */}
+      {isAdmin && (
+        <div className="mn-invites-section">
+          <div className="mn-invites-header">
+            <p className="mn-section-label" style={{ margin: 0 }}>Uitnodigingen</p>
+            <div className="mn-tabs">
+              <button
+                className={`mn-tab ${inviteTab === 'pending' ? 'mn-tab--active' : ''}`}
+                onClick={() => handleTabChange('pending')}
+              >
+                Openstaand
+                {invitations.length > 0 && (
+                  <span className="mn-tab-count">{invitations.length}</span>
+                )}
+              </button>
+              <button
+                className={`mn-tab ${inviteTab === 'all' ? 'mn-tab--active' : ''}`}
+                onClick={() => handleTabChange('all')}
+              >
+                Alles
               </button>
             </div>
+          </div>
+
+          {inviteTab === 'pending' && (
+            <>
+              {invitations.length === 0 ? (
+                <p className="mn-empty">Geen openstaande uitnodigingen.</p>
+              ) : (
+                <ul className="mn-list">
+                  {invitations.map(invite => (
+                    <li key={invite.id} className="mn-item">
+                      <div className="mn-avatar mn-avatar--invite"><MailIcon /></div>
+                      <div className="mn-info">
+                        <span className="mn-name">{invite.email}</span>
+                        <span className="mn-email">
+                          Uitgenodigd als {invite.role === 'admin' ? 'Beheerder' : 'Lid'}
+                          {' · '}
+                          Verloopt {new Date(invite.expires_at).toLocaleDateString('nl-NL')}
+                        </span>
+                      </div>
+                      <span className="mn-role mn-role--pending">Wacht op acceptatie</span>
+                      <button
+                        className="mn-remove-btn"
+                        title="Intrekken"
+                        onClick={() => handleRevoke(invite.id)}
+                        disabled={revoking === invite.id}
+                      >
+                        <TrashIcon />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+
+          {inviteTab === 'all' && (
+            <>
+              {loadingAll ? (
+                <p className="mn-empty">Laden…</p>
+              ) : allInvites.length === 0 ? (
+                <p className="mn-empty">Geen uitnodigingen gevonden.</p>
+              ) : (
+                <ul className="mn-list">
+                  {allInvites.map(invite => (
+                    <li key={invite.id} className="mn-item">
+                      <div className="mn-avatar mn-avatar--invite"><MailIcon /></div>
+                      <div className="mn-info">
+                        <span className="mn-name">{invite.email}</span>
+                        <span className="mn-email">
+                          Uitgenodigd als {invite.role === 'admin' ? 'Beheerder' : 'Lid'}
+                          {' · '}
+                          {new Date(invite.created_at).toLocaleDateString('nl-NL')}
+                        </span>
+                      </div>
+                      <span className={`mn-role ${statusClass[invite.status] ?? ''}`}>
+                        {statusLabel[invite.status] ?? invite.status}
+                      </span>
+                      {invite.status === 'pending' && (
+                        <button
+                          className="mn-remove-btn"
+                          title="Intrekken"
+                          onClick={() => handleRevoke(invite.id)}
+                          disabled={revoking === invite.id}
+                        >
+                          <TrashIcon />
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
           )}
         </div>
       )}
@@ -106,23 +270,73 @@ export default function Mensen() {
             .join('')
             .toUpperCase() ?? '?';
 
+          const roleLabel = member.role === 'owner'
+            ? 'Eigenaar'
+            : member.role === 'admin'
+            ? 'Beheerder'
+            : 'Lid';
+
+          const hasPendingChange = pendingRoleChange?.memberId === member.id;
+
           return (
             <li key={member.id} className="mn-item">
-              <div className="mn-avatar">{initials}</div>
+              <div className="mn-avatar">
+                {member.profile_picture_resource_url ? (
+                  <img
+                    src={`${BASE_URL}${member.profile_picture_resource_url}`}
+                    alt={member.name}
+                    className="mn-avatar-img"
+                  />
+                ) : (
+                  initials
+                )}
+              </div>
               <div className="mn-info">
                 <span className="mn-name">{member.name}</span>
-                <span className="mn-email">
-                  {member.email}
-                  {member.role === 'owner' ? ' · Eigenaar' : ' · Lid'}
-                  {member.joinedVia === 'domain' && (
-                    <span className="mn-domain-badge">via domein</span>
-                  )}
-                </span>
+                <span className="mn-email">{member.email}</span>
               </div>
-              <span className={`mn-role mn-role--${member.role}`}>
-                {member.role === 'owner' ? 'Eigenaar' : 'Lid'}
-              </span>
-              {isOwner && member.role !== 'owner' && (
+
+              {isOwner && member.role !== 'owner' ? (
+                <div className="mn-role-change">
+                  <select
+                    className="mn-role-select"
+                    value={hasPendingChange ? pendingRoleChange.newRole : member.role}
+                    onChange={e => setPendingRoleChange({
+                      memberId: member.id,
+                      newRole: e.target.value,
+                      currentRole: member.role,
+                    })}
+                  >
+                    <option value="member">Lid</option>
+                    <option value="admin">Beheerder</option>
+                  </select>
+                  {hasPendingChange && (
+                    <div className="mn-role-confirm">
+                      <button
+                        className="mn-role-confirm-btn mn-role-confirm-btn--yes"
+                        onClick={confirmRoleChange}
+                        disabled={savingRole}
+                        title="Bevestigen"
+                      >
+                        <CheckIcon />
+                      </button>
+                      <button
+                        className="mn-role-confirm-btn mn-role-confirm-btn--no"
+                        onClick={() => setPendingRoleChange(null)}
+                        title="Annuleren"
+                      >
+                        <CrossIcon />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <span className={`mn-role mn-role--${member.role}`}>
+                  {roleLabel}
+                </span>
+              )}
+
+              {isAdmin && member.role !== 'owner' && (
                 <button
                   className="mn-remove-btn"
                   title="Verwijderen"
@@ -135,21 +349,6 @@ export default function Mensen() {
           );
         })}
       </ul>
-
-      {/* Domain-join banner */}
-      {domain && (
-        <div className="mn-domain-banner">
-          <div className="mn-domain-banner-icon"><DomainIcon /></div>
-          <div>
-            <p className="mn-domain-banner-title">
-              Auto domain-join actief voor @{domain}
-            </p>
-            <p className="mn-domain-banner-sub">
-              Nieuwe gebruikers met dit domein sluiten automatisch aan.
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -163,23 +362,6 @@ function PlusIcon() {
   );
 }
 
-function CopyIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-      <rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.2"/>
-      <path d="M3 9H2a1 1 0 01-1-1V2a1 1 0 011-1h6a1 1 0 011 1v1" stroke="currentColor" strokeWidth="1.2"/>
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-      <path d="M2 7l3 3 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
 function TrashIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -189,15 +371,27 @@ function TrashIcon() {
   );
 }
 
-function DomainIcon() {
+function MailIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.2"/>
-      <path d="M8 1.5C8 1.5 5.5 4 5.5 8s2.5 6.5 2.5 6.5M8 1.5C8 1.5 10.5 4 10.5 8S8 14.5 8 14.5"
-        stroke="currentColor" strokeWidth="1.2"/>
-      <line x1="1.5" y1="8" x2="14.5" y2="8" stroke="currentColor" strokeWidth="1.2"/>
-      <line x1="2.5" y1="5" x2="13.5" y2="5" stroke="currentColor" strokeWidth="1.2" opacity=".5"/>
-      <line x1="2.5" y1="11" x2="13.5" y2="11" stroke="currentColor" strokeWidth="1.2" opacity=".5"/>
+      <rect x="2" y="4" width="12" height="9" rx="2" stroke="currentColor" strokeWidth="1.3"/>
+      <path d="M2 6l6 4 6-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path d="M2 6.5l2.5 2.5L10 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function CrossIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+      <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
     </svg>
   );
 }

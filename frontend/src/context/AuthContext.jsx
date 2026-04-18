@@ -43,7 +43,7 @@ export default function AuthProvider({ children }) {
 
   async function joinOrg(token) {
     const res = await api.post('/users/join-org', { token });
-    if (res.data.success) getAuth(); // zelfde
+    if (res.data.success) getAuth();
     return res.data;
   }
 
@@ -54,7 +54,7 @@ export default function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{ 
-      user, loading, login, register, logout,
+      user, setUser, loading, login, register, logout,
       createOrg, joinOrg, inviteMembers
     }}>
       {children}
