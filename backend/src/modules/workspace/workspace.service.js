@@ -85,19 +85,18 @@ export const updateOrgLogo = async (orgId, filePath, resourcePath) => {
     `
 }
 
-export const getStats = async (orgId, ISPROD) => {
+export const getStats = async (orgId) => {
     const promises = await Promise.allSettled([
         await db`
             SELECT COUNT(*) as docs
             FROM documents
-            WHERE organization_id = ${orgId} and isprod = ${ISPROD}
+            WHERE organization_id = ${orgId}
         `,
         await db`
         SELECT COUNT(*) as members
         FROM memberships
         WHERE organization_id = ${orgId}
         `
-        // const connections = await db``
     ])
     const stats = { docs: 0, connections: 0, members: 0 }
 

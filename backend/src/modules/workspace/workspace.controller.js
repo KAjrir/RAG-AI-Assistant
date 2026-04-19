@@ -7,7 +7,7 @@ import chatRouter from "../chat/chat.controller.js"
 import docRouter from "../doc/doc.controller.js"
 
 import { getCurrentWorkspace, getWorkspaceMembers, getStats, inviteMember, getAllInvites, getPendingInvites, deleteMember, updateWorkspaceName, checkOrgLogo, updateOrgLogo } from "./workspace.service.js";
-import { assetsPath, ISPROD, uploadsDirectory } from "../../constants.js";
+import { assetsPath, uploadsDirectory } from "../../constants.js";
 import { mockConnections } from "../mocks/stats.mock.js";
 
 
@@ -170,7 +170,7 @@ router.get("/connections", async (req, res) => {
 router.get("/stats", async (req, res) => {
     const orgId = req.orgId
     
-    const stats = await getStats(orgId, ISPROD);
+    const stats = await getStats(orgId);
 
     res.status(200).json(stats)
 })
