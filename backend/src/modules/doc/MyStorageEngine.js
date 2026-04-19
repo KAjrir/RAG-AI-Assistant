@@ -3,7 +3,13 @@ import path from "path";
 import fs from "fs";
 import multer from "multer";
 
-import { assetsPath, uploadsDirectory, ISPROD } from "../../constants.js";
+import { uploadsDirectory, assetsPath } from "../../constants.js";
+
+const documentsFileDirectory = `${uploadsDirectory}/documents`
+const documentsResourcePath = `${assetsPath}/documents`
+
+
+await fs.promises.mkdir(documentsFileDirectory, {recursive: true})
 
 class MyStorageEngine {
     constructor () {
@@ -16,7 +22,8 @@ class MyStorageEngine {
         const filename = `${uuid}${fileExt}`
         return {
             filename: filename,
-            path: `${uploadsDirectory}/${uuid}${fileExt}`,
+            path: `${documentsFileDirectory}/${filename}`,
+            resource_url: `${documentsResourcePath}/${filename}`,
             ext: fileExt
         }
     }

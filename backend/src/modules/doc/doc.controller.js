@@ -2,10 +2,10 @@ import fs from "fs/promises"
 import { Router } from "express";
 import { getDoc, getDocs, addDocs, deleteDoc, getDocStatus, getDocChunks } from "./doc.service.js";
 import { processDocument } from "../jobs/processDocument.js";
-import { assetsPath, ISPROD } from "../../constants.js";
 
 import db from "../../database/db.js";
 import myStorage from "./MyStorageEngine.js";
+
 
 const router = Router();
 
@@ -17,7 +17,7 @@ router.get("/", async (req, res) => {
         return res.status(400).json( { message: "Limit not specified" })
     }
 
-    const docs = await getDocs(orgId, limit, ISPROD )
+    const docs = await getDocs(orgId, limit)
 
     res.status(200).json(docs)
 })
@@ -39,7 +39,7 @@ router.post("/", myStorage.array("files"), async (req, res) => {
         // const chunks = -- Deze een trigger zetten op document_chunks
         const originalName = file.originalname
         const size = file.size
-        const resource_url = `${assetsPath}/${file.filename}`
+        const resource_url = file.resource_url
         const filepath = file.path
         // const status = -- Deze per default bij db
         const hash = file.hash
@@ -52,7 +52,6 @@ router.post("/", myStorage.array("files"), async (req, res) => {
             size,
             resource_url,
             filepath,
-            isprod: ISPROD,
             documentHash: hash
         })
     }
@@ -61,7 +60,7 @@ router.post("/", myStorage.array("files"), async (req, res) => {
     const publicDocs = [];
 
     for (const doc of docs) {
-        const {document_hash, filepath, isprod, tokens, organization_id, ...restDoc} = doc
+        const {document_hash, filepath, tokens, organization_id, ...restDoc} = doc
         publicDocs.push(restDoc)
     }
 
@@ -81,7 +80,7 @@ router.get("/:docId", async (req, res) => {
     const orgId = req.orgId
 
 
-    const { filepath, uploaded_by, ...restDoc} = await getDoc(docId, orgId, ISPROD)
+    const { filepath, uploaded_by, ...restDoc} = await getDoc(docId, orgId)
     
     res.status(200).json(restDoc)
 })
@@ -113,7 +112,7 @@ router.post("/:docId/reindex", async (req, res) => {
     const { docId } = req.params;
     const orgId = req.orgId
 
-    const { filepath, originalname } = await getDoc(docId, orgId, ISPROD)
+    const { filepath, originalname } = await getDoc(docId, orgId)
 
     processDocument(docId, orgId, filepath, originalname)
     

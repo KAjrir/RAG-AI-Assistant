@@ -4,21 +4,21 @@ import OpenAI from "openai"
 const openai = new OpenAI();
 
 
-export const getDoc = async (docId, orgId, ISPROD) => {
+export const getDoc = async (docId, orgId) => {
     const docs = await db`
         SELECT *
         FROM documents
-        WHERE organization_id = ${orgId} and id = ${docId} and isprod = ${ISPROD}
+        WHERE organization_id = ${orgId} and id = ${docId}
     `
 
     return docs[0]
 }
 
-export const getDocs = async (orgId, limit, ISPROD) => {
+export const getDocs = async (orgId, limit) => {
     const docs = await db`
         SELECT id, originalname, resource_url, status, uploaded_by, uploaded_at, page_count, size
         FROM documents
-        WHERE organization_id = ${orgId} AND isprod = ${ISPROD}
+        WHERE organization_id = ${orgId}
         ORDER BY
           CASE status
             WHEN 'processing'  THEN 1
@@ -36,7 +36,7 @@ export const getDocs = async (orgId, limit, ISPROD) => {
 
 export const addDocs = async (files) => {
     const docs = await db`
-        INSERT INTO documents (id, organization_id, uploaded_by, originalname, size, resource_url, filepath, isprod, document_hash)
+        INSERT INTO documents (id, organization_id, uploaded_by, originalname, size, resource_url, filepath, document_hash)
         SELECT * FROM unnest(
             ${files.map(f => f.docId)}::uuid[],
             ${files.map(f => f.organizationId)}::uuid[],
@@ -45,7 +45,6 @@ export const addDocs = async (files) => {
             ${files.map(f => f.size)}::int[],
             ${files.map(f => f.resource_url)}::text[],
             ${files.map(f => f.filepath)}::text[],
-            ${files.map(f => f.isprod)}::boolean[],
             ${files.map(f => f.documentHash)}::text[]
         )
         RETURNING *
