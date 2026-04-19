@@ -1,11 +1,12 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import { api } from '../lib/api.js';
 import { useAuth } from './AuthContext.jsx';
 
 const WorkspaceContext = createContext(null);
 
 export function WorkspaceProvider({ slug, children }) {
-  const { user }                          = useAuth();
+  const { user, setUser}                          = useAuth();
   const [workspace, setWorkspace]         = useState(null);
   const [members, setMembers]             = useState([]);
   const [invitations, setInvitations]     = useState([]);
@@ -63,7 +64,26 @@ export function WorkspaceProvider({ slug, children }) {
 
   async function updateWorkspace(data) {
     const res = await api.patch(`/workspaces/${slug}`, data);
-    setWorkspace({...workspace, name: data.name});
+    console.log("UPDATE WORKSPACE RESULT", res.data)
+    flushSync(() => {
+      setWorkspace(prev => ({ ...prev, ...res.data }));
+
+      if (data.name || data.slug) {
+        setUser(prev => ({
+          ...prev,
+          memberships: prev.memberships.map(m =>
+            m.orgSlug === slug
+              ? {
+                  ...m,
+                  ...(data.name && { orgName: data.name }),
+                  ...(data.slug && { orgSlug: data.slug }),
+                }
+              : m
+          )
+        }));
+      }
+    });
+
     return res.data;
   }
 

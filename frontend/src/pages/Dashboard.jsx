@@ -10,13 +10,6 @@ export default function Dashboard() {
 
   const [pendingInvites, setPendingInvites] = useState([]);
   const [accepting, setAccepting]           = useState(null);
-  const [showCreate, setShowCreate]         = useState(false);
-  const [showJoin, setShowJoin]             = useState(false);
-  const [newName, setNewName]               = useState('');
-  const [newSlug, setNewSlug]               = useState('');
-  const [inviteCode, setInviteCode]         = useState('');
-  const [busy, setBusy]                     = useState(false);
-  const [error, setError]                   = useState(null);
 
   // Profiel modal
   const [showProfile, setShowProfile]           = useState(false);
@@ -25,8 +18,17 @@ export default function Dashboard() {
   const [savingUser, setSavingUser]             = useState(false);
   const [savedUser, setSavedUser]               = useState(false);
   const [uploadingPicture, setUploadingPicture] = useState(false);
-  const [pictureMenu, setPictureMenu]           = useState(false);
   const fileInputRef                            = useRef(null);
+
+  // Workspace aanmaken modal
+  const [showCreate, setShowCreate]     = useState(false);
+  const [newName, setNewName]           = useState('');
+  const [newSlug, setNewSlug]           = useState('');
+  const [slugStatus, setSlugStatus]     = useState('idle');
+  const [slugManual, setSlugManual]     = useState(false);
+  const [busy, setBusy]                 = useState(false);
+  const [error, setError]               = useState(null);
+  const slugDebounceRef                 = useRef(null);
 
   useEffect(() => {
     api.get('/users/pending-invites')
@@ -34,37 +36,54 @@ export default function Dashboard() {
       .catch(() => {})
   }, []);
 
+  // Slug auto-genereren
   useEffect(() => {
+    if (slugManual) return;
     const generated = newName
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
     setNewSlug(generated);
-  }, [newName]);
+  }, [newName, slugManual]);
+
+  // Slug beschikbaarheidscheck
+  useEffect(() => {
+    if (!newSlug) { setSlugStatus('idle'); return; }
+    setSlugStatus('checking');
+    clearTimeout(slugDebounceRef.current);
+    slugDebounceRef.current = setTimeout(async () => {
+      try {
+        const res = await api.get(`/users/check-slug?slug=${newSlug}`);
+        setSlugStatus(res.data.available ? 'available' : 'taken');
+      } catch {
+        setSlugStatus('idle');
+      }
+    }, 400);
+    return () => clearTimeout(slugDebounceRef.current);
+  }, [newSlug]);
+
+  function openCreateModal() {
+    setNewName('');
+    setNewSlug('');
+    setSlugStatus('idle');
+    setSlugManual(false);
+    setError(null);
+    setShowCreate(true);
+  }
+
+  function closeCreateModal() {
+    setShowCreate(false);
+    setError(null);
+  }
 
   async function handleCreate(e) {
     e.preventDefault();
-    if (!newName.trim()) return;
+    if (!newName.trim() || slugStatus === 'taken' || slugStatus === 'checking') return;
     setBusy(true);
     setError(null);
     try {
       await createOrg({ name: newName, slug: newSlug });
       navigate(`/w/${newSlug}`);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleJoin(e) {
-    e.preventDefault();
-    if (!inviteCode.trim()) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await joinOrg(inviteCode);
-      navigate('/dashboard');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -91,14 +110,9 @@ export default function Dashboard() {
 
   // ── Profielfoto ──────────────────────────
 
-  function handlePictureClick() {
-      fileInputRef.current?.click();
-  }
-
   async function handlePictureUpload(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setPictureMenu(false);
     setUploadingPicture(true);
     try {
       const formData = new FormData();
@@ -114,7 +128,6 @@ export default function Dashboard() {
   }
 
   async function handlePictureDelete() {
-    setPictureMenu(false);
     try {
       await api.delete('/users/profile-picture');
       setProfilePicture(null);
@@ -182,6 +195,7 @@ export default function Dashboard() {
           Kies een workspace om verder te gaan, of maak een nieuwe aan.
         </p>
 
+        {/* Pending invites */}
         {pendingInvites.length > 0 && (
           <div className="db-invites">
             <p className="db-ws-label">Uitnodigingen</p>
@@ -216,6 +230,7 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Workspaces */}
         <p className="db-ws-label">Jouw workspaces</p>
         <ul className="db-ws-list">
           {user.memberships.map(mem => (
@@ -248,65 +263,77 @@ export default function Dashboard() {
         </ul>
 
         <div className="db-actions">
-          <button
-            className="db-btn-dark"
-            onClick={() => { setShowJoin(false); setShowCreate(p => !p); setError(null); }}
-          >
+          <button className="db-btn-dark" onClick={openCreateModal}>
             + Nieuwe workspace
           </button>
-          <button
-            className="db-btn-secondary"
-            onClick={() => { setShowCreate(false); setShowJoin(p => !p); setError(null); }}
-          >
-            Joinen via code
-          </button>
         </div>
-
-        {showCreate && (
-          <form className="db-form" onSubmit={handleCreate}>
-            <p className="db-form-title">Nieuwe workspace aanmaken</p>
-            <input
-              className="db-input"
-              placeholder="Naam van je organisatie"
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
-              autoFocus
-            />
-            {newSlug && <p className="db-slug-preview">vlnk.nl/w/{newSlug}</p>}
-            {error && <p className="db-error">{error}</p>}
-            <div className="db-form-actions">
-              <button type="submit" className="db-btn-dark" disabled={busy}>
-                {busy ? 'Aanmaken…' : 'Aanmaken'}
-              </button>
-              <button type="button" className="db-btn-secondary" onClick={() => setShowCreate(false)}>
-                Annuleren
-              </button>
-            </div>
-          </form>
-        )}
-
-        {showJoin && (
-          <form className="db-form" onSubmit={handleJoin}>
-            <p className="db-form-title">Joinen via uitnodigingscode</p>
-            <input
-              className="db-input"
-              placeholder="Uitnodigingscode"
-              value={inviteCode}
-              onChange={e => setInviteCode(e.target.value)}
-              autoFocus
-            />
-            {error && <p className="db-error">{error}</p>}
-            <div className="db-form-actions">
-              <button type="submit" className="db-btn-dark" disabled={busy}>
-                {busy ? 'Joinen…' : 'Joinen'}
-              </button>
-              <button type="button" className="db-btn-secondary" onClick={() => setShowJoin(false)}>
-                Annuleren
-              </button>
-            </div>
-          </form>
-        )}
       </main>
+
+      {/* ── Workspace aanmaken modal ── */}
+      {showCreate && (
+        <>
+          <div className="db-modal-backdrop" onClick={closeCreateModal} />
+          <div className="db-modal">
+            <div className="db-modal-header">
+              <h2 className="db-modal-title">Nieuwe workspace</h2>
+              <button className="db-modal-close" onClick={closeCreateModal}>
+                <CloseIcon />
+              </button>
+            </div>
+            <form className="db-modal-form" onSubmit={handleCreate}>
+              <div className="db-modal-field">
+                <label className="db-modal-label">Naam organisatie</label>
+                <input
+                  className="db-input"
+                  placeholder="Acme BV"
+                  value={newName}
+                  onChange={e => { setNewName(e.target.value); setSlugManual(false); }}
+                  autoFocus
+                  required
+                />
+              </div>
+              <div className="db-modal-field">
+                <label className="db-modal-label">URL</label>
+                <div className="db-slug-wrap">
+                  <span className="db-slug-prefix">raggy.nl/w/</span>
+                  <input
+                    className="db-input db-slug-input"
+                    placeholder="acme-bv"
+                    value={newSlug}
+                    onChange={e => {
+                      const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+                      setNewSlug(val);
+                      setSlugManual(true);
+                    }}
+                  />
+                  {slugStatus === 'checking' && (
+                    <div className="db-slug-status"><SpinnerIcon /></div>
+                  )}
+                </div>
+                {slugStatus === 'taken' && (
+                  <p className="db-field-error">Deze URL is al in gebruik.</p>
+                )}
+                {slugStatus === 'available' && (
+                  <p className="db-field-success">Deze URL is beschikbaar.</p>
+                )}
+              </div>
+              {error && <p className="db-error">{error}</p>}
+              <div className="db-modal-footer">
+                <button type="button" className="db-btn-secondary" onClick={closeCreateModal}>
+                  Annuleren
+                </button>
+                <button
+                  type="submit"
+                  className="db-btn-dark"
+                  disabled={busy || !newName.trim() || !newSlug || slugStatus === 'taken' || slugStatus === 'checking'}
+                >
+                  {busy ? 'Aanmaken…' : 'Aanmaken'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </>
+      )}
 
       {/* ── Profiel modal ── */}
       {showProfile && (
@@ -320,9 +347,8 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {/* Profielfoto */}
             <div className="db-modal-avatar-wrap">
-              <div className="db-modal-avatar" onClick={handlePictureClick}>
+              <div className="db-modal-avatar" onClick={() => fileInputRef.current?.click()}>
                 {profilePicture ? (
                   <img src={`${BASE_URL}${profilePicture}`} alt="Profielfoto" className="db-modal-avatar-img" />
                 ) : (
@@ -363,7 +389,6 @@ export default function Dashboard() {
               />
             </div>
 
-            {/* Naam form */}
             <form className="db-modal-form" onSubmit={handleSaveUser}>
               <div className="db-modal-field">
                 <label className="db-modal-label">Naam</label>
@@ -385,11 +410,7 @@ export default function Dashboard() {
                 <p className="db-modal-hint">E-mailadres kan niet worden gewijzigd.</p>
               </div>
               <div className="db-modal-footer">
-                <button
-                  type="button"
-                  className="db-btn-secondary"
-                  onClick={() => setShowProfile(false)}
-                >
+                <button type="button" className="db-btn-secondary" onClick={() => setShowProfile(false)}>
                   Annuleren
                 </button>
                 <button
@@ -448,6 +469,22 @@ function CloseIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M2 7.5l3 3L12 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function CrossIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
     </svg>
   );
 }

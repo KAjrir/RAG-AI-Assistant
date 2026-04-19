@@ -64,6 +64,10 @@ export default function Instellingen() {
     const clean = val.toLowerCase().replace(/[^a-z0-9-]/g, '');
     setWsSlug(clean);
 
+    if (!clean.trim()) {
+      setSlugStatus('idle');
+      return
+    }
     if (clean === workspace?.slug) {
       setSlugStatus('idle');
       return;
@@ -89,13 +93,17 @@ export default function Instellingen() {
 
     setSavingName(true);
     try {
-      const updated = await updateWorkspace({
+      await updateWorkspace({
         ...(nameChanged && { name }),
         ...(slugChanged && { slug: wsSlug }),
       });
       setSavedName(true);
       setTimeout(() => setSavedName(false), 2000);
-      if (slugChanged) navigate(`/w/${updated.slug}/instellingen`);
+
+      if (slugChanged) {
+        console.log(`/w/${wsSlug}/instellingen`)
+        navigate(`/w/${wsSlug}/instellingen`, { replace: true });
+      }
     } finally {
       setSavingName(false);
     }

@@ -2,7 +2,7 @@ import path from "path";
 import fs from "fs/promises";
 import { Router } from "express";
 import multer from "multer";
-import { checkProfilePicture, createOrg, getPendingInvites, joinOrg, updateOnboardingStatus, updateProfilePicture } from "./user.service.js";
+import { checkProfilePicture, checkSlugAvailability, createOrg, getPendingInvites, joinOrg, updateOnboardingStatus, updateProfilePicture } from "./user.service.js";
 import { assetsPath, uploadsDirectory } from "../../constants.js";
 
 const profilePictureFileDirectory = `${uploadsDirectory}/profile-pictures`
@@ -116,6 +116,21 @@ router.get("/pending-invites", async (req, res) => {
     res.status(200).json({ invites: pendingInvites })
 })
 
+router.get("/check-slug", async (req, res) => {
+    const newSlug = req.query.slug
+
+    if (!newSlug.trim()) {
+        return res.status(200).json()
+    }
+
+    const existing = await checkSlugAvailability(newSlug)
+
+    if (!existing) {
+        return res.status(200).json({ available: true })
+    }
+
+    res.status(200).json({ available: false})
+})
 
 
 export default router;

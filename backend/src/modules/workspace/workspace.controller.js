@@ -6,7 +6,7 @@ import { Router } from "express";
 import chatRouter from "../chat/chat.controller.js"
 import docRouter from "../doc/doc.controller.js"
 
-import { getCurrentWorkspace, getWorkspaceMembers, getStats, inviteMember, getAllInvites, getPendingInvites, deleteMember, updateWorkspaceName, checkOrgLogo, updateOrgLogo } from "./workspace.service.js";
+import { getCurrentWorkspace, getWorkspaceMembers, getStats, inviteMember, getAllInvites, getPendingInvites, deleteMember, checkOrgLogo, updateOrgLogo, updateWorkspace } from "./workspace.service.js";
 import { assetsPath, uploadsDirectory } from "../../constants.js";
 import { mockConnections } from "../mocks/stats.mock.js";
 
@@ -56,15 +56,22 @@ router.get("/", async (req, res) => {
 })
 
 
-
 router.patch("/", async (req, res) => {
     const orgId = req.orgId
-    const { name } = req.body
+    const { name, slug } = req.body;
 
-    await updateWorkspaceName(orgId, name)
+    if (!name?.trim() && !slug?.trim()) {
+        return res.status(400).json({ error: 'Niets om bij te werken.' });
+    }
 
-    res.status(201).json()
-})
+    const updates = {};
+    if (name?.trim())  updates.name = name.trim();
+    if (slug?.trim())  updates.slug = slug.trim();
+
+    const updated = await updateWorkspace(orgId, updates)
+
+    res.status(200).json(updated);
+});
 
 router.get("/members", async (req, res) => {
     const orgId = req.orgId

@@ -43,17 +43,39 @@ export const getCurrentWorkspace = async (orgId, userId) => {
     return workspace
 }
 
-export const updateWorkspaceName = async (orgId, name) => {
-    await db`
-        UPDATE organizations
-        SET name = ${name}
-        WHERE id = ${orgId}
-    `
+export const updateWorkspace = async (orgId, updates) => {
+    const keys = Object.keys(updates);
+    if (keys.length === 0) return null;
+
+    const setClause = keys
+        .map((key, index) => `${key} = $${index + 1}`)
+        .join(", ");
+
+    const values = keys.map((key) => updates[key]);
+
+    values.push(orgId);
+    const idPlaceholder = `$${values.length}`;
+
+    const result = await db.query(
+        `UPDATE organizations
+         SET ${setClause}
+         WHERE id = ${idPlaceholder}
+         RETURNING name, slug`,
+        values
+    );
+
+    return result[0];
 }
+
 
 export const getWorkspaceMembers = async (orgId) => {
     const members = db`
-        SELECT u.id, u.name, u.email, u.profile_picture_resource_url, m.role
+        SELECT 
+            u.id,
+            u.name,
+            u.email,
+            u.profile_picture_resource_url,
+            m.role
         FROM users u
         JOIN memberships m ON u.id = m.user_id
         JOIN organizations o ON o.id = m.organization_id

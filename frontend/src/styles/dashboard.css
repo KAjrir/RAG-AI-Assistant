@@ -640,3 +640,63 @@
 .spinning {
   animation: spinning 0.8s linear infinite;
 }
+
+/* ── Slug input in modal ─────────────────── */
+.db-slug-wrap {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-dark);
+  border-radius: 8px;
+  background: var(--bg);
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.db-slug-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.12);
+}
+
+.db-slug-prefix {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 9px 0 9px 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.db-slug-input {
+  flex: 1;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding-left: 2px !important;
+}
+
+.db-slug-input:focus {
+  box-shadow: none !important;
+}
+
+.db-slug-status {
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+}
+
+.db-slug-available { color: #27500A; }
+.db-slug-taken     { color: #B91C1C; }
+.db-slug-checking  { color: var(--muted); }
+
+
+.db-field-error {
+  font-size: 12px;
+  color: #B91C1C;
+  margin-top: 2px;
+}
+
+.db-field-success {
+  font-size: 12px;
+  color: #27500A;
+  margin-top: 2px;
+}

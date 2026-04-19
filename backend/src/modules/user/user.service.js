@@ -102,3 +102,13 @@ export const getPendingInvites = async (userId) => {
 
     return pendingInvites
 }
+
+export const checkSlugAvailability = async (newSlug) => {
+    const slug = await db`
+        SELECT slug
+        FROM organizations
+        WHERE slug = ${newSlug}
+    `
+
+    return slug[0]
+} 

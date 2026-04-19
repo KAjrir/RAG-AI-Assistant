@@ -61,8 +61,7 @@ app.use(assetsPath, express.static(uploadsDirectory))
 app.use("/api/auth", authRouter)
 app.use("/api/users", requireAuth, userRouter)
 app.use("/api/workspaces/:slug", requireAuth, requireWorkspace, workspaceRouter)
-// app.use("/api/chats", authMiddleware, chatRouter)
-// app.use("/api/docs", requireAuth, requireWorkspace, docRouter)
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
