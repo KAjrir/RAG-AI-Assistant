@@ -5,6 +5,7 @@ import MobileSheet from '../components/workspace/MobileSheet.jsx';
 import MobileBottomBar from '../components/workspace/MobileBottomBar.jsx';
 import '../styles/workspaceLayout.css';
 import { useAuth } from '../context/AuthContext.jsx';
+import AppHeader from '../components/AppHeader.jsx';
 
 export default function WorkspaceLayout() {
   const { slug } = useParams();
@@ -30,80 +31,80 @@ export default function WorkspaceLayout() {
 
   return (
     <div className="wl-root">
-
-      <aside className={`wl-sidebar ${sidebarOpen ? 'mobile-open' : ''}`}>
-        <div className="wl-ws-header" onClick={() => setDropdownOpen(prev => !prev)} ref={dropdownRef}>
-          <div className="wl-ws-identity">
-            <span className="wl-ws-name">{workspace?.name}</span>
-            <span className="wl-ws-slug">w/{workspace?.slug}</span>
-          </div>
-          {dropdownOpen ? <ChevronUp /> : <ChevronDown />}
-          <div className={`wl-ws-dropdown ${dropdownOpen ? 'open' : ''}`}>
-            {user.memberships.map(ws => (
+      <AppHeader />
+      <div className="wl-body">
+        <aside className={`wl-sidebar ${sidebarOpen ? 'mobile-open' : ''}`}>
+          <div className="wl-ws-header" onClick={() => setDropdownOpen(prev => !prev)} ref={dropdownRef}>
+            <div className="wl-ws-identity">
+              <span className="wl-ws-name">{workspace?.name}</span>
+              <span className="wl-ws-slug">w/{workspace?.slug}</span>
+            </div>
+            {dropdownOpen ? <ChevronUp /> : <ChevronDown />}
+            <div className={`wl-ws-dropdown ${dropdownOpen ? 'open' : ''}`}>
+              {user.memberships.map(ws => (
+                <button
+                  key={ws.orgSlug}
+                  className={`wl-ws-dropdown-item ${ws.orgSlug === slug ? 'active' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDropdownOpen(false);
+                    setSidebarOpen(false);
+                    navigate(`/w/${ws.orgSlug}`);
+                  }}
+                >
+                  <span className="wl-ws-dropdown-name">{ws.orgName}</span>
+                  <span className="wl-ws-dropdown-slug">w/{ws.orgSlug}</span>
+                </button>
+              ))}
+              <div className="wl-ws-dropdown-divider" />
               <button
-                key={ws.orgSlug}
-                className={`wl-ws-dropdown-item ${ws.orgSlug === slug ? 'active' : ''}`}
+                className="wl-ws-dropdown-item wl-ws-dropdown-dashboard"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setDropdownOpen(false);
-                  setSidebarOpen(false);
-                  navigate(`/w/${ws.orgSlug}`);
+                  navigate('/dashboard');
                 }}
               >
-                <span className="wl-ws-dropdown-name">{ws.orgName}</span>
-                <span className="wl-ws-dropdown-slug">w/{ws.orgSlug}</span>
+                Alle workspaces
               </button>
-            ))}
-            <div className="wl-ws-dropdown-divider" />
-            <button
-              className="wl-ws-dropdown-item wl-ws-dropdown-dashboard"
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate('/dashboard');
-              }}
-            >
-              Alle workspaces
-            </button>
+            </div>
           </div>
+
+          <nav className="wl-nav">
+            <span className="wl-nav-section">Workspace</span>
+            <NavLink to={`/w/${slug}`} end className="wl-nav-item" onClick={() => setSidebarOpen(false)}>
+              <OverviewIcon /> Overzicht
+            </NavLink>
+            <NavLink to={`/w/${slug}/docs`} className="wl-nav-item" onClick={() => setSidebarOpen(false)}>
+              <DocsIcon /> Documenten
+            </NavLink>
+            <NavLink to={`/w/${slug}/connecties`} className="wl-nav-item" onClick={() => setSidebarOpen(false)}>
+              <ConnectionsIcon /> Connecties
+            </NavLink>
+            <NavLink to={`/w/${slug}/mensen`} className="wl-nav-item" onClick={() => setSidebarOpen(false)}>
+              <PeopleIcon /> Mensen
+            </NavLink>
+            {isOwner && (
+              <>
+                <span className="wl-nav-section">Beheer</span>
+                <NavLink to={`/w/${slug}/instellingen`} className="wl-nav-item" onClick={() => setSidebarOpen(false)}>
+                  <SettingsIcon /> Instellingen
+                </NavLink>
+              </>
+            )}
+          </nav>
+
+          <button className="wl-cta" onClick={() => { navigate(`/w/${slug}/chat`); setSidebarOpen(false); }}>
+            <ChatIcon /> Start chat
+          </button>
+        </aside>
+        <div className="wl-content">
+          <main className="wl-main">
+            <Outlet />
+          </main>
+          <MobileBottomBar onMenuClick={() => setSidebarOpen(prev => !prev)} />
+          <MobileSheet open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         </div>
-
-        <nav className="wl-nav">
-          <span className="wl-nav-section">Workspace</span>
-          <NavLink to={`/w/${slug}`} end className="wl-nav-item" onClick={() => setSidebarOpen(false)}>
-            <OverviewIcon /> Overzicht
-          </NavLink>
-          <NavLink to={`/w/${slug}/docs`} className="wl-nav-item" onClick={() => setSidebarOpen(false)}>
-            <DocsIcon /> Documenten
-          </NavLink>
-          <NavLink to={`/w/${slug}/connecties`} className="wl-nav-item" onClick={() => setSidebarOpen(false)}>
-            <ConnectionsIcon /> Connecties
-          </NavLink>
-          <NavLink to={`/w/${slug}/mensen`} className="wl-nav-item" onClick={() => setSidebarOpen(false)}>
-            <PeopleIcon /> Mensen
-          </NavLink>
-          {isOwner && (
-            <>
-              <span className="wl-nav-section">Beheer</span>
-              <NavLink to={`/w/${slug}/instellingen`} className="wl-nav-item" onClick={() => setSidebarOpen(false)}>
-                <SettingsIcon /> Instellingen
-              </NavLink>
-            </>
-          )}
-        </nav>
-
-        <button className="wl-cta" onClick={() => { navigate(`/w/${slug}/chat`); setSidebarOpen(false); }}>
-          <ChatIcon /> Start chat
-        </button>
-      </aside>
-
-      <div className="wl-content">
-        <main className="wl-main">
-          <Outlet />
-        </main>
-        <MobileBottomBar onMenuClick={() => setSidebarOpen(prev => !prev)} />
-        <MobileSheet open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       </div>
-
     </div>
   );
 }

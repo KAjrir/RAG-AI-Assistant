@@ -1,8 +1,14 @@
 .wl-root {
   display: flex;
+  flex-direction: column;
   height: 100svh;
   background: var(--bg);
   font-family: var(--sans);
+}
+
+.wl-body {
+  display: flex;
+  flex: 1;
 }
 
 .wl-loading {
