@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useWorkspace } from '../context/WorkspaceContext.jsx';
 import { useChat } from '../context/ChatContext.jsx';
 import '../styles/chatPage.css';
+import { BASE_URL } from '../lib/api.js';
 
 export default function ChatPage() {
   const { slug, chatId }                    = useParams();
@@ -193,7 +194,17 @@ export default function ChatPage() {
           className={`cpl-profile ${sidebarOpen ? '' : 'cpl-profile--closed'}`}
           onClick={() => navigate(`/w/${slug}`)}
         >
-          <div className="cpl-avatar">{initials}</div>
+          <div className="cpl-avatar">
+            {user?.profile_picture_resource_url ? (
+              <img
+                src={`${BASE_URL}${user.profile_picture_resource_url}`}
+                alt="Profielfoto"
+                className="cpl-avatar-img"
+              />
+            ) : (
+              initials
+            )}
+          </div>
           {sidebarOpen && (
             <div className="cpl-profile-info">
               <span className="cpl-profile-name">{user?.name}</span>
