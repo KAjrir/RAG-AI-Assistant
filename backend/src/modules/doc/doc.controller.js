@@ -1,5 +1,7 @@
 import fs from "fs/promises"
 import { Router } from "express";
+import multer from "multer";
+
 import { getDoc, getDocs, addDocs, deleteDoc, getDocStatus, getDocChunks } from "./doc.service.js";
 import { processDocument } from "../jobs/processDocument.js";
 
@@ -22,55 +24,67 @@ router.get("/", async (req, res) => {
     res.status(200).json(docs)
 })
 
-router.post("/", myStorage.array("files"), async (req, res) => {
-    const userId = req.userId
-    const orgId = req.orgId
+router.post("/", (req, res) => {
+    myStorage.array("files")(req, res, async function (err) {
+        if (err instanceof multer.MulterError) {
+        // A Multer error occurred when uploading.
+            if (err.code === "LIMIT_FILE_SIZE") {
+                return res.status(413).json({ error: "Bestand is te groot"})
+            }
+        } else if (err) {
+        // An unknown error occurred when uploading.
+            console.error(err)
+            return res.status(500).json({ error: "Internal Server Error"})
+        }
 
-    console.log(req.files)
+        // Everything went fine.
+        const userId = req.userId
+        const orgId = req.orgId
     
-    const files = []
-    for (const file of req.files) {
-        const docId = file.filename.split(".")[0];
-        const organizationId = orgId
-        const uploadedBy = userId;
-        // const uploadedAt -- Deze per default bij db
-        // const pageCount = -- hoeft nog niet
-        // const tokens = -- hoeft nog niet
-        // const chunks = -- Deze een trigger zetten op document_chunks
-        const originalName = file.originalname
-        const size = file.size
-        const resource_url = file.resource_url
-        const filepath = file.path
-        // const status = -- Deze per default bij db
-        const hash = file.hash
-
-        files.push({
-            docId,
-            organizationId,
-            uploadedBy,
-            originalName,
-            size,
-            resource_url,
-            filepath,
-            documentHash: hash
-        })
-    }
-
-    const docs = await addDocs(files)
-    const publicDocs = [];
-
-    for (const doc of docs) {
-        const {document_hash, filepath, tokens, organization_id, ...restDoc} = doc
-        publicDocs.push(restDoc)
-    }
-
-    console.log("POST ROUTE ADDED DOCS: ", publicDocs)
+        console.log(req.files)
+        
+        const files = []
+        for (const file of req.files) {
+            const docId = file.filename.split(".")[0];
+            const organizationId = orgId
+            const uploadedBy = userId;
+            // const uploadedAt -- Deze per default bij db
+            // const pageCount = -- hoeft nog niet
+            // const tokens = -- hoeft nog niet
+            // const chunks = -- Deze een trigger zetten op document_chunks
+            const originalName = file.originalname
+            const size = file.size
+            const resource_url = file.resource_url
+            const filepath = file.path
+            // const status = -- Deze per default bij db
+            const hash = file.hash
     
-    for (const file of files) {
-        processDocument(file.docId, file.organizationId, file.filepath, file.originalName)
-    }
-
-    res.status(200).json(publicDocs)
+            files.push({
+                docId,
+                organizationId,
+                uploadedBy,
+                originalName,
+                size,
+                resource_url,
+                filepath,
+                documentHash: hash
+            })
+        }
+    
+        const docs = await addDocs(files)
+        const publicDocs = [];
+    
+        for (const doc of docs) {
+            const {document_hash, filepath, tokens, organization_id, ...restDoc} = doc
+            publicDocs.push(restDoc)
+        }
+    
+        for (const file of files) {
+            processDocument(file.docId, file.organizationId, file.filepath, file.originalName)
+        }
+    
+        res.status(200).json(publicDocs)
+    })
 })
 
 

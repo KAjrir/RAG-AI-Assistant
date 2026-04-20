@@ -64,7 +64,7 @@ export default function DocsUpload() {
       await uploadDocuments(files);
       navigate(`/w/${slug}/docs`);
     } catch (err) {
-      setError(err.message);
+      setError(err.response.data.error);
       setUploading(false);
     }
   }

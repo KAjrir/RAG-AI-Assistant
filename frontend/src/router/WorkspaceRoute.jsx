@@ -9,11 +9,8 @@ export default function WorkspaceRoute() {
   if (loading) return <div className="route-loading">Laden…</div>;
 
   const hasAccess = user.memberships.some(w => {
-    console.log(w.orgSlug, slug)
     return w.orgSlug === slug
   });
-  console.log("USER", user)
-  console.log("HASACCESS", hasAccess)
 
   if (!hasAccess) return <Navigate to="/dashboard" replace />;
 

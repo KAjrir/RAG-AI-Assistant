@@ -29,8 +29,6 @@ class MyStorageEngine {
     }
 
     _handleFile(req, file, cb ) {
-        let called = false;
-
         const done = (() => {
             let called = false;
             return (err, data) => {
@@ -90,5 +88,8 @@ const fileFilter = (req, file, cb) => {
 
 export default multer({
     storage: new MyStorageEngine(),
+    limits: {
+        fileSize: 25 * 1024 * 1024, //25MB
+    },
     fileFilter
 })
