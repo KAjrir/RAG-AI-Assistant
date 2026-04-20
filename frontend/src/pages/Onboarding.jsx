@@ -21,12 +21,9 @@ export default function Onboarding() {
   const [slugManual, setSlugManual]           = useState(false);
   const slugDebounceRef                       = useRef(null);
 
-  // Join
-  const [inviteCode, setInviteCode]           = useState('');
-
   const [loading, setLoading]                 = useState(false);
   const [error, setError]                     = useState(null);
-  // Pending invites ophalen
+
   useEffect(() => {
     api.get('/users/pending-invites')
       .then(res => setPendingInvites(res.data.invites ?? []))
@@ -34,7 +31,6 @@ export default function Onboarding() {
       .finally(() => setCheckingInvites(false));
   }, []);
 
-  // Slug auto-genereren op basis van naam
   useEffect(() => {
     if (slugManual) return;
     const generated = orgName
@@ -44,16 +40,10 @@ export default function Onboarding() {
     setSlug(generated);
   }, [orgName, slugManual]);
 
-  // Slug beschikbaarheidscheck met debounce
   useEffect(() => {
-    if (!slug) {
-      setSlugStatus('idle');
-      return;
-    }
-
+    if (!slug) { setSlugStatus('idle'); return; }
     setSlugStatus('checking');
     clearTimeout(slugDebounceRef.current);
-
     slugDebounceRef.current = setTimeout(async () => {
       try {
         const res = await api.get(`/users/check-slug?slug=${slug}`);
@@ -62,11 +52,9 @@ export default function Onboarding() {
         setSlugStatus('idle');
       }
     }, 400);
-
     return () => clearTimeout(slugDebounceRef.current);
   }, [slug]);
 
-  // Org aanmaken
   async function handleCreate(e) {
     e.preventDefault();
     if (!orgName.trim() || slugStatus === 'taken' || slugStatus === 'checking') return;
@@ -82,28 +70,11 @@ export default function Onboarding() {
     }
   }
 
-  // Pending invite accepteren
   async function handleAcceptInvite(token) {
     setLoading(true);
     setError(null);
     try {
       await joinOrg(token);
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // Handmatig joinen met code
-  async function handleJoin(e) {
-    e.preventDefault();
-    if (!inviteCode.trim()) return;
-    setLoading(true);
-    setError(null);
-    try {
-      await joinOrg(inviteCode);
       navigate('/dashboard');
     } catch (err) {
       setError(err.message);
@@ -119,14 +90,7 @@ export default function Onboarding() {
   return (
     <div className="auth-bg">
       <div className="auth-card onboarding-card">
-        <div className="auth-logo" onClick={() => navigate("/")}>VLNK.</div>
-
-        <Link to="/" className="auth-back">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 12H5M12 5l-7 7 7 7"/>
-          </svg>
-          Terug naar home
-        </Link>
+        <div className="auth-logo" onClick={() => navigate('/')}>VLNK<span>.</span></div>
 
         {/* ── Keuze scherm ── */}
         {step === 'choose' && (
@@ -143,7 +107,6 @@ export default function Onboarding() {
 
             <div className="onboarding-options">
 
-              {/* Één pending invite — direct tonen */}
               {pendingInvites.length === 1 && (
                 <button
                   className="onboarding-option onboarding-option--highlight"
@@ -153,7 +116,7 @@ export default function Onboarding() {
                   <div className="onboarding-option-icon"><InviteIcon /></div>
                   <div className="onboarding-option-text">
                     <span className="onboarding-option-title">
-                      {pendingInvites[0].orgName} wacht op je
+                      {pendingInvites[0].org_name} wacht op je
                     </span>
                     <span className="onboarding-option-sub">
                       Uitgenodigd als {pendingInvites[0].role}
@@ -163,24 +126,22 @@ export default function Onboarding() {
                 </button>
               )}
 
-              {/* Meerdere pending invites — stuur naar join scherm */}
-              {pendingInvites.length > 1 && (
-                <button
-                  className="onboarding-option onboarding-option--highlight"
-                  onClick={() => setStep('join')}
-                >
-                  <div className="onboarding-option-icon"><InviteIcon /></div>
-                  <div className="onboarding-option-text">
-                    <span className="onboarding-option-title">
-                      {pendingInvites.length} uitnodigingen wachten op je
-                    </span>
-                    <span className="onboarding-option-sub">
-                      Bekijk en accepteer je uitnodigingen
-                    </span>
-                  </div>
-                  <ChevronIcon />
-                </button>
-              )}
+              <button
+                className="onboarding-option"
+                onClick={() => setStep('join')}
+              >
+                <div className="onboarding-option-icon"><InviteIcon /></div>
+                <div className="onboarding-option-text">
+                  <span className="onboarding-option-title">Organisatie joinen</span>
+                  <span className="onboarding-option-sub">
+                    {pendingInvites.length > 0
+                      ? `Je hebt ${pendingInvites.length} uitnodiging${pendingInvites.length > 1 ? 'en' : ''}`
+                      : 'Bekijk je uitnodigingen'
+                    }
+                  </span>
+                </div>
+                <ChevronIcon />
+              </button>
 
               <button
                 className="onboarding-option"
@@ -194,22 +155,21 @@ export default function Onboarding() {
                 <ChevronIcon />
               </button>
 
-              <button
-                className="onboarding-option"
-                onClick={() => setStep('join')}
-              >
-                <div className="onboarding-option-icon"><LinkIcon /></div>
-                <div className="onboarding-option-text">
-                  <span className="onboarding-option-title">Organisatie joinen</span>
-                  <span className="onboarding-option-sub">
-                    {pendingInvites.length > 0
-                      ? `Je hebt ${pendingInvites.length} uitnodiging${pendingInvites.length > 1 ? 'en' : ''}`
-                      : 'Je hebt een uitnodigingscode ontvangen'
-                    }
-                  </span>
-                </div>
-                <ChevronIcon />
-              </button>
+              {pendingInvites.length > 0 && (
+                <button
+                  className="onboarding-option"
+                  onClick={() => setStep('join')}
+                >
+                  <div className="onboarding-option-icon"><InviteIcon /></div>
+                  <div className="onboarding-option-text">
+                    <span className="onboarding-option-title">Organisatie joinen</span>
+                    <span className="onboarding-option-sub">
+                      Je hebt {pendingInvites.length} uitnodiging{pendingInvites.length > 1 ? 'en' : ''}
+                    </span>
+                  </div>
+                  <ChevronIcon />
+                </button>
+              )}
 
             </div>
           </>
@@ -253,7 +213,7 @@ export default function Onboarding() {
                   <span className="auth-label-hint">Zichtbaar in de adresbalk</span>
                 </label>
                 <div className="slug-input-wrap">
-                  <span className="slug-prefix">vlnk.nl/w/</span>
+                  <span className="slug-prefix">raggy.nl/w/</span>
                   <input
                     className="auth-input slug-input"
                     type="text"
@@ -267,14 +227,17 @@ export default function Onboarding() {
                       setSlugManual(true);
                     }}
                   />
-                  <div className="slug-status">
-                    {slugStatus === 'checking'  && <span className="slug-checking"><SpinnerIcon /></span>}
-                    {slugStatus === 'available' && <span className="slug-available"><CheckIcon /></span>}
-                    {slugStatus === 'taken'     && <span className="slug-taken"><CrossIcon /></span>}
-                  </div>
+                  {slugStatus === 'checking' && (
+                    <div className="slug-status">
+                      <span className="slug-checking"><SpinnerIcon /></span>
+                    </div>
+                  )}
                 </div>
                 {slugStatus === 'taken' && (
-                  <p className="slug-error">Deze URL is al in gebruik. Kies een andere.</p>
+                  <p className="slug-error">Deze URL is al in gebruik.</p>
+                )}
+                {slugStatus === 'available' && (
+                  <p className="slug-success">Deze URL is beschikbaar.</p>
                 )}
               </div>
 
@@ -283,13 +246,7 @@ export default function Onboarding() {
               <button
                 className="auth-btn-primary"
                 type="submit"
-                disabled={
-                  loading ||
-                  !orgName.trim() ||
-                  !slug ||
-                  slugStatus === 'taken' ||
-                  slugStatus === 'checking'
-                }
+                disabled={loading || !orgName.trim() || !slug || slugStatus === 'taken' || slugStatus === 'checking'}
               >
                 {loading ? 'Aanmaken…' : 'Organisatie aanmaken'}
               </button>
@@ -297,7 +254,8 @@ export default function Onboarding() {
           </>
         )}
 
-        {/* ── Joinen ── */}
+        {/* ── Joinen — alleen pending invites, geen code ── */}
+        {/* ── Joinen — altijd zichtbaar ── */}
         {step === 'join' && (
           <>
             <button
@@ -309,19 +267,22 @@ export default function Onboarding() {
             <h1 className="auth-title">
               Organisatie <span className="auth-title-italic">joinen</span>
             </h1>
+            <p className="auth-sub">
+              Accepteer één van je openstaande uitnodigingen.
+            </p>
 
-            {/* Pending invites */}
-            {pendingInvites.length > 0 && (
+            {pendingInvites.length === 0 ? (
+              <div className="pending-invites-empty">
+                <p>Je hebt geen openstaande uitnodigingen.</p>
+              </div>
+            ) : (
               <div className="pending-invites">
-                <p className="auth-label" style={{ marginBottom: 10 }}>
-                  Openstaande uitnodigingen
-                </p>
                 {pendingInvites.map(invite => (
                   <div key={invite.token} className="pending-invite-card">
                     <div className="pending-invite-info">
-                      <span className="pending-invite-org">{invite.orgName}</span>
+                      <span className="pending-invite-org">{invite.org_name}</span>
                       <span className="pending-invite-role">
-                        Uitgenodigd als {invite.role}
+                        Uitgenodigd als {invite.role === 'admin' ? 'Beheerder' : 'Lid'}
                       </span>
                     </div>
                     <button
@@ -336,33 +297,7 @@ export default function Onboarding() {
               </div>
             )}
 
-            <p className="auth-sub" style={{ marginTop: pendingInvites.length > 0 ? 24 : 0 }}>
-              {pendingInvites.length > 0
-                ? 'Of voer een uitnodigingscode in:'
-                : 'Voer de uitnodigingscode in die je per mail hebt ontvangen.'
-              }
-            </p>
-
-            <form className="auth-form" onSubmit={handleJoin}>
-              <div className="auth-field">
-                <input
-                  className="auth-input"
-                  type="text"
-                  placeholder="abc123xyz"
-                  value={inviteCode}
-                  onChange={e => setInviteCode(e.target.value)}
-                  autoFocus={pendingInvites.length === 0}
-                />
-              </div>
-              {error && <p className="auth-error">{error}</p>}
-              <button
-                className="auth-btn-primary"
-                type="submit"
-                disabled={loading || !inviteCode.trim()}
-              >
-                {loading ? 'Joinen…' : 'Joinen met code'}
-              </button>
-            </form>
+            {error && <p className="auth-error">{error}</p>}
           </>
         )}
 
@@ -386,15 +321,6 @@ function BuildingIcon() {
       <path d="M6 16V9h6v7" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
       <path d="M2 8h14" stroke="currentColor" strokeWidth="1.3"/>
       <path d="M6 2h6v2H6z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
-function LinkIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-      <path d="M7.5 10.5a4 4 0 0 0 5.66 0l2-2a4 4 0 0 0-5.66-5.66l-1 1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-      <path d="M10.5 7.5a4 4 0 0 0-5.66 0l-2 2a4 4 0 0 0 5.66 5.66l1-1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
     </svg>
   );
 }

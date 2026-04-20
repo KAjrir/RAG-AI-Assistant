@@ -158,6 +158,19 @@
   color: var(--accent);
 }
 
+.auth-logo {
+  font-family: var(--serif);
+  font-size: 24px;
+  color: var(--text);
+  letter-spacing: -0.3px;
+  margin-bottom: 36px;
+  display: block;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.auth-logo span { color: var(--accent); }
+
 /* Slug input */
 .auth-label-hint {
   font-size: 11px;
@@ -211,6 +224,12 @@
 .slug-available { color: #27500A; }
 .slug-taken     { color: #B91C1C; }
 .slug-checking  { color: var(--muted); }
+
+.slug-success {
+  font-size: 12px;
+  color: #27500A;
+  margin-top: 2px;
+}
 
 .slug-error {
   font-size: 12px;
@@ -351,4 +370,14 @@
 
 .spinning {
   animation: spinning 0.8s linear infinite;
+}
+
+.pending-invites-empty {
+  padding: 20px;
+  text-align: center;
+  background: var(--surface2);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--muted);
 }
