@@ -16,5 +16,13 @@ export function signToken(userObject) {
  * Gooit een error als het token ongeldig of verlopen is
  */
 export function verifyToken(token) {
-  return jwt.verify(token, SECRET)
+  try {
+    return jwt.verify(token, SECRET);
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return { error: 'EXPIRED' };
+    }
+    console.error(err)
+    return { error: 'INVALID' };
+  }
 }

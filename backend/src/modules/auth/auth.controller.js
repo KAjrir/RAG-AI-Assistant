@@ -16,8 +16,18 @@ router.get("/me", async (req, res) => {
     if (!auth_token) return res.status(200).json({ user: null })
     
     try {
-        const { userId } = verifyToken(auth_token)
-        const user = await getUserInfo(userId)
+        const payload = verifyToken(auth_token)
+        
+        if(payload?.error) {
+            res.clearCookie("auth_token", {
+                httpOnly: true,
+                sameSite: "lax",
+                secure: ISPROD,
+            });
+            return res.status(401).json({ code: payload.error})
+        }
+
+        const user = await getUserInfo(payload.userId)
 
         res.status(200).json({ 
             user
@@ -25,7 +35,7 @@ router.get("/me", async (req, res) => {
 
     } catch (err) {
         console.error(err)
-        return res.status(401).json({ message: "Invalid or expired token" });
+        return res.status(500).json({ message: "Server error..." });
     }
 })
 
