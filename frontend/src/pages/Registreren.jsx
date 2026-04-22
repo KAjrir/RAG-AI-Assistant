@@ -46,7 +46,7 @@ export default function Register() {
       await register(form.name, form.email, form.password)
       navigate('/onboarding')
     } catch (err) {
-      setError(err.message || "Registreren mislukt.")
+      setError(err?.response?.data?.error || "Registreren mislukt.")
     } finally {
       setLoading(false)
     }

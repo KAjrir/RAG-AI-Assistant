@@ -15,8 +15,12 @@ api.interceptors.response.use(
   res => res,
   err => {
     if (err.response?.status === 401 && relocationAttempts < MAX_RELOCATION_ATTEMPTS) {
-      window.location.href = '/inloggen';
-      relocationAttempts++
+      console.log("hallo")
+      if(window.location.pathname !== "/inloggen") {
+        console.log("je wordt geredirect")
+        window.location.href = '/inloggen';
+        relocationAttempts++
+      }
     }
     return Promise.reject(err);
   }

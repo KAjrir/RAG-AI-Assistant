@@ -25,7 +25,7 @@ export default function Login() {
       await login(form.email, form.password)
       navigate('/dashboard')
     } catch (err) {
-      setError(err.message || 'Inloggen mislukt.')
+      setError(err?.response?.data?.error || 'Inloggen mislukt.')
     } finally {
       setLoading(false)
     }
