@@ -4,6 +4,7 @@ import fs from "fs";
 import multer from "multer";
 
 import { uploadsDirectory, assetsPath } from "../../constants.js";
+import { checkHash } from "./doc.service.js";
 
 const documentsFileDirectory = `${uploadsDirectory}/documents`
 const documentsResourcePath = `${assetsPath}/documents`
@@ -24,48 +25,47 @@ class MyStorageEngine {
             filename: filename,
             path: `${documentsFileDirectory}/${filename}`,
             resource_url: `${documentsResourcePath}/${filename}`,
-            ext: fileExt
         }
     }
 
     _handleFile(req, file, cb ) {
-        const done = (() => {
-            let called = false;
-            return (err, data) => {
-                if (called) return;
-                called = true;
-                cb(err, data);
-            };
-        })();
-
         const hash = crypto.createHash("sha256");
-
-        const fileInfo = this.getFileInfo(file);
-        let outstream = fs.createWriteStream(fileInfo.path);
+        let buffer = Buffer.alloc(0)
 
         file.stream.on("data", (data) => {
             hash.update(data)
+            buffer = Buffer.concat([buffer, data])
         });
+        
+        file.stream.on("end", async () => {
+            const fileHash = hash.digest("hex")
 
-        file.stream.pipe(outstream);
+            const existing = await checkHash(fileHash, req.orgId)
+            if(existing) {
+                return cb(null, {
+                    isDuplicate: true,
+                    duplicateFile: {...existing, duplicateFileName: file.originalname}
+                })
+            }
 
-        outstream.on("finish", () => {
-            done(null, {
-                size: outstream.bytesWritten,
-                hash: hash.digest("hex"),
-                ...fileInfo
-            });
-        });
+            const fileInfo = this.getFileInfo(file);
+
+            fs.writeFile(fileInfo.path, buffer, err => {
+                if (err) return cb(err)
+
+                cb(null, {
+                    isDuplicate: false,
+                    size: buffer.length,
+                    hash: fileHash,
+                    ...fileInfo
+                })
+            })
+        })
+
 
         file.stream.on("error", err => {
             fs.unlink(file.path, () => {
-                done(err)
-            })
-        });
-
-        outstream.on("error", err => {
-            fs.unlink(file.path, () => {
-                done(err)
+                cb(err)
             })
         });
     }
@@ -76,7 +76,7 @@ class MyStorageEngine {
 }
 
 const fileFilter = (req, file, cb) => {
-    const fileTypes = /\.(pdf|txt)$/
+    const fileTypes = /\.(pdf)$/
     const validExtname = fileTypes.test(path.extname(file.originalname).toLowerCase())
 
     if(validExtname){

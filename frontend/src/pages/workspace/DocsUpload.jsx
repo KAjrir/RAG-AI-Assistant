@@ -61,8 +61,11 @@ export default function DocsUpload() {
     setError(null);
 
     try {
-      await uploadDocuments(files);
-      navigate(`/w/${slug}/docs`);
+      const result = await uploadDocuments(files);
+      console.log(result)
+      navigate(`/w/${slug}/docs`, {
+        state: { duplicates: result.duplicateDocs ?? [] }
+      });
     } catch (err) {
       setError(err.response.data.error);
       setUploading(false);

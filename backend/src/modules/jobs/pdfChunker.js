@@ -1,5 +1,6 @@
-import { readFile } from 'node:fs/promises'
+import fs from 'fs/promises'
 import pdf from 'pdf-parse-new'
+import SmartParser from "pdf-parse-new/lib/SmartPDFParser.js";
 import { DocumentQueue } from './queue.js'
 
 // ============================================================
@@ -11,13 +12,15 @@ const CONFIG = {
   overlapSize:  100,  // overlap tussen chunks voor context behoud
 }
 
+const parser = new SmartParser();
+
 // ============================================================
 // STAP 1: PDF → tekst per pagina
 // ============================================================
 // We gebruiken de pagerender optie om per pagina tekst bij te houden
 // zodat we paginanummer als metadata kunnen meegeven aan elke chunk
 async function extractPages(filePath) {
-  const buffer = await readFile(filePath)
+  const buffer = await fs.readFile(filePath)
 
   const pages = []
 
@@ -40,13 +43,17 @@ async function extractPages(filePath) {
     },
   }
   
-  const data = await pdf(buffer, options)
+  // const data = await pdf(buffer, options)
+  // console.log("BASIC PDFPARSING: ", data)
+  
+  const smartData = await parser.parse(buffer, options)
+  // console.log("\n\nSMART PARSER: ", smartData)
 
   return {
     pages,
-    numpages: data.numpages,
-    info:     data.info,
-    fullText: data.text
+    numpages: smartData.numpages,
+    info:     smartData.info,
+    fullText: smartData.text
   }
 }
 
@@ -167,10 +174,6 @@ function buildChunks(pages, documentMeta) {
 // ============================================================
 export async function chunkPdf(filePath, filename) {
   const { pages, numpages, info, fullText } = await extractPages(filePath)
-//   console.log("PAGES: ", pages)
-//   console.log("NUMPAGES: ", numpages)
-//   console.log("INFO: ", info)
-//   console.log("FULTEXT: ", fullText)
 
   // Fallback: als pagerender niet werkte, gebruik fullText als één pagina
   const effectivePages = pages.length > 0

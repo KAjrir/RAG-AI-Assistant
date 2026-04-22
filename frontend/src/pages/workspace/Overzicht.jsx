@@ -4,6 +4,7 @@ import { useWorkspace } from '../../context/WorkspaceContext.jsx';
 import { api } from '../../lib/api.js';
 import { formatTimeAgo } from '../../lib/utils.js';
 import '../../styles/overzicht.css';
+import StatusPill from '../../components/StatusPill.jsx';
 
 export default function Overzicht() {
   const { slug }              = useParams();
@@ -63,7 +64,7 @@ export default function Overzicht() {
                   <span className="ov-doc-meta">{formatTimeAgo(doc.uploaded_at)}</span>
                 </div>
                 <span className={`ov-pill ov-pill--${doc.status}`}>
-                  {statusLabel(doc.status)}
+                  <StatusPill status={doc.status} />
                 </span>
               </button>
             </li>
@@ -72,17 +73,6 @@ export default function Overzicht() {
       </section>
     </div>
   );
-}
-
-function statusLabel(status) {
-  const labels = {
-    uploading:  'Uploaden',
-    queued:     'Wachtrij',
-    processing: 'Verwerking',
-    completed:  'Geïndexeerd',
-    failed:     'Mislukt',
-  };
-  return labels[status] ?? status;
 }
 
 function PlusIcon() {

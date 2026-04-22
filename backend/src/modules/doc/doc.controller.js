@@ -44,7 +44,13 @@ router.post("/", (req, res) => {
         console.log(req.files)
         
         const files = []
+        const duplicateFiles = []
         for (const file of req.files) {
+            if(file.isDuplicate) {
+                duplicateFiles.push(file.duplicateFile)
+                continue
+            }
+
             const docId = file.filename.split(".")[0];
             const organizationId = orgId
             const uploadedBy = userId;
@@ -72,18 +78,24 @@ router.post("/", (req, res) => {
         }
     
         const docs = await addDocs(files)
-        const publicDocs = [];
-    
-        for (const doc of docs) {
-            const {document_hash, filepath, tokens, organization_id, ...restDoc} = doc
-            publicDocs.push(restDoc)
+        
+        const publicizedDocs = (docs) => {
+            const publicDocs = [];
+            for (const doc of docs) {
+                const {document_hash, filepath, tokens, organization_id, isDuplicate, ...restDoc} = doc
+                publicDocs.push(restDoc)
+            }
+            return publicDocs
         }
     
         for (const file of files) {
             processDocument(file.docId, file.organizationId, file.filepath, file.originalName)
         }
     
-        res.status(200).json(publicDocs)
+        res.status(200).json({
+            docs: publicizedDocs(docs),
+            duplicateDocs: publicizedDocs(duplicateFiles)
+        })
     })
 })
 

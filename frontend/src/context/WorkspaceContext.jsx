@@ -111,7 +111,7 @@ export function WorkspaceProvider({ slug, children }) {
     const formData = new FormData();
     files.forEach(file => formData.append('files', file));
     const res = await api.post(`/workspaces/${slug}/docs`, formData);
-    setDocuments(prev => [...prev, ...res.data]);
+    setDocuments(prev => [...prev, ...res.data.docs]);
     return res.data;
   }
 

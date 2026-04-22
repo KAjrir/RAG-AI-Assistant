@@ -1,23 +1,41 @@
-import { useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useParams, useLocation } from 'react-router';
 import { formatFileSize, formatTimeAgo } from '../../lib/utils.js';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
 import '../../styles/docsPage.css';
-import { api } from '../../lib/api.js';
+import StatusPill from '../../components/StatusPill.jsx';
 
 export default function DocsPage() {
   const { slug }                              = useParams();
   const navigate                              = useNavigate();
+  const location                              = useLocation();
   const { documents, loading, refreshDocuments, reindexDocument, deleteDocument } = useWorkspace();
 
-  // Refresh zodra de pagina mount — haalt verse data op
-  // polling in context neemt het daarna over bij processing docs
+  const [duplicates, setDuplicates]   = useState(location?.state?.duplicates ?? []);
+  const [highlightedDoc, setHighlightedDoc] = useState(null);
+  const docRefs                             = useRef({});
+
   useEffect(() => {
     refreshDocuments();
   }, []);
 
+  function scrollToDoc(docName) {
+    // Zoek het document op basis van naam
+    const doc = documents.find(d => d.originalname === docName);
+    if (!doc) return;
+
+    const el = docRefs.current[doc.id];
+    if (!el) return;
+
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Twee keer flikker animatie
+    setHighlightedDoc(doc.id);
+    setTimeout(() => setHighlightedDoc(null), 1200);
+  }
+
   async function handleReindex(docId) {
-    await reindexDocument(docId) 
+    await reindexDocument(docId);
   }
 
   async function handleDelete(docId) {
@@ -37,6 +55,45 @@ export default function DocsPage() {
         </button>
       </header>
 
+      {duplicates.length > 0 && (
+        <div className="dp-duplicates">
+          <div className="dp-duplicates-header">
+            <div className="dp-duplicates-title">
+              <AlertIcon />
+              <span>
+                {duplicates.length} bestand{duplicates.length > 1 ? 'en werden' : ' werd'} overgeslagen — al aanwezig in je workspace
+              </span>
+            </div>
+            <button
+              className="dp-duplicates-close"
+              onClick={() => setDuplicates([])}
+              title="Sluiten"
+            >
+              <CloseIcon />
+            </button>
+          </div>
+          <ul className="dp-duplicates-list">
+            {duplicates.map((doc, i) => (
+              <li key={i}>
+                <div
+                  className="dp-duplicates-item"
+                  onClick={() => scrollToDoc(doc.originalname)}
+                >
+                  <DocIcon />
+                  <div className="dp-duplicates-item-info">
+                    <span className="dp-duplicates-item-name">{doc.duplicateFileName}</span>
+                    <span className="dp-duplicates-item-existing">
+                      al aanwezig als <strong>{doc.originalname}</strong>
+                    </span>
+                  </div>
+                  <ChevronIcon />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {loading ? (
         <p className="dp-loading">Laden…</p>
       ) : documents.length === 0 ? (
@@ -51,7 +108,12 @@ export default function DocsPage() {
       ) : (
         <ul className="dp-list">
           {documents.map(doc => (
-            <li key={doc.id} className="dp-item"  onClick={() => navigate(`/w/${slug}/docs/${doc.id}`)}>
+            <li
+              key={doc.id}
+              ref={el => docRefs.current[doc.id] = el}
+              className={`dp-item ${highlightedDoc === doc.id ? 'dp-item--highlight' : ''}`}
+              onClick={() => navigate(`/w/${slug}/docs/${doc.id}`)}
+            >
               <div className={`dp-icon dp-icon--${doc.status}`}>
                 <DocIcon />
               </div>
@@ -69,10 +131,7 @@ export default function DocsPage() {
                   <button
                     className="dp-action-btn"
                     title="Opnieuw indexeren"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleReindex(doc.id)
-                    }}
+                    onClick={(e) => { e.stopPropagation(); handleReindex(doc.id); }}
                   >
                     <ReindexIcon />
                   </button>
@@ -80,70 +139,18 @@ export default function DocsPage() {
                 <button
                   className="dp-action-btn dp-action-btn--danger"
                   title="Verwijderen"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                      handleDelete(doc.id)
-                  }}
+                  onClick={(e) => { e.stopPropagation(); handleDelete(doc.id); }}
                 >
                   <TrashIcon />
                 </button>
               </div>
-              <StatusPill status={doc.status}/>
+              <StatusPill status={doc.status} />
             </li>
           ))}
         </ul>
       )}
     </div>
   );
-}
-
-function StatusPill({ status }) {
-  const config = {
-    uploading: {
-      color: 'blue',
-      title: 'Uploaden',
-      icon: <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-        <path d="M6 9V3M6 3L3 6M6 3l3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
-    },
-    queued: {
-      color: 'yellow',
-      title: 'Wachtrij',
-      icon: <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-        <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.2"/>
-        <path d="M6 3.5V6l1.5 1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-      </svg>
-    },
-    processing: {
-      color: 'amber',
-      title: 'Verwerking',
-      icon: <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="dp-spin">
-        <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.4" strokeDasharray="16 8" strokeLinecap="round"/>
-      </svg>
-    },
-    completed: {
-      color: 'green',
-      title: 'Geïndexeerd',
-      icon: <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-        <path d="M2 6.5l2.5 2.5L10 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
-    },
-    failed: {
-      color: 'red',
-      title: 'Mislukt',
-      icon: <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-        <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-      </svg>
-    },
-  }
-
-  const { icon, title, color } = config[status] ?? { icon: '?', title: status, color: 'gray' }
-
-  return (
-    <span className={`dp-pill dp-pill--${color}`} title={title}>
-      {icon}
-    </span>
-  )
 }
 
 function PlusIcon() {
@@ -177,6 +184,32 @@ function TrashIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
       <path d="M2 4h10M5 4V2.5h4V4M5.5 6.5v4M8.5 6.5v4M3 4l.8 7.5h6.4L11 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function AlertIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M7 1.5L13 12.5H1L7 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+      <line x1="7" y1="6" x2="7" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+      <circle cx="7" cy="10.5" r="0.7" fill="currentColor"/>
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function ChevronIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }

@@ -81,6 +81,17 @@ export const getDocChunks = async (docId, orgId) => {
     return chunks
 }
 
+export const checkHash = async (hash, orgId) => {
+    const doc = await db`
+        SELECT *
+        FROM documents
+        WHERE document_hash = ${hash}
+        AND organization_id = ${orgId}
+    `
+
+    return doc[0]
+}
+
 
 
 
