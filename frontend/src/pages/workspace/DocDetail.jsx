@@ -125,7 +125,7 @@ export default function DocDetail() {
           <ul className="dd-chunk-list">
             {chunks.map((chunk, i) => (
               <li key={i} className="dd-chunk">
-                <span className="dd-chunk-num">#{i + 1}</span>
+                <span className="dd-chunk-num">#{chunk.chunk_index + 1}</span>
                 <p className="dd-chunk-text">{chunk.content}</p>
               </li>
             ))}
