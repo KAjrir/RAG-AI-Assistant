@@ -37,12 +37,6 @@ export default function ChatUI() {
   const assistantMessageRef                     = useRef(null);
 
   useEffect(() => {
-    if (!localStorage.getItem('session_id')) {
-      localStorage.setItem('session_id', random());
-    }
-  }, []);
-
-  useEffect(() => {
     if (!chatId) {
       setMessages([]);
       if (bottomRef.current) bottomRef.current.style.height = '0px';
@@ -183,7 +177,6 @@ export default function ChatUI() {
   };
 
   const startStream = async ({ chatId, message, assistantId }) => {
-    const sessionId = localStorage.getItem('session_id');
     const url = `${BASE_URL}/api/workspaces/${slug}/chats/messages`;
 
     assistantIdRef.current = assistantId
@@ -197,7 +190,6 @@ export default function ChatUI() {
       body: JSON.stringify({
         message,
         chatId,
-        sessionId,
         assistantId
       })
     });

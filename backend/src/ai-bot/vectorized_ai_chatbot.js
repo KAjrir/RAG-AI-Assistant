@@ -5,9 +5,7 @@ import db from '../database/db.js'
 import { SYSTEM_PROMPT } from "./prompts.js";
 import { EXPERIMENTAL_SYSTEM_PROMPT } from "./prompts.js";
 
-config({
-  path: "../.env"
-});
+
 
 const LLM_MODEL = "gpt-4o-mini";
 const EMBED_MODEL = "text-embedding-3-small";
@@ -42,23 +40,17 @@ async function retrieve(question, orgId) {
     FROM document_chunks
     WHERE organization_id = ${orgId}
     ORDER BY embedding <=> ${JSON.stringify(embedding)}::vector
-    LIMIT 3
+    LIMIT 6
   `;
-
-  console.log(rows)
 
   return rows;
 }
 
-export async function promptAI(question, sessionId, orgId) {
-  // 1. Chat history ophalen
-  if (!chatMemory.has(sessionId)) {
-    chatMemory.set(sessionId, []);
-  }
-  const history = chatMemory.get(sessionId);
-
-  // 2. Retrieval via pgvector
+export async function promptAI(question, history, orgId) {
+  // 1. Retrieval via pgvector
   const docs = await retrieve(question, orgId);
+  // console.log(docs)
+  
   const context = docs.map((d) => d.content).join("\n\n");
 
   const allVideos = docs.flatMap((d) => d.videos ?? []);
@@ -80,8 +72,9 @@ export async function promptAI(question, sessionId, orgId) {
       ? allImages.map((i) => `- ${i.url}`).join("\n")
       : "Geen fotos beschikbaar";
 
-  // 3. Messages opbouwen
-  const historyMessages = history.map(([role, content]) => ({ role, content }));
+  // 2. Messages opbouwen
+  // Laatste 2 eraf want die komen van de database. Dit is om de juiste content te sturen naar de llm provider
+  const historyMessages = history.map( ({ role, content }) => ({ role, content })).slice(0, history.length - 2);
 
   const userContent = `Knowledge Base Context:
 ${context}
@@ -104,8 +97,9 @@ Follow the RESPONSE FORMAT strictly and render media properly.`;
     ...historyMessages,
     { role: "user", content: userContent },
   ];
+  console.log(messages.slice(messages.length - 5))
 
-  // 4. Streaming call naar OpenAI, direct schrijven naar res
+  // 3. Streaming call naar OpenAI, direct schrijven naar res
   const stream = await openai.chat.completions.create({
     model: LLM_MODEL,
     temperature: 1,
@@ -127,12 +121,6 @@ Follow the RESPONSE FORMAT strictly and render media properly.`;
         };
       }
     }
-
-    // 5. History updaten
-    history.push(["user", question]);
-    history.push(["assistant", fullResponse]);
-    console.log(history)
-
   }
 
   return trackAndStream()

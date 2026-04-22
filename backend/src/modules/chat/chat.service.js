@@ -3,11 +3,13 @@ import OpenAI from "openai"
 
 const openai = new OpenAI();
 
-export const getChatId = async (chatId) => {
+export const getChatId = async (chatId, userId, orgId) => {
     const chat = await db`
         SELECT id, title
         FROM chats
         WHERE id = ${chatId}
+        AND user_id = ${userId}
+        AND organization_id = ${orgId}
     `
     return chat
 }
@@ -23,33 +25,35 @@ export const getChatsFromOrg = async (userId, orgId) => {
 }
 
 
-export const getMessagesFromOrg = async (userId, chatId) => {
+export const getChatMessages = async (chatId) => {
     const messages = await db`
         SELECT id, role, content, status
         FROM messages
         WHERE chat_id = ${chatId}
         ORDER BY created_at ASC
     `
-
     return messages
 }
 
 export const saveMessage = async (role, content, chatId, status = null) => {
-    const messageId = await db`
+    const message = await db`
         INSERT INTO messages (chat_id, role, content, status)
         VALUES (${chatId}, ${role}, ${content}, ${status})
-        RETURNING id
+        RETURNING id, role, content, status
     `
 
-    return messageId
+    return message[0]
 }
 
 export const updateAssistantMessage = async (assistantMessageId, assistantContent, status) => {
-    await db`
+    const assistantMessage = await db`
         UPDATE messages
         SET status = ${status}, content = ${assistantContent}
         WHERE id = ${assistantMessageId}
+        RETURNING id, role, content, status
     `
+
+    return assistantMessage[0]
 }
 
 export const createChat = async (orgId, userId) => {
@@ -58,7 +62,7 @@ export const createChat = async (orgId, userId) => {
         VALUES (${orgId}, ${userId})
         RETURNING id
     `
-    return chatId
+    return chatId[0]
 }
 
 export const generateChatTitle = async (userContent, chatId) => {
