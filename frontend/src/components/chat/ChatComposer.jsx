@@ -5,10 +5,11 @@ import { useWorkspace } from '../../context/WorkspaceContext.jsx';
 import '../../styles/chatComposer.css';
 
 const MODELS = [
-  { key: 'gpt-4o-mini', label: 'GPT-4o mini' },
+  { key: 'gpt-4o-mini', label: 'GPT-5' },
+  { key: 'gpt-4o', label: 'Sonnet 4.6' },
+  
   // Toekomst:
   // { key: 'gpt-4o',     label: 'GPT-4o' },
-  // { key: 'claude-3-5', label: 'Claude 3.5' },
   // { key: 'grok-2',     label: 'Grok 2' },
 ];
 
