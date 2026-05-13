@@ -6,11 +6,12 @@ import { useAuth } from './AuthContext.jsx';
 const WorkspaceContext = createContext(null);
 
 export function WorkspaceProvider({ slug, children }) {
-  const { user, setUser}                          = useAuth();
+  const { user, setUser }                 = useAuth();
   const [workspace, setWorkspace]         = useState(null);
   const [members, setMembers]             = useState([]);
   const [invitations, setInvitations]     = useState([]);
   const [documents, setDocuments]         = useState([]);
+  const [connections, setConnections]     = useState([]);
   const [loading, setLoading]             = useState(true);
   const [error, setError]                 = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -23,13 +24,15 @@ export function WorkspaceProvider({ slug, children }) {
       api.get(`/workspaces/${slug}`),
       api.get(`/workspaces/${slug}/members`),
       api.get(`/workspaces/${slug}/docs`),
+      api.get(`/workspaces/${slug}/connections`),
     ])
-      .then(([wsRes, membersRes, docsRes]) => {
+      .then(([wsRes, membersRes, docsRes, connectionsRes]) => {
         setWorkspace(wsRes.data);
         setMembers(membersRes.data);
         setDocuments(docsRes.data);
+        setConnections(connectionsRes.data);
+        console.log(connectionsRes.data)
 
-        // Invites alleen ophalen als admin/owner
         const me             = membersRes.data.find(m => m.id === user?.id);
         const isAdminOrOwner = ['admin', 'owner'].includes(me?.role);
 
@@ -64,10 +67,8 @@ export function WorkspaceProvider({ slug, children }) {
 
   async function updateWorkspace(data) {
     const res = await api.patch(`/workspaces/${slug}`, data);
-    console.log("UPDATE WORKSPACE RESULT", res.data)
     flushSync(() => {
       setWorkspace(prev => ({ ...prev, ...res.data }));
-
       if (data.name || data.slug) {
         setUser(prev => ({
           ...prev,
@@ -83,7 +84,6 @@ export function WorkspaceProvider({ slug, children }) {
         }));
       }
     });
-
     return res.data;
   }
 
@@ -132,6 +132,71 @@ export function WorkspaceProvider({ slug, children }) {
     );
   };
 
+  // ── Connections ──────────────────────────
+
+  // Eerste keer verbinden + re-enable na disable (zelfde endpoint)
+  async function connectConnection(connectionId, config = {}) {
+    const connection = connections.find(c => c.id === connectionId);
+    if (!connection) return;
+
+    if (connection.auth_type === 'oauth') {
+      window.location.href = connection.auth_config.oauth_url;
+      return;
+    }
+
+    const res = await api.post(
+      `/workspaces/${slug}/connections/${connectionId}/connect`,
+      { config }
+    );
+
+    console.log(res.data)
+
+    setConnections(prev => prev.map(c =>
+      c.id === connectionId
+        ? { ...c, organization_connection: res.data }
+        : c
+    ));
+
+    return res.data;
+  }
+
+  async function disableConnection(orgConnectionId) {
+    await api.patch(
+      `/workspaces/${slug}/connections/${orgConnectionId}/disable`
+    );
+
+    setConnections(prev => prev.map(c =>
+      c.organization_connection?.id === orgConnectionId
+        ? { ...c, organization_connection: { ...c.organization_connection, enabled: false } }
+        : c
+    ));
+  }
+
+  async function updateConnectionConfig(orgConnectionId, config) {
+    const res = await api.patch(
+      `/workspaces/${slug}/connections/${orgConnectionId}/config`,
+      { config }
+    );
+
+    setConnections(prev => prev.map(c =>
+      c.organization_connection?.id === orgConnectionId
+        ? { ...c, organization_connection: res.data }
+        : c
+    ));
+
+    return res.data;
+  }
+
+  async function deleteConnection(orgConnectionId) {
+    await api.delete(`/workspaces/${slug}/connections/${orgConnectionId}`);
+
+    setConnections(prev => prev.map(c =>
+      c.organization_connection?.id === orgConnectionId
+        ? { ...c, organization_connection: null }
+        : c
+    ));
+  }
+
   return (
     <WorkspaceContext.Provider value={{
       isSidebarOpen, toggleSidebar,
@@ -141,6 +206,11 @@ export function WorkspaceProvider({ slug, children }) {
       inviteMember, revokeInvite, removeMember,
       documents, reindexDocument, deleteDocument,
       uploadDocuments, refreshDocuments,
+      connections,
+      connectConnection,
+      disableConnection,
+      updateConnectionConfig,
+      deleteConnection,
     }}>
       {children}
     </WorkspaceContext.Provider>

@@ -55,7 +55,8 @@ export const addDocs = async (files) => {
 export const deleteDoc = async (orgId, docId) => {
     const deletedDoc = await db`
         DELETE FROM documents
-        WHERE organization_id = ${orgId} and id = ${docId}
+        WHERE organization_id = ${orgId}
+        AND id = ${docId}
         RETURNING id, filepath
     `
 
@@ -66,7 +67,8 @@ export const getDocStatus = async (docId, orgId) => {
     const [docStatus] = await db`
         SELECT status
         FROM documents
-        WHERE id = ${docId} and organization_id = ${orgId}
+        WHERE id = ${docId}
+        AND organization_id = ${orgId}
     `
 
     return docStatus
@@ -76,7 +78,9 @@ export const getDocChunks = async (docId, orgId) => {
     const chunks = await db`
         SELECT chunk_index, content, created_at
         FROM document_chunks
-        WHERE organization_id = ${orgId} and document_id = ${docId}
+        WHERE organization_id = ${orgId} 
+        AND document_id = ${docId}
+        ORDER BY chunk_index
     `
     return chunks
 }

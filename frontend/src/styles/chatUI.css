@@ -137,22 +137,18 @@
   border-radius: 14px;
   line-height: 1.5;
   word-break: break-word;
-  /* border: 1px solid var(--border); */
-  /* box-shadow: 0 2px 6px rgba(15, 32, 64, 0.04); */
 }
 
 /* ===== USER BUBBLE ===== */
 .bubbleUser {
   background: var(--surface2);
   color: var(--text);
-  /* border: none; */
   border-bottom-right-radius: 6px;
   padding: 8px 16px;
 }
 
 /* ===== ASSISTANT BUBBLE ===== */
 .bubbleAssistant {
-  /* background: var(--surface); */
   color: var(--text);
   border-bottom-left-radius: 6px;
   padding: 14px 16px;
@@ -167,76 +163,6 @@
   font-size: 1.4rem;
   font-weight: 500;
   color: var(--muted);
-}
-
-/* ===== COMPOSER ===== */
-.chatComposer {
-  position: sticky;
-  bottom: 0;
-  background-color: var(--bg);
-  border-radius: 24px 24px 0 0;
-}
-
-/* ===== INPUT WRAPPER ===== */
-.chatInputWrapper {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 24px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-  margin-bottom: 20px;
-}
-
-.chatInputWrapper:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
-}
-
-/* ===== INPUT ===== */
-.chatInput {
-  flex: 1;
-  field-sizing: content;
-  resize: none;
-  max-height: 200px;
-  border: none;
-  background: transparent;
-  color: var(--text);
-  outline: none;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  font-family: var(--sans);
-}
-
-.chatInput::placeholder {
-  color: var(--muted);
-}
-
-/* ===== SEND BUTTON ===== */
-.chatSend {
-  display: flex;
-  padding: 6px;
-  border-radius: 50%;
-  border: none;
-  background: var(--accent);
-  color: white;
-  font-weight: 500;
-  cursor: pointer;
-  align-self: flex-end;
-  transition: background 0.4s ease, transform 0.4s ease, opacity 0.4s ease;
-}
-
-.chatSend:hover {
-  background: var(--accent-hover);
-  transform: rotateZ(90deg);
-}
-
-.chatSend:disabled {
-  pointer-events: none;
-  transform: rotateZ(90deg);
-  opacity: 0.5;
 }
 
 /* ===== TYPING DOTS ===== */

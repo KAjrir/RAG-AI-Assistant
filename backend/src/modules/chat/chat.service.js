@@ -109,3 +109,33 @@ export const updateChatTitle = async (chatId, title) => {
     `
     return newTitle
 }
+
+export const getToolsForChat = async (orgId, requestedConnectionIds) => {
+    // 1. Check of org deze connections heeft enabled
+    // 2. Haal config op (api_key etc voor api_key type)
+    // 3. Haal connection_tools op met parameters
+    // Alles in 1 query!
+  
+    const tools = await db`
+        SELECT 
+            c.id as connection_id,
+            c.key as connection_key,
+            c.auth_type,
+            oc.config,                    -- Encrypted api_key etc
+            ct.id as tool_id,
+            ct.key as tool_key,
+            ct.name as tool_name,
+            ct.description,
+            ct.parameters
+        FROM connections c
+        JOIN organization_connections oc 
+            ON c.id = oc.connection_id
+            AND oc.organization_id = ${orgId}
+            AND oc.enabled = true          -- ← Moet enabled zijn
+        JOIN connection_tools ct 
+            ON c.id = ct.connection_id
+        WHERE c.id = ANY(${requestedConnectionIds})             -- ← Alleen requested connections
+    `
+    
+    return tools
+}

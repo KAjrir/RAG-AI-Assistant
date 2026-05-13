@@ -2,8 +2,9 @@ import { Router } from "express";
 import { promptAI } from "../../ai-bot/vectorized_ai_chatbot.js";
 import { cache } from "../../cache.js"
 
-import { getChatMessages, getChatsFromOrg, saveMessage, createChat, generateChatTitle, updateAssistantMessage, getChatId, deleteChat, updateChatTitle } from "./chat.service.js";
+import { getChatMessages, getChatsFromOrg, saveMessage, createChat, generateChatTitle, updateAssistantMessage, getChatId, deleteChat, updateChatTitle, getToolsForChat } from "./chat.service.js";
 import { toJsonLine } from "../../utils.js";
+import { openaiToolFormat } from "../../ai-bot/refactorCode.js";
 
 const router = Router();
 
@@ -45,7 +46,7 @@ router.get("/:chatId", async (req, res) => {
   if (chat.length < 1) return res.status(404).json({ message: "Chat not found"})
   
   const messages = await getChatMessages(chatId)
-  console.log(messages)
+  // console.log(messages)
 
   res.status(200).json(messages)
 })
@@ -55,7 +56,7 @@ router.patch("/:chatId", async (req, res) => {
   const newTitle = req.body.title
   const { title } = await updateChatTitle(chatId, newTitle)
 
-  res.status(200).json({title})
+  res.status(200).json({ title })
 })
 
 router.delete("/:chatId", async (req, res) => {
@@ -82,35 +83,48 @@ router.post("/:chatId/messages", async (req, res) => {
     cache.set(`chat:${chatId}:messages`, JSON.stringify(history))
   }
 
-  res.status(201).json({assistantMessageId: assistantMessage.id})
+  res.status(201).json({ assistantMessageId: assistantMessage.id })
 })
 
 router.post("/messages", async (req, res) => {
-  const userContent = req.body.message || "";
-  const chatId = req.body.chatId
-  const assistantId = req.body.assistantId
-
-  const userId = req.userId
-  const orgId = req.orgId
-
   res.setHeader("Content-Type", "text/plain");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
+  
+  const chatId = req.body.chatId
+  const assistantId = req.body.assistantId
+  
+  const orgId = req.orgId
+  
+  const { message, model, connections } = req.body
 
+  
+  const availableTools = await getToolsForChat(orgId, connections)
+  // console.dir(availableTools, { depth: null })
+
+  const tools = openaiToolFormat(availableTools)
+  // console.dir(tools, {depth: null})
+  
   let history = JSON.parse(cache.get(`chat:${chatId}:messages`))
   
   if(!history) {
     history = await getChatMessages(chatId)
     cache.set(`chat:${chatId}:messages`, JSON.stringify(history))
   }
+  
+  const userInput = {
+    userContent: message,
+    model,
+    tools
+  }
 
   try {
     let assistantContent = "";
-    const stream = await promptAI(userContent, history, orgId);
+    const stream = await promptAI(userInput, history, orgId);
 
     for await (const token of stream) {
-        assistantContent += token.content
-        res.write(toJsonLine(token))
+      assistantContent += token.content
+      res.write(toJsonLine(token))
     }
     
     const assistantMessage = await updateAssistantMessage(assistantId, assistantContent, "done")

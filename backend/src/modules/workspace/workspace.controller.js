@@ -6,9 +6,8 @@ import { Router } from "express";
 import chatRouter from "../chat/chat.controller.js"
 import docRouter from "../doc/doc.controller.js"
 
-import { getCurrentWorkspace, getWorkspaceMembers, getStats, inviteMember, getAllInvites, getPendingInvites, deleteMember, checkOrgLogo, updateOrgLogo, updateWorkspace } from "./workspace.service.js";
+import { getCurrentWorkspace, getWorkspaceMembers, getStats, inviteMember, getAllInvites, getPendingInvites, deleteMember, checkOrgLogo, updateOrgLogo, updateWorkspace, getConnectionsForOrganization, enableOrgConnection, disableOrgConnection, deleteOrgConnection, updateOrgConnectionConfig } from "./workspace.service.js";
 import { assetsPath, uploadsDirectory } from "../../constants.js";
-import { mockConnections } from "../mocks/stats.mock.js";
 
 
 const organizationLogoFileDirectory = `${uploadsDirectory}/organization-logos`
@@ -170,8 +169,54 @@ router.delete("/members/:memberId", async (req, res) => {
 })
 
 router.get("/connections", async (req, res) => {
+    const orgId = req.orgId
 
-    res.status(200).json(mockConnections)
+    const connections = await getConnectionsForOrganization(orgId);
+
+    res.status(200).json(connections)
+})
+
+router.post("/connections/:connectionId/connect", async (req, res) => {
+    const orgId = req.orgId
+    const connectionId = req.params.connectionId
+    const config = req.body.config
+    console.log(orgId, connectionId, config)
+
+    const orgConnection = await enableOrgConnection(orgId, connectionId, config)
+
+    res.status(201).json(orgConnection)
+})
+
+router.patch("/connections/:orgConnectionId/disable", async (req, res) => {
+    const orgId = req.orgId
+    const orgConnectionId = req.params.orgConnectionId
+
+    await disableOrgConnection(orgId, orgConnectionId)
+
+    res.status(204).end()
+})
+
+router.patch("/connections/:orgConnectionId/config", async (req, res) => {
+    const orgId = req.orgId
+    const orgConnectionId = req.params.orgConnectionId
+    const config = req.body.config
+
+    await updateOrgConnectionConfig(orgId, orgConnectionId, config)
+
+    res.status(200).json({
+        success: true
+    })
+})
+
+router.delete("/connections/:orgConnectionId", async (req, res) => {
+    const orgId = req.orgId
+    const orgConnectionId = req.params.orgConnectionId
+    
+    await deleteOrgConnection(orgId, orgConnectionId)
+
+    res.status(200).json({
+        success: true
+    })
 })
 
 router.get("/stats", async (req, res) => {
