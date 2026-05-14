@@ -1,4 +1,4 @@
-import fs from "fs"
+import fs from "fs/promises"
 import express from "express";
 import cors from "cors";
 import cookieParser from 'cookie-parser';
@@ -6,20 +6,14 @@ import rateLimit from "express-rate-limit";
 import { config } from "dotenv";
 
 import authRouter from "./modules/auth/auth.controller.js"
-import chatRouter from "./modules/chat/chat.controller.js"
 import userRouter from "./modules/user/user.controller.js"
 import workspaceRouter from "./modules/workspace/workspace.controller.js"
-import docRouter from "./modules/doc/doc.controller.js"
 
 import { requireAuth, requireWorkspace } from "./modules/middleware.js";
 
 import { assetsPath, uploadsDirectory, ISPROD, FRONTEND_URL } from "./constants.js";
 
-
-if (!fs.existsSync(uploadsDirectory)) {
-  fs.mkdirSync(uploadsDirectory)
-  console.log("UPLOADS DIRECTORY INITIATED!")
-}
+await fs.mkdir(uploadsDirectory, {recursive: true})
 
 config({
   path: "../.env"
@@ -56,11 +50,11 @@ const chatLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-app.use(assetsPath, express.static(uploadsDirectory))
 
 app.use("/api/auth", authRouter)
 app.use("/api/users", requireAuth, userRouter)
 app.use("/api/workspaces/:slug", requireAuth, requireWorkspace, workspaceRouter)
+app.use(assetsPath, requireAuth, express.static(uploadsDirectory))
 
 
 const PORT = process.env.PORT || 3000;

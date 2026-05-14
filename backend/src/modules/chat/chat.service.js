@@ -27,18 +27,23 @@ export const getChatsFromOrg = async (userId, orgId) => {
 
 export const getChatMessages = async (chatId) => {
     const messages = await db`
-        SELECT id, role, content, status
+        SELECT
+            id,
+            role,
+            content,
+            status
         FROM messages
         WHERE chat_id = ${chatId}
         ORDER BY created_at ASC
     `
+    // console.dir(messages, { depth:null })
     return messages
 }
 
 export const saveMessage = async (role, content, chatId, status = null) => {
     const message = await db`
         INSERT INTO messages (chat_id, role, content, status)
-        VALUES (${chatId}, ${role}, ${content}, ${status})
+        VALUES (${chatId}, ${role}, ${JSON.stringify(content)}::jsonb, ${status})
         RETURNING id, role, content, status
     `
 
@@ -48,7 +53,7 @@ export const saveMessage = async (role, content, chatId, status = null) => {
 export const updateAssistantMessage = async (assistantMessageId, assistantContent, status) => {
     const assistantMessage = await db`
         UPDATE messages
-        SET status = ${status}, content = ${assistantContent}
+        SET status = ${status}, content = ${JSON.stringify(assistantContent)}::jsonb
         WHERE id = ${assistantMessageId}
         RETURNING id, role, content, status
     `

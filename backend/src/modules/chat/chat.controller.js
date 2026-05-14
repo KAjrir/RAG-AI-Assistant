@@ -1,10 +1,47 @@
+import fs from "fs/promises";
+import path from "path";
+import sharp from "sharp";
+
 import { Router } from "express";
+import multer from "multer";
+
 import { promptAI } from "../../ai-bot/vectorized_ai_chatbot.js";
 import { cache } from "../../cache.js"
 
 import { getChatMessages, getChatsFromOrg, saveMessage, createChat, generateChatTitle, updateAssistantMessage, getChatId, deleteChat, updateChatTitle, getToolsForChat } from "./chat.service.js";
-import { toJsonLine } from "../../utils.js";
+import { toJsonLine, getUuid } from "../../utils.js";
 import { openaiToolFormat } from "../../ai-bot/refactorCode.js";
+import { assetsPath, uploadsDirectory } from "../../constants.js";
+
+const chatsFileDirectory = `${uploadsDirectory}/chat-resources`
+const chatsFileResourcePath = `${assetsPath}/chat-resources`
+
+await fs.mkdir(chatsFileDirectory, {recursive: true})
+
+const storage = multer.diskStorage({
+  destination(req, file, cb) {
+    cb(null, chatsFileDirectory);
+  },
+  filename(req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const fileName = `${getUuid()}${ext}`;
+    cb(null, fileName);
+  }
+});
+
+const upload = multer({
+  storage: multer.memoryStorage()
+  // limits: {
+  //   fileSize: 2 * 1024 * 1024, // 2MB
+  // },
+  // fileFilter(req, file, cb) {
+  //   const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+  //   if (!allowed.includes(file.mimetype)) {
+  //     return cb(new Error('Alleen JPG, PNG of WebP is toegestaan.'));
+  //   }
+  //   cb(null, true);
+  // }
+});
 
 const router = Router();
 
@@ -18,16 +55,81 @@ router.get("/", async (req, res) => {
   res.status(200).json(chats)
 })
 
-router.post("/", async (req, res) => {
+router.post("/", upload.array("files"), async (req, res) => {
   const orgId = req.orgId
   const userId = req.userId
-  const userContent = req.body.message;  
-  
+
   const { id } = await createChat(orgId, userId);
+
+  for (const file of req.files) {
+    if(file.mimetype.includes("image/")) {
+      const filename = `${getUuid()}.webp`;
+      const filepath = `${chatsFileDirectory}/${filename}`
+      
+      const optimized = 
+        await sharp(file.buffer)
+          .resize({ width: 1200, height: 1200, withoutEnlargement: true })
+          .webp({ quality: 75 }).toFile(filepath);
+
+      delete file.buffer
+      file.filename = filename
+      file.path = filepath
+      file.size = optimized.size
+      
+    } else {
+
+      const extname = path.extname(file.originalname)
+      const filename = `${getUuid()}${extname}`;
+      const filepath = `${chatsFileDirectory}/${filename}`
+      await fs.writeFile(filepath, file.buffer)
+
+      delete file.buffer
+      file.filename = filename
+      file.path = filepath
+    }
+  }
+  
+  const userContent = [
+    ...req.files.map(f => (
+      f.mimetype.includes("image") ? {
+        type: "image",
+        filepath: f.path,
+        url: `${chatsFileResourcePath}/${f.filename}`,
+        filename: f.filename,
+        originalname: f.originalname,
+        mimetype: f.mimetype,
+        chatId: id,
+        size: f.size
+      } : {
+        type: "file",
+        filepath: f.path,
+        url: `${chatsFileResourcePath}/${f.filename}`,
+        filename: f.filename,
+        originalname: f.originalname,
+        mimetype: f.mimetype,
+        chatId: id,
+        size: f.size
+      }
+    )),
+
+    ...(req.body.message ? [{
+      type: "text",
+      text: req.body.message
+    }] : [])
+  ]
+
+  // console.log(userContent)
+  const assistantContent = [
+    {
+      type: "text",
+      text: ""
+    }
+  ]
+
   await saveMessage("user", userContent, id)
   
-  generateChatTitle(userContent, id)
-  const assistantMessage = await saveMessage("assistant", "", id, "streaming")
+  generateChatTitle(req.body.message, id)
+  const assistantMessage = await saveMessage("assistant", assistantContent, id, "streaming")
 
 
   res.status(201).json({
@@ -46,7 +148,26 @@ router.get("/:chatId", async (req, res) => {
   if (chat.length < 1) return res.status(404).json({ message: "Chat not found"})
   
   const messages = await getChatMessages(chatId)
-  // console.log(messages)
+
+  const publicMessages = messages.map(msg => ({
+    ...msg,
+    content: msg.content.map(c => {
+      if(c.type === "file" || c.type === "image") {
+        return {
+          type: c.type,
+          originalname: c.originalname,
+          url: c.url
+        }
+      } else {
+        return c
+      }
+    })
+  }))
+  console.log("MESSAGES: ")
+  console.dir(messages, {depth: null})
+
+  console.log("PUBLICMESSAGES: ")
+  console.dir(publicMessages, {depth: null})
 
   res.status(200).json(messages)
 })
@@ -66,14 +187,103 @@ router.delete("/:chatId", async (req, res) => {
   res.status(204).end()
 })
 
-router.post("/:chatId/messages", async (req, res) => {
-  const userContent = req.body.message
+[
+  {
+    fieldname: 'files',
+    originalname: 'Feedback for HERKANSING Professional Skills Portfolio eerste 100-dagen.pdf',
+    encoding: '7bit',
+    mimetype: 'application/pdf',
+    size: 59093,
+
+    filename: 'd42c15e7-5f6c-4506-8866-a95d17e490ac.pdf',
+    path: '/home/kajrir/repos/RAG-AI-Assistant/backend/src/uploads/chat-resources/d42c15e7-5f6c-4506-8866-a95d17e490ac.pdf',
+  },
+  {
+    fieldname: 'files',
+    originalname: 'handtekening.png',
+    encoding: '7bit',
+    mimetype: 'image/png',
+    size: 13678,
+
+    buffer: "<Buffer 89 50 4e 47 0d 0a 1a 0a 00 00 00 0d 49 48 44 52 00 00 01 90 00 00 00 c8 08 06 00 00 00 c6 15 b7 e2 00 00 10 00 49 44 41 54 78 01 ec dd 05 bc 6d 41 5d ... 13628 more bytes>",
+  }
+]
+
+
+router.post("/:chatId/messages", upload.array("files"), async (req, res) => {
   const userId = req.userId
   const orgId = req.orgId
   const chatId = req.params.chatId
+  
+  for (const file of req.files) {
+    if(file.mimetype.includes("image/")) {
+      const filename = `${getUuid()}.webp`;
+      const filepath = `${chatsFileDirectory}/${filename}`
+      
+      const optimized = 
+        await sharp(file.buffer)
+          .resize({ width: 1200, height: 1200, withoutEnlargement: true })
+          .webp({ quality: 75 }).toFile(filepath);
+
+      delete file.buffer
+      file.filename = filename
+      file.path = filepath
+      file.size = optimized.size
+
+    } else {
+
+      const extname = path.extname(file.originalname)
+      const filename = `${getUuid()}${extname}`;
+      const filepath = `${chatsFileDirectory}/${filename}`
+      await fs.writeFile(filepath, file.buffer)
+
+      delete file.buffer
+      file.filename = filename
+      file.path = filepath
+    }
+  }
+
+  console.log(req.files)
+
+  const userContent = [
+    ...req.files.map(f => (
+      f.mimetype.includes("image") ? {
+        type: "image",
+        filepath: f.path,
+        url: `${chatsFileResourcePath}/${f.filename}`,
+        filename: f.filename,
+        originalname: f.originalname,
+        mimetype: f.mimetype,
+        chatId: chatId,
+        size: f.size
+      } : {
+        type: "file",
+        filepath: f.path,
+        url: `${chatsFileResourcePath}/${f.filename}`,
+        filename: f.filename,
+        originalname: f.originalname,
+        mimetype: f.mimetype,
+        chatId: chatId,
+        size: f.size
+      }
+    )),
+    
+    ...(req.body.message ? [{
+      type: "text",
+      text: req.body.message
+    }] : [])
+  ]
+
+  const assistantContent = [
+    {
+      type: "text",
+      text: ""
+    }
+  ]
+
 
   const userMessage = await saveMessage("user", userContent, chatId)
-  const assistantMessage = await saveMessage("assistant", "", chatId)
+  const assistantMessage = await saveMessage("assistant", assistantContent, chatId)
 
   const history = JSON.parse(cache.get(`chat:${chatId}:messages`))
   
@@ -95,10 +305,8 @@ router.post("/messages", async (req, res) => {
   const assistantId = req.body.assistantId
   
   const orgId = req.orgId
-  
-  const { message, model, connections } = req.body
+  const { model, connections } = req.body.payload
 
-  
   const availableTools = await getToolsForChat(orgId, connections)
   // console.dir(availableTools, { depth: null })
 
@@ -111,21 +319,29 @@ router.post("/messages", async (req, res) => {
     history = await getChatMessages(chatId)
     cache.set(`chat:${chatId}:messages`, JSON.stringify(history))
   }
+  console.log("HISTORY: ")
+  console.dir(history, {depth: null})
   
   const userInput = {
-    userContent: message,
     model,
     tools
   }
 
   try {
-    let assistantContent = "";
+    let assistantText = "";
     const stream = await promptAI(userInput, history, orgId);
 
     for await (const token of stream) {
-      assistantContent += token.content
+      assistantText += token.content
       res.write(toJsonLine(token))
     }
+
+    const assistantContent = [
+      {
+        type: "text",
+        text: assistantText
+      }
+    ]
     
     const assistantMessage = await updateAssistantMessage(assistantId, assistantContent, "done")
 

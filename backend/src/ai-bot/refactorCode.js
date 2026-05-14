@@ -1,3 +1,5 @@
+import fs from "fs/promises";
+
 export const openaiToolFormat = (availableTools) => {
     const tools = [];
     for (const tool of availableTools) {
@@ -19,4 +21,90 @@ export const openaiToolFormat = (availableTools) => {
         tools.push(formattedTool)
     }
     return tools
+};
+
+export const openaiInputFormat = async (messages) => {
+    const formattedInput = [];
+
+    for (const msg of messages) {
+        const content = msg.content
+
+        const formattedContent = []
+
+        for (const c of content) {
+            if(c.type === "file" || c.type === "image") {
+                const base64 = await fs.readFile(c.filepath, "base64")
+                const data = `data:${c.mimetype};base64,${base64}`
+
+                formattedContent.push(c.type === "file" ? 
+                    {
+                        type: "input_file",
+                        filename: c.filename,
+                        file_data: data
+                    } : {
+                        type: "input_image",
+                        image_url: data
+                    }
+                )
+            } else {
+                formattedContent.push(msg.role === "user" ? 
+                    {
+                        type: "input_text",
+                        text: c.text
+                    } : {
+                        type: "output_text",
+                        text: c.text
+                    }
+                )
+            }
+        }
+
+        formattedInput.push({
+            ...msg,
+            content: formattedContent
+        })
+    }
+
+    return formattedInput
+}
+
+
+export const openaiInputFormat2 = async (messages) => {
+    return Promise.all(
+        messages.map(async (msg) => ({
+            ...msg,
+            content: await Promise.all(
+                msg.content.map(async (c) => {
+                    if (
+                        c.type === "file" ||
+                        c.type === "image"
+                    ) {
+                        const base64 = await fs.readFile(
+                            c.filepath,
+                            "base64"
+                        );
+
+                        const data =
+                            `data:${c.mimetype};base64,${base64}`;
+
+                        return c.type === "file"
+                            ? {
+                                type: "input_file",
+                                filename: c.filename,
+                                file_data: data
+                            }
+                            : {
+                                type: "input_image",
+                                image_url: data
+                            };
+                    }
+
+                    return {
+                        type: "input_text",
+                        text: c.text
+                    };
+                })
+            )
+        }))
+    );
 };

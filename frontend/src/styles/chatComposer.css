@@ -1,5 +1,7 @@
 /* ===== COMPOSER ===== */
 .composer {
+  position: sticky;
+  bottom: 0;
   background: var(--bg);
   padding: 0 24px 24px;
 }
@@ -156,7 +158,7 @@
 .composer-submenu {
   position: absolute;
   bottom: calc(100% + 8px);
-  left: calc(210px - 12px);  /* breedte hoofdmenu + gap */
+  left: calc(210px + 12px);  /* breedte hoofdmenu + gap */
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -329,4 +331,91 @@
     font-size: 10px;
     padding: 3px 8px;
   }
+}
+
+/* ===== FILE PREVIEWS ===== */
+.composer-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 16px 0;
+}
+
+.composer-file {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  width: 72px;
+  flex-shrink: 0;
+}
+
+.composer-file-preview {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  display: block;
+}
+
+.composer-file-icon {
+  width: 72px;
+  height: 72px;
+  background: var(--accent-light);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Filename alleen zichtbaar op hover */
+.composer-file-name {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  font-size: 9px;
+  color: #fff;
+  background: rgba(15, 32, 64, 0.7);
+  padding: 3px 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.composer-file:hover .composer-file-name {
+  opacity: 1;
+}
+
+.composer-file-remove {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(15, 32, 64, 0.5);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.composer-file:hover .composer-file-remove {
+  opacity: 1;
+}
+
+.composer-file-remove:hover {
+  background: rgba(15, 32, 64, 0.8);
 }

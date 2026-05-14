@@ -1,5 +1,4 @@
 import crypto from "crypto";
-import bcrypt from "bcrypt"
 
 export const toJsonLine = (data) => JSON.stringify(data) + "\n";
 
@@ -29,4 +28,8 @@ export const formatTimeForUser = (date, user = {}) => {
     hour: "2-digit",
     minute: "2-digit"
   }).format(new Date(date));
+};
+
+export const getUuid = () => {
+  return crypto.randomUUID();
 };

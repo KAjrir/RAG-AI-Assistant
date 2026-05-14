@@ -54,11 +54,11 @@ export default function ChatUI() {
     api.get(`/workspaces/${slug}/chats/${chatId}`).then(res => {
       setMessages(res.data);
 
-      const streamingMsg = res.data.find(m => m.status === 'streaming');
-      if (streamingMsg) {
-        assistantIdRef.current = streamingMsg.id;
-        startStream({ chatId, message: null, assistantId: streamingMsg.id });
-      }
+      // const streamingMsg = res.data.find(m => m.status === 'streaming');
+      // if (streamingMsg) {
+      //   assistantIdRef.current = streamingMsg.id;
+      //   startStream({ chatId, message: null, assistantId: streamingMsg.id });
+      // }
     });
   }, [slug, chatId]);
 
@@ -98,24 +98,43 @@ export default function ChatUI() {
   };
 
   // ── handleSubmit krijgt model + connections mee van ChatComposer ──
-  const handleSubmit = async (text, { model, connections } = {}) => {
-    if (!text.trim() || chatLoading || isStreaming) return;
+  const handleSubmit = async (payload, formData) => {
+    if (chatLoading || isStreaming) return;
+
     setChatLoading(true);
-    setDraft('');
 
     const tempAssistantId = random();
     setMessages(prev => [
       ...prev,
-      { id: random(), role: 'user', content: text },
-      { id: tempAssistantId, role: 'assistant', content: '' },
+      {
+        id: random(),
+        role: 'user',
+        content: [
+          // Afbeeldingen
+          ...payload.files
+            .filter(f => f.type.startsWith('image/'))
+            .map(f => ({
+              type: 'image',
+              originalname: f.name,
+              blob: URL.createObjectURL(f),
+              url: null
+            })),
+          // Bestanden
+          ...payload.files
+            .filter(f => !f.type.startsWith('image/'))
+            .map(f => ({
+              type: 'file',
+              originalname: f.name,
+            })),
+          // Tekst
+          ...(payload.message ? [{ type: 'text', text: payload.message }] : [])
+        ]
+      },
+      { id: tempAssistantId, role: 'assistant', content: [{ type: 'text', text: '' }] }
     ]);
 
     if (chatId) {
-      const res = await api.post(`/workspaces/${slug}/chats/${chatId}/messages`, {
-        message: text,
-        model,
-        connections,
-      });
+      const res = await api.post(`/workspaces/${slug}/chats/${chatId}/messages`, formData);
       assistantIdRef.current = res.data.assistantMessageId;
 
       setMessages(prev =>
@@ -126,15 +145,10 @@ export default function ChatUI() {
         )
       );
 
-      startStream({ chatId, message: text, assistantId: res.data.assistantMessageId, model, connections });
+      startStream({ chatId, assistantId: res.data.assistantMessageId, payload});
     } else {
-      const res = await api.post(`/workspaces/${slug}/chats`, {
-        message: text,
-        model,
-        connections,
-      });
+      const res = await api.post(`/workspaces/${slug}/chats`, formData)
       const { chatId: newChatId, assistantMessageId } = res.data;
-
       assistantIdRef.current = assistantMessageId;
 
       setMessages(prev =>
@@ -144,23 +158,24 @@ export default function ChatUI() {
             : msg
         )
       );
-
-      pendingStreamRef.current = { chatId: newChatId, message: text, assistantId: assistantMessageId, model, connections };
+      
+      pendingStreamRef.current = { chatId: newChatId, assistantId: assistantMessageId, payload };
+      console.log(payload)
       setTitleLoading(true);
       navigate(`/w/${slug}/chat/${newChatId}`);
     }
   };
 
-  const startStream = async ({ chatId, message, assistantId, model, connections }) => {
+  const startStream = async ({ chatId, assistantId, payload }) => {
     const url = `${BASE_URL}/api/workspaces/${slug}/chats/messages`;
 
     assistantIdRef.current = assistantId;
-
+    console.log(pendingStreamRef)
     const response = await fetch(url, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, chatId, assistantId, model, connections }),
+      body: JSON.stringify({ chatId, assistantId, payload }),
     });
 
     const reader  = response.body.getReader();
@@ -190,7 +205,12 @@ export default function ChatUI() {
           setMessages(prev =>
             prev.map(msg =>
               msg.id === assistantIdRef.current
-                ? { ...msg, content: msg.content + data.content }
+                ? { ...msg, content: [
+                  {
+                    ...msg.content[0],
+                    text: msg.content[0].text + data.content
+                  }
+                ]}
                 : msg
             )
           );
@@ -257,7 +277,36 @@ export default function ChatUI() {
                 }
               >
                 {m.role === 'user' && (
-                  <div className="bubble bubbleUser">{m.content}</div>
+                  <div className="bubble bubbleUser">
+                    {/* Bestanden en afbeeldingen */}
+                    {m.content.filter(c => c.type === 'image' || c.type === 'file').length > 0 && (
+                      <div className="bubbleUser-attachments">
+                        {m.content.filter(c => c.type === 'image' || c.type === 'file').map((item, i) => (
+                          item.type === 'image' ? (
+                            <div key={i} className="bubbleUser-image-wrap">
+                              <img
+                                src={item.url ? `${BASE_URL}${item.url}` : item.blob}
+                                alt={item.originalname ?? 'Afbeelding'}
+                                className="bubbleUser-image"
+                              />
+                            </div>
+                          ) : (
+                            <div key={i} className="bubbleUser-file">
+                              <FileIcon />
+                              <span className="bubbleUser-file-name">{item.originalname}</span>
+                            </div>
+                          )
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Tekst */}
+                    {m.content.find(c => c.type === 'text')?.text && (
+                      <p className="bubbleUser-text">
+                        {m.content.find(c => c.type === 'text').text}
+                      </p>
+                    )}
+                  </div>
                 )}
 
                 {m.role === 'assistant' && (
@@ -270,7 +319,7 @@ export default function ChatUI() {
                           rehypePlugins={[rehypeRaw, rehypeHighlight]}
                           remarkPlugins={[remarkGfm]}
                         >
-                          {m.content}
+                          {m.content[0].text}
                         </ReactMarkdown>
                       </div>
                     </div>
@@ -320,6 +369,15 @@ function ShareIcon() {
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
       <path d="M10 1.5L12.5 4L10 6.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M12.5 4H5.5C3.8 4 2.5 5.3 2.5 7v3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function FileIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M2.5 1h6L11 3.5V13H2.5V1z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+      <path d="M8.5 1v2.5H11" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
     </svg>
   );
 }

@@ -26,7 +26,6 @@ export async function requireAuth(req, res, next) {
   }
 }
 
-
 export async function requireWorkspace(req, res, next) {
   const { slug } = req.params
 

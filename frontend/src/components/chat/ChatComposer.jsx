@@ -1,22 +1,20 @@
 import { useRef, useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
-
 import '../../styles/chatComposer.css';
 
 const MODELS = [
   { key: 'gpt-4o-mini', label: 'GPT-5' },
-  { key: 'gpt-4o', label: 'Sonnet 4.6' },
-  
+  { key: 'gpt-4o',      label: 'Sonnet 4.6' },
   // Toekomst:
-  // { key: 'gpt-4o',     label: 'GPT-4o' },
-  // { key: 'grok-2',     label: 'Grok 2' },
+  // { key: 'grok-2',   label: 'Grok 2' },
 ];
 
 export default function ChatComposer({ draft, setDraft, handleSubmit }) {
   const { slug }                              = useParams();
   const { connections }                       = useWorkspace();
   const navigate                              = useNavigate();
+  const fileInputRef                          = useRef(null);
 
   // Plus menu
   const [plusOpen, setPlusOpen]               = useState(false);
@@ -27,6 +25,9 @@ export default function ChatComposer({ draft, setDraft, handleSubmit }) {
   const [modelOpen, setModelOpen]             = useState(false);
   const [selectedModel, setSelectedModel]     = useState(MODELS[0]);
   const modelRef                              = useRef(null);
+
+  // Files
+  const [files, setFiles]                     = useState([]);
 
   // Actieve connectors (frontend state)
   const availableConns = connections.filter(c => c.organization_connection?.enabled);
@@ -55,16 +56,105 @@ export default function ChatComposer({ draft, setDraft, handleSubmit }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Ctrl+V paste detecteren (screenshots/images)
+  useEffect(() => {
+    function handlePaste(e) {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      const pastedFiles = [];
+      for (const item of items) {
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) pastedFiles.push(file);
+        }
+      }
+
+      if (pastedFiles.length > 0) {
+        addFiles(pastedFiles);
+      }
+    }
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, []);
+
+  function addFiles(newFiles) {
+    setFiles(prev => [
+      ...prev,
+      ...newFiles.map(f => ({
+        id: crypto.randomUUID(),
+        file: f,
+        name: f.name || `screenshot-${Date.now()}.png`,
+        preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null,
+      }))
+    ]);
+  }
+
+  function removeFile(id) {
+    setFiles(prev => {
+      const file = prev.find(f => f.id === id);
+      if (file?.preview) URL.revokeObjectURL(file.preview);
+      return prev.filter(f => f.id !== id);
+    });
+  }
+
+  function handleFileInput(e) {
+    const selected = Array.from(e.target.files);
+    if (selected.length > 0) addFiles(selected);
+    e.target.value = '';  // Reset zodat je hetzelfde bestand opnieuw kan toevoegen
+    setPlusOpen(false);
+  }
+
   function onSubmit() {
-    handleSubmit(draft, {
+    if (!draft.trim() && files.length === 0) return;
+
+    // Bouw FormData op
+    const payload = {
+      message: draft,
       model: selectedModel.key,
       connections: activeConns,
-    });
+      files: files.map(f => f.file)
+    }
+    
+    const formData = new FormData();
+    formData.append('message', draft);
+    formData.append('model', selectedModel.key);
+    formData.append('connections', JSON.stringify(activeConns));
+    files.forEach(f => formData.append('files', f.file, f.name));
+    console.log(payload)
+    console.log(formData)
+
+    handleSubmit(payload, formData);
+
+    // Reset files na submit
+    files.forEach(f => { if (f.preview) URL.revokeObjectURL(f.preview); });
+    setFiles([]);
+    setDraft("");
   }
 
   return (
     <div className="composer">
       <div className="composer-inner">
+
+        {/* File previews */}
+        {files.length > 0 && (
+          <div className="composer-files">
+            {files.map(f => (
+              <div key={f.id} className="composer-file">
+                {f.preview ? (
+                  <img src={f.preview} className="composer-file-preview" alt={f.name} />
+                ) : (
+                  <div className="composer-file-icon"><AttachIcon /></div>
+                )}
+                <span className="composer-file-name">{f.name}</span>
+                <button className="composer-file-remove" onClick={() => removeFile(f.id)}>
+                  <CloseIcon />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Textarea */}
         <textarea
@@ -78,6 +168,16 @@ export default function ChatComposer({ draft, setDraft, handleSubmit }) {
               onSubmit();
             }
           }}
+        />
+
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/*,.pdf,.txt,.docx"
+          style={{ display: 'none' }}
+          onChange={handleFileInput}
         />
 
         {/* Toolbar */}
@@ -99,7 +199,10 @@ export default function ChatComposer({ draft, setDraft, handleSubmit }) {
                 <div className="composer-menu">
 
                   {/* Bestand toevoegen */}
-                  <button className="composer-menu-item" onClick={() => setPlusOpen(false)}>
+                  <button
+                    className="composer-menu-item"
+                    onClick={() => { fileInputRef.current?.click(); }}
+                  >
                     <AttachIcon />
                     Bestand toevoegen
                   </button>
@@ -118,10 +221,9 @@ export default function ChatComposer({ draft, setDraft, handleSubmit }) {
                 </div>
               )}
 
-              {/* Connecties submenu — naast het hoofdmenu */}
+              {/* Connecties submenu */}
               {plusOpen && connSubmenuOpen && (
                 <div className="composer-submenu">
-
                   {availableConns.length === 0 && (
                     <p className="composer-submenu-empty">Geen connecties beschikbaar</p>
                   )}
@@ -172,7 +274,6 @@ export default function ChatComposer({ draft, setDraft, handleSubmit }) {
 
           {/* Rechts: model + send */}
           <div className="composer-toolbar-right">
-
             <div className="composer-model-wrap" ref={modelRef}>
               <button
                 className="composer-model"
@@ -200,7 +301,7 @@ export default function ChatComposer({ draft, setDraft, handleSubmit }) {
             <button
               className="composer-send"
               onClick={onSubmit}
-              disabled={!draft.trim()}
+              disabled={!draft.trim() && files.length === 0}
             >
               <SendIcon />
             </button>
@@ -266,6 +367,14 @@ function SendIcon() {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <path d="m5 12 7-7 7 7"/>
       <path d="M12 19V5"/>
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+      <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
     </svg>
   );
 }

@@ -147,6 +147,55 @@
   padding: 8px 16px;
 }
 
+.bubbleUser:has(.bubbleUser-attachments) {
+  padding: 10px 12px;
+}
+
+/* ===== ATTACHMENTS ===== */
+.bubbleUser-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.bubbleUser-image-wrap {
+  border-radius: 10px;
+  overflow: hidden;
+  max-width: 240px;
+}
+
+.bubbleUser-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 10px;
+}
+
+.bubbleUser-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  max-width: 200px;
+}
+
+.bubbleUser-file-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bubbleUser-text {
+  margin: 0;
+  line-height: 1.5;
+}
+
 /* ===== ASSISTANT BUBBLE ===== */
 .bubbleAssistant {
   color: var(--text);

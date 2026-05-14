@@ -1,7 +1,8 @@
-import path from "path";
 import fs from "fs/promises";
+import path from "path";
 import { Router } from "express";
 import multer from "multer";
+
 import { checkProfilePicture, checkSlugAvailability, createOrg, getPendingInvites, joinOrg, updateOnboardingStatus, updateProfilePicture } from "./user.service.js";
 import { assetsPath, uploadsDirectory } from "../../constants.js";
 

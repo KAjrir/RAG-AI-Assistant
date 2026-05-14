@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import db from '../database/db.js'
 
 import { EXPERIMENTAL_SYSTEM_PROMPT2 } from "./prompts.js";
+import { openaiInputFormat } from "./refactorCode.js";
 
 
 const EMBED_MODEL = "text-embedding-3-small";
@@ -80,20 +81,21 @@ async function generalRetrieve(question, orgId) {
 }
 
 export async function promptAI(userInput, history, orgId) {
-  const question = userInput?.userContent ?? ""
-  const chatModel = userInput?.model;
-  const tools = userInput?.tools
+  const chatModel = userInput.model;
+  const tools = userInput.tools
 
-  const historyMessages = history.map( ({ role, content }) => ({ role, content })).slice(0, history.length - 2);
-  // console.log(historyMessages)
+  const historyMessages = history.map( ({ role, content }) => ({ role, content })).slice(0, history.length - 1);
+  const formattedInput = await openaiInputFormat(historyMessages)
+  console.dir(formattedInput, {depth: null})
+  
 
   const input = [
     { role: "system", content: EXPERIMENTAL_SYSTEM_PROMPT2 },
-    ...historyMessages,
-    { role: "user", content: question },
+    ...formattedInput
   ];
 
-  // console.log(input)
+  // console.log("INPUT: ")
+  // console.dir(input, {depth: null})
 
   async function* trackAndStream() {
     while(true) {
