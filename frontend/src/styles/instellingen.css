@@ -336,7 +336,7 @@
   background: transparent !important;
   box-shadow: none !important;
   border-radius: 0 !important;
-  padding-left: 2px !important;
+  padding-left: 0px !important;
 }
 
 .is-slug-input:focus {

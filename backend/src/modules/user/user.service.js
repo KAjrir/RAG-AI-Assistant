@@ -97,7 +97,6 @@ export const getPendingInvites = async (userId) => {
         JOIN organizations o ON o.id = i.organization_id
         WHERE i.email = ${userEmail}
         AND i.status = 'pending'
-
     `
 
     return pendingInvites

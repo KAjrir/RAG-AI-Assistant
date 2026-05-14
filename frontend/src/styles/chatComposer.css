@@ -158,7 +158,7 @@
 .composer-submenu {
   position: absolute;
   bottom: calc(100% + 8px);
-  left: calc(210px + 12px);  /* breedte hoofdmenu + gap */
+  left: calc(210px - 12px);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;

@@ -91,8 +91,10 @@ router.delete('/profile-picture', async (req, res) => {
 });
 
 router.post("/create-org", async (req, res) => {
-    const userId = req.userId
-    const { orgName, slug } = req.body
+    const userId = req.userId;
+    const orgName = req.body.name;
+    const slug = req.body.slug;
+
     console.log(orgName, slug, userId)
     await createOrg(orgName, slug, userId)
     await updateOnboardingStatus(userId)
