@@ -86,8 +86,7 @@ export async function promptAI(userInput, history, orgId) {
 
   const historyMessages = history.map( ({ role, content }) => ({ role, content })).slice(0, history.length - 1);
   const formattedInput = await openaiInputFormat(historyMessages)
-  console.dir(formattedInput, {depth: null})
-  
+  // console.dir(formattedInput, {depth: null})
 
   const input = [
     { role: "system", content: EXPERIMENTAL_SYSTEM_PROMPT2 },

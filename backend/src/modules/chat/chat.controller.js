@@ -163,13 +163,8 @@ router.get("/:chatId", async (req, res) => {
       }
     })
   }))
-  console.log("MESSAGES: ")
-  console.dir(messages, {depth: null})
 
-  console.log("PUBLICMESSAGES: ")
-  console.dir(publicMessages, {depth: null})
-
-  res.status(200).json(messages)
+  res.status(200).json(publicMessages)
 })
 
 router.patch("/:chatId", async (req, res) => {
@@ -319,8 +314,6 @@ router.post("/messages", async (req, res) => {
     history = await getChatMessages(chatId)
     cache.set(`chat:${chatId}:messages`, JSON.stringify(history))
   }
-  console.log("HISTORY: ")
-  console.dir(history, {depth: null})
   
   const userInput = {
     model,
