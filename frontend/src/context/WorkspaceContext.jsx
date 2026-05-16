@@ -31,7 +31,6 @@ export function WorkspaceProvider({ slug, children }) {
         setMembers(membersRes.data);
         setDocuments(docsRes.data);
         setConnections(connectionsRes.data);
-        console.log(connectionsRes.data)
 
         const me             = membersRes.data.find(m => m.id === user?.id);
         const isAdminOrOwner = ['admin', 'owner'].includes(me?.role);
@@ -160,8 +159,6 @@ export function WorkspaceProvider({ slug, children }) {
       `/workspaces/${slug}/connections/${connectionId}/connect`,
       { config }
     );
-
-    console.log(res.data)
 
     setConnections(prev => prev.map(c =>
       c.id === connectionId

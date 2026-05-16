@@ -30,7 +30,13 @@ export default function WorkspaceLayout() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  if (loading) return <div className="wl-loading">Laden…</div>;
+  if (loading) {
+    return (
+      <div className="route-loading">
+        <div className="spinner" />
+      </div>
+    )
+  }
 
   return (
     <div className="wl-root">

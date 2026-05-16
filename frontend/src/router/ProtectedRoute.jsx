@@ -6,7 +6,14 @@ export default function ProtectedRoute() {
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return (
+      <div className="route-loading">
+        <div className="spinner" />
+      </div>
+    )
+  }
+  
   if (!user) return <Navigate to="/inloggen" replace />;
 
   if (!user.onboarding_completed && location.pathname !== '/onboarding') {

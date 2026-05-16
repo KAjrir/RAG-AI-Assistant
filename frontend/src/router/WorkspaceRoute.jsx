@@ -6,7 +6,13 @@ export default function WorkspaceRoute() {
   const { slug }                           = useParams();
   const { user, loading }                  = useAuth();
 
-  if (loading) return <div className="route-loading">Laden…</div>;
+  if (loading) {
+    return (
+      <div className="route-loading">
+        <div className="spinner" />
+      </div>
+    )
+  }
 
   const hasAccess = user.memberships.some(w => {
     return w.org_slug === slug
