@@ -3,7 +3,7 @@ import path from "path";
 import { Router } from "express";
 import multer from "multer";
 
-import { checkProfilePicture, checkSlugAvailability, createOrg, getPendingInvites, joinOrg, updateOnboardingStatus, updateProfilePicture } from "./user.service.js";
+import { checkProfilePicture, checkSlugAvailability, createOrg, updateOnboardingStatus, updateProfilePicture } from "./user.service.js";
 import { assetsPath, uploadsDirectory } from "../../constants.js";
 
 const profilePictureFileDirectory = `${uploadsDirectory}/profile-pictures`
@@ -95,28 +95,10 @@ router.post("/create-org", async (req, res) => {
     const orgName = req.body.name;
     const slug = req.body.slug;
 
-    console.log(orgName, slug, userId)
     await createOrg(orgName, slug, userId)
     await updateOnboardingStatus(userId)
 
     res.status(201).json({ success: true })
-})
-
-router.post("/join-org", async (req, res) => {
-    const userId = req.userId
-    const invitationToken = req.body.token
-
-    await joinOrg(invitationToken, userId)
-    await updateOnboardingStatus(userId)
-
-    res.status(201).json({ success: true })
-})
-
-router.get("/pending-invites", async (req, res) => {
-    const userId = req.userId
-    const pendingInvites = await getPendingInvites(userId)
-
-    res.status(200).json({ invites: pendingInvites })
 })
 
 router.get("/check-slug", async (req, res) => {

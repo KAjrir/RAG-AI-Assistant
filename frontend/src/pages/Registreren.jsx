@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate, Navigate } from 'react-router'
+import { Link, Navigate, useSearchParams } from 'react-router'
 import '../styles/auth.css'
 
 import { useAuth } from '../context/AuthContext.jsx'
@@ -19,12 +19,12 @@ function getStrength(password) {
 const strengthClass = ['', 'weak', 'medium', 'strong']
 
 export default function Register() {
-    const [form, setForm]   = useState({ name: '', email: '', password: '' })
-    const [error, setError] = useState('')
-    const [loading, setLoading] = useState(false)
-    
-    const navigate = useNavigate()
-    const { user, register } = useAuth();
+  const [form, setForm]   = useState({ name: '', email: '', password: '' })
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get('redirect');
+  const { user, register } = useAuth();
 
   const strength = getStrength(form.password)
 
@@ -44,17 +44,14 @@ export default function Register() {
 
     try {
       await register(form.name, form.email, form.password)
-      navigate('/onboarding')
     } catch (err) {
       setError(err?.response?.data?.error || "Registreren mislukt.")
     } finally {
       setLoading(false)
     }
   }
-
-    if (user) {
-        return <Navigate to="/dashboard" replace />;
-    }
+  
+  if (user) return <Navigate to={redirect || '/onboarding'} replace />;
 
   return (
     <div className="auth-page">

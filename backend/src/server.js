@@ -8,6 +8,7 @@ import { config } from "dotenv";
 import authRouter from "./modules/auth/auth.controller.js"
 import userRouter from "./modules/user/user.controller.js"
 import workspaceRouter from "./modules/workspace/workspace.controller.js"
+import invitationRouter from "./modules/invitation/invitation.controller.js"
 
 import { requireAuth, requireWorkspace } from "./modules/middleware.js";
 
@@ -52,6 +53,7 @@ const chatLimiter = rateLimit({
 
 
 app.use("/api/auth", authRouter)
+app.use("/api/invitations", invitationRouter)
 app.use("/api/users", requireAuth, userRouter)
 app.use("/api/workspaces/:slug", requireAuth, requireWorkspace, workspaceRouter)
 app.use(assetsPath, requireAuth, express.static(uploadsDirectory))

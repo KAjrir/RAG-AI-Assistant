@@ -7,7 +7,7 @@ import { getInvitation, getUser, createUser, getUserInfo, updateUserLastLogin, g
 import { signToken, verifyToken } from "./jwt.js"
 import { ISPROD } from "../../constants.js"
 import { formatTimeForUser, hash, generateRandomToken, getExpirationDate } from "../../utils.js"
-import sgMail from "./mailer.js"
+import sgMail from "../../mailer/mailer.js"
 
 const router = Router()
 
@@ -138,7 +138,7 @@ router.post("/logout", async (req, res) => {
 
 router.post("/forgot-password", async (req, res) => {
     const email = req.body.email;
-    const [user] = await getUserInfo({ email })
+    const user = await getUser({ email })
 
     if(!user) return res.status(202).end()
 

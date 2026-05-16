@@ -37,7 +37,7 @@ export function WorkspaceProvider({ slug, children }) {
         const isAdminOrOwner = ['admin', 'owner'].includes(me?.role);
 
         if (isAdminOrOwner) {
-          api.get(`/workspaces/${slug}/invites`)
+          api.get(`/invitations/${slug}/workspace/pending`)
             .then(res => setInvitations(res.data.invites ?? []))
             .catch(() => {});
         }
@@ -88,14 +88,27 @@ export function WorkspaceProvider({ slug, children }) {
   }
 
   async function inviteMember(email, role = 'member') {
-    const res = await api.post(`/workspaces/${slug}/invites`, { email, role });
+    const res = await api.post(`/invitations/${slug}/create`, { email, role });
     setInvitations(prev => [...prev, res.data]);
     return res.data;
   }
 
   async function revokeInvite(inviteId) {
-    await api.delete(`/workspaces/${slug}/invites/${inviteId}`);
+    await api.post(`/invitations/${slug}/workspace/revoke`, { inviteId });
     setInvitations(prev => prev.filter(i => i.id !== inviteId));
+  }
+
+  async function updateMember(memberId, newRole) {
+    const res = await api.patch(`/workspaces/${slug}/members/${memberId}`,
+      { role: newRole }
+    );
+    setMembers(prev => 
+      prev.map(mem => (
+        mem.id === memberId ?
+         {...mem , role: res.data.newRole} :
+         mem
+      ))
+    )
   }
 
   async function removeMember(memberId) {
@@ -134,7 +147,6 @@ export function WorkspaceProvider({ slug, children }) {
 
   // ── Connections ──────────────────────────
 
-  // Eerste keer verbinden + re-enable na disable (zelfde endpoint)
   async function connectConnection(connectionId, config = {}) {
     const connection = connections.find(c => c.id === connectionId);
     if (!connection) return;
@@ -203,7 +215,7 @@ export function WorkspaceProvider({ slug, children }) {
       workspace, members, invitations, loading, error,
       isOwner, isAdmin, currentMember,
       updateWorkspace,
-      inviteMember, revokeInvite, removeMember,
+      inviteMember, revokeInvite, updateMember, removeMember,
       documents, reindexDocument, deleteDocument,
       uploadDocuments, refreshDocuments,
       connections,

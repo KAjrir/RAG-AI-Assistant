@@ -7,8 +7,9 @@ import chatRouter from "../chat/chat.controller.js"
 import docRouter from "../doc/doc.controller.js"
 import connectionRouter from "../connection/connection.controller.js"
 
-import { getCurrentWorkspace, getWorkspaceMembers, getStats, inviteMember, getAllInvites, getPendingInvites, deleteMember, checkOrgLogo, updateOrgLogo, updateWorkspace } from "./workspace.service.js";
+import { getCurrentWorkspace, getWorkspaceMembers, getStats, deleteWorkspaceMember, checkOrgLogo, updateOrgLogo, updateWorkspace, updateWorkspaceMemberRole } from "./workspace.service.js";
 import { assetsPath, uploadsDirectory } from "../../constants.js";
+
 
 
 const organizationLogoFileDirectory = `${uploadsDirectory}/organization-logos`
@@ -56,7 +57,6 @@ router.get("/", async (req, res) => {
     res.status(200).json(workspace)
 })
 
-
 router.patch("/", async (req, res) => {
     const orgId = req.orgId
     const { name, slug } = req.body;
@@ -73,13 +73,6 @@ router.patch("/", async (req, res) => {
 
     res.status(200).json(updated);
 });
-
-router.get("/members", async (req, res) => {
-    const orgId = req.orgId
-
-    const members = await getWorkspaceMembers(orgId)
-    res.status(200).json(members)
-})
 
 router.post("/logo", upload.single('logo'), async (req, res) => {
     const orgId = req.orgId
@@ -124,53 +117,30 @@ router.delete('/logo', async (req, res) => {
     }
 });
 
-
-router.get("/invites", async (req, res) => {
+router.get("/members", async (req, res) => {
     const orgId = req.orgId
-    const { all } = req.query
-    let invites
 
-    if (all && all === "true") {
-        invites = await getAllInvites(orgId)
-    } else if (all === undefined){
-        invites = await getPendingInvites(orgId)
-    } else {
-        return res.status(400).json({ error: "Bad request"})
-    }
-
-    res.status(200).json({
-        invites
-    })
+    const members = await getWorkspaceMembers(orgId)
+    res.status(200).json(members)
 })
 
-router.post("/invites", async (req, res) => {
-    const userId = req.userId
+router.patch("/members/:memberId", async (req, res) => {
     const orgId = req.orgId
-    const { email, role } = req.body;
+    const memberId = req.params.memberId
+    const role = req.body.role
 
-
-    const invitation = await inviteMember(orgId, email, role, userId)
-
-    res.status(200).json(invitation)
-})
-
-router.delete("/invites/:id", async (req, res) => {
-    const { email, role } = req.body;
-
-    
-
-    res.status(200).json()
+    const member = await updateWorkspaceMemberRole(orgId, memberId, role)
+    console.log(member)
+    res.status(200).json({ newRole: member.role})
 })
 
 router.delete("/members/:memberId", async (req, res) => {
-    const { memberId } = req.params
     const orgId = req.orgId
+    const memberId = req.params.memberId
     
-    await deleteMember(memberId, orgId)
+    await deleteWorkspaceMember(memberId, orgId)
     res.status(200).json({ success: true })
 })
-
-
 
 router.get("/stats", async (req, res) => {
     const orgId = req.orgId

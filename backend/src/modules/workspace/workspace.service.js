@@ -2,7 +2,12 @@ import db from "../../database/db.js"
 
 export const getUserWorkspaces = async (userId) => {
     const workspaces = await db`
-        SELECT o.id, o.name, o.slug, m.role, o.plan
+        SELECT 
+            o.id,
+            o.name,
+            o.slug,
+            m.role,
+            o.plan
         FROM memberships m
         JOIN organizations o ON o.id = m.organization_id
         WHERE m.user_id = ${userId}
@@ -34,11 +39,11 @@ export const getCurrentWorkspace = async (orgId, userId) => {
             o.name,
             o.slug,
             o.logo_resource_url
-        FROM memberships m
+            FROM memberships m
         JOIN organizations o ON o.id = m.organization_id
         WHERE o.id = ${orgId}
         AND m.user_id = ${userId}
-    `
+        `
 
     return workspace
 }
@@ -51,15 +56,15 @@ export const updateWorkspace = async (orgId, updates) => {
         .map((key, index) => `${key} = $${index + 1}`)
         .join(", ");
 
-    const values = keys.map((key) => updates[key]);
-
-    values.push(orgId);
+        const values = keys.map((key) => updates[key]);
+        
+        values.push(orgId);
     const idPlaceholder = `$${values.length}`;
 
     const result = await db.query(
         `UPDATE organizations
-         SET ${setClause}
-         WHERE id = ${idPlaceholder}
+        SET ${setClause}
+        WHERE id = ${idPlaceholder}
          RETURNING name, slug`,
         values
     );
@@ -69,7 +74,7 @@ export const updateWorkspace = async (orgId, updates) => {
 
 
 export const getWorkspaceMembers = async (orgId) => {
-    const members = db`
+    const members = await db`
         SELECT 
             u.id,
             u.name,
@@ -80,9 +85,28 @@ export const getWorkspaceMembers = async (orgId) => {
         JOIN memberships m ON u.id = m.user_id
         JOIN organizations o ON o.id = m.organization_id
         WHERE o.id = ${orgId}
-    `
-
+        `
+        
     return members
+}
+
+export const updateWorkspaceMemberRole = async (orgId, memberId, role) => {
+    const member = await db`
+        UPDATE memberships
+        SET role = ${role}
+        WHERE user_id = ${memberId}
+        AND organization_id = ${orgId}
+        RETURNING *;
+    `
+    return member[0]
+}
+
+export const deleteWorkspaceMember = async (memberId, orgId) => {
+    await db`
+        DELETE FROM memberships
+        WHERE user_id = ${memberId}
+        AND organization_id = ${orgId}
+    `
 }
 
 export const checkOrgLogo = async (orgId) => {
@@ -115,9 +139,15 @@ export const getStats = async (orgId) => {
             WHERE organization_id = ${orgId}
         `,
         await db`
-        SELECT COUNT(*) as members
-        FROM memberships
-        WHERE organization_id = ${orgId}
+            SELECT COUNT(*) as connections
+            FROM organization_connections
+            WHERE organization_id = ${orgId}
+            AND enabled = TRUE
+        `,
+        await db`
+            SELECT COUNT(*) as members
+            FROM memberships
+            WHERE organization_id = ${orgId}
         `
     ])
     const stats = { docs: 0, connections: 0, members: 0 }
@@ -132,49 +162,4 @@ export const getStats = async (orgId) => {
     }
     
     return stats
-}
-
-export const inviteMember = async (orgId, email, role, invitedBy) => {
-    try {
-        const invitation = await db`
-            INSERT INTO invitations (organization_id, email, role, invited_by)
-            VALUES (${orgId}, ${email}, ${role}, ${invitedBy})
-            RETURNING *
-        `
-        console.log(invitation)
-
-        return invitation[0]
-    } catch (err) {
-        console.error(err)
-        return null
-    }
-}
-
-export const deleteMember = async (memberId, orgId) => {
-    await db`
-        DELETE FROM memberships
-        WHERE user_id = ${memberId}
-        AND organization_id = ${orgId}
-    `
-}
-
-export const getPendingInvites = async (orgId) => {
-    const invites = await db`
-        SELECT *
-        FROM invitations
-        WHERE organization_id = ${orgId}
-        AND status = 'pending'
-    `
-
-    return invites
-}
-
-export const getAllInvites = async (orgId) => {
-    const invites = await db`
-        SELECT *
-        FROM invitations
-        WHERE organization_id = ${orgId}
-    `
-
-    return invites
 }

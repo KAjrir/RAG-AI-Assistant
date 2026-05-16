@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Uitnodiging voor organisatie — Raggy</title>
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: #EEF3FA;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      color: #0F2040;
+    }
+
+    .wrapper {
+      width: 100%;
+      background-color: #EEF3FA;
+      padding: 48px 16px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    .logo-row {
+      text-align: left;
+      margin-bottom: 24px;
+      padding: 0 4px;
+    }
+
+    .logo {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 22px;
+      font-weight: 400;
+      color: #0F2040;
+      letter-spacing: -0.02em;
+      text-decoration: none;
+    }
+
+    .logo-dot { color: #1A56DB; }
+
+    .card {
+      background: #FFFFFF;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(15,32,64,0.08), 0 1px 4px rgba(15,32,64,0.04);
+    }
+
+    .card-accent {
+      height: 4px;
+      background: linear-gradient(90deg, #1A56DB 0%, #4F8EF7 100%);
+    }
+
+    .card-body {
+      padding: 44px 48px 40px;
+    }
+
+    /* Organisatie Badge sectie */
+    .org-badge-container {
+      margin-bottom: 24px;
+    }
+
+    .org-logo-img {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      object-fit: cover;
+      border: 1px solid #D2DFEE;
+    }
+
+    /* Placeholder wanneer er geen logo is */
+    .org-logo-placeholder {
+      display: inline-block;
+      width: 56px;
+      height: 56px;
+      line-height: 56px;
+      background-color: #1A56DB;
+      color: #ffffff;
+      font-size: 24px;
+      font-weight: 500;
+      text-align: center;
+      border-radius: 14px;
+      text-transform: uppercase;
+    }
+
+    .heading {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 28px;
+      font-weight: 400;
+      color: #0F2040;
+      line-height: 1.2;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .heading-italic {
+      font-style: italic;
+      color: #1A56DB;
+    }
+
+    .subtext {
+      font-size: 15px;
+      color: #5A7399;
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+
+    .subtext strong {
+      color: #0F2040;
+      font-weight: 500;
+    }
+
+    /* Rol indicator badge */
+    .role-badge {
+      display: inline-block;
+      background: #EEF3FA;
+      border: 1px solid #D2DFEE;
+      color: #1A56DB;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 4px 12px;
+      border-radius: 100px;
+      margin-top: 4px;
+      text-transform: capitalize;
+    }
+
+    /* Grote CTA knop */
+    .btn-wrap {
+      margin-bottom: 28px;
+    }
+
+    .btn-primary {
+      display: block;
+      width: 100%;
+      padding: 15px 24px;
+      background-color: #111827;
+      color: #ffffff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 100px;
+      line-height: 1;
+    }
+
+    /* Fallback link tekst */
+    .link-fallback {
+      background: #EEF3FA;
+      border: 1px solid #D2DFEE;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 28px;
+    }
+
+    .link-fallback p {
+      font-size: 12px;
+      color: #5A7399;
+      margin-bottom: 6px;
+    }
+
+    .link-fallback a {
+      font-size: 12px;
+      color: #1A56DB;
+      word-break: break-all;
+      text-decoration: none;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #E4ECF6;
+      margin: 28px 0;
+    }
+
+    .expires-text {
+      font-size: 13px;
+      color: #5A7399;
+      line-height: 1.6;
+    }
+
+    .expires-text strong {
+      color: #0F2040;
+      font-weight: 500;
+    }
+
+    .email-footer {
+      text-align: center;
+      padding: 28px 0 8px;
+    }
+
+    .email-footer p {
+      font-size: 12px;
+      color: #8BA3BF;
+      line-height: 1.6;
+    }
+
+    .email-footer a {
+      color: #5A7399;
+      text-decoration: none;
+    }
+
+    @media (max-width: 600px) {
+      .card-body {
+        padding: 32px 24px 28px;
+      }
+      .heading {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+
+      <div class="logo-row">
+        <a href="https://raggy.nl" class="logo">Raggy<span class="logo-dot">.</span></a>
+      </div>
+
+      <div class="card">
+        <div class="card-accent"></div>
+        <div class="card-body">
+
+          <!-- Organisatie Logo of Placeholder -->
+          <div class="org-badge-container">
+              <img src="{{ organization_logo }}" alt="{{ organization_name }} logo" class="org-logo-img" />
+          </div>
+
+          <h1 class="heading">
+            Sluit je aan bij<br>
+            <span class="heading-italic">{{ organization_name }}</span>
+          </h1>
+
+          <p class="subtext">
+            <strong>{{ invited_by_name }}</strong> heeft je uitgenodigd om deel te nemen aan de workspace van <strong>{{ organization_name }}</strong> op Raggy. 
+            <br><br>
+            Je krijgt direct toegang met de volgende rechten:
+            <br>
+            <span class="role-badge">{{ role }}</span>
+          </p>
+
+          <!-- CTA knop -->
+          <div class="btn-wrap">
+            <a href="{{ invitation_url }}" class="btn-primary">
+              Accepteer uitnodiging
+            </a>
+          </div>
+
+          <!-- Fallback voor als de knop niet werkt -->
+          <div class="link-fallback">
+            <p>Werkt de knop niet? Kopieer deze link in je browser:</p>
+            <a href="{{ invitation_url }}">{{ invitation_url }}</a>
+          </div>
+
+          <hr class="divider" />
+
+          <p class="expires-text">
+            Deze uitnodiging is verzonden naar {{ email }} en is geldig tot <strong>{{ expires_at }}</strong>.
+          </p>
+
+        </div>
+      </div>
+
+      <div class="email-footer">
+        <p>
+          © 2026 Raggy · <a href="https://raggy.nl">raggy.nl</a><br>
+          Je ontvangt deze mail omdat je bent uitgenodigd voor een organisatie op ons platform.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

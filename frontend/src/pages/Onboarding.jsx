@@ -25,7 +25,7 @@ export default function Onboarding() {
   const [error, setError]                     = useState(null);
 
   useEffect(() => {
-    api.get('/users/pending-invites')
+    api.get('/invitations/user/pending')
       .then(res => setPendingInvites(res.data.invites ?? []))
       .catch((err) => console.log(err))
       .finally(() => setCheckingInvites(false));

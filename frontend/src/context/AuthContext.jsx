@@ -6,28 +6,32 @@ const AuthContext = createContext(null);
 export default function AuthProvider({ children }) {
   const [user, setUser]       = useState(null);
   const [loading, setLoading] = useState(true);
-
-  const getAuth = () => {
-    api.get('/auth/me')
-      .then(res => {
-        setUser(res.data.user)
-      })
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
-  }
-
+  
   useEffect(() => {
     getAuth()
   }, []);
 
+
+  async function getAuth() {
+    try {
+      const res = await api.get('/auth/me')
+      setUser(res.data.user)
+    } catch (err) {
+      console.error(err)
+      setUser(null)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function register(name, email, password) {
     const res = await api.post('/auth/register', { name, email, password });
-    if(res.data.success) getAuth()
+    if(res.data.success) await getAuth();
   }
 
   async function login(email, password) {
     const res = await api.post('/auth/login', { email, password });
-    if(res.data.success) getAuth()
+    if(res.data.success) await getAuth();
   }
 
   async function logout() {
@@ -41,21 +45,20 @@ export default function AuthProvider({ children }) {
     return res.data;
   }
 
-  async function joinOrg(token) {
-    const res = await api.post('/users/join-org', { token });
+  async function acceptInvite(token) {
+    const res = await api.post('/invitations/accept', { token });
     if (res.data.success) getAuth();
-    return res.data;
+    return res.data.workspace;
   }
 
-  async function inviteMembers(emails) {
-    const res = await api.post('/users/invite-members', { emails });
-    return res.data;
+  async function declineInvite(token) {
+    await api.post('/invitations/user/decline', { token });
   }
 
   return (
     <AuthContext.Provider value={{ 
       user, setUser, loading, login, register, logout,
-      createOrg, joinOrg, inviteMembers
+      createOrg, acceptInvite, declineInvite
     }}>
       {children}
     </AuthContext.Provider>

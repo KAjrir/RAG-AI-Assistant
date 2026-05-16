@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate, Navigate } from 'react-router'
+import { Link, useNavigate, Navigate, useSearchParams } from 'react-router'
 import { useAuth } from '../context/AuthContext.jsx'
 import '../styles/auth.css'
 
@@ -8,6 +8,8 @@ export default function Login() {
   const [error, setError]         = useState('')
   const [loading, setLoading]     = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get('redirect');
 
   const navigate = useNavigate()
   const { user, login } = useAuth()
@@ -23,7 +25,6 @@ export default function Login() {
     setError('')
     try {
       await login(form.email, form.password)
-      navigate('/dashboard')
     } catch (err) {
       setError(err?.response?.data?.error || 'Inloggen mislukt.')
     } finally {
@@ -31,7 +32,7 @@ export default function Login() {
     }
   }
 
-  if (user) return <Navigate to="/dashboard" replace />
+  if (user) return <Navigate to={redirect || '/dashboard'} replace />;
 
   return (
     <div className="auth-page">

@@ -6,8 +6,8 @@ import '../styles/dashboard.css';
 import AppHeader from '../components/AppHeader.jsx';
 
 export default function Dashboard() {
-  const { user, createOrg, joinOrg } = useAuth();
-  const navigate                                       = useNavigate();
+  const { user, createOrg, acceptInvite, declineInvite }      = useAuth();
+  const navigate                          = useNavigate();
 
   const [pendingInvites, setPendingInvites] = useState([]);
   const [accepting, setAccepting]           = useState(null);
@@ -23,7 +23,7 @@ export default function Dashboard() {
   const slugDebounceRef                 = useRef(null);
 
   useEffect(() => {
-    api.get('/users/pending-invites')
+    api.get('/invitations/user/pending')
       .then(res => setPendingInvites(res.data.invites ?? []))
       .catch(() => {})
   }, []);
@@ -86,18 +86,21 @@ export default function Dashboard() {
   async function handleAccept(token) {
     setAccepting(token);
     try {
-      await joinOrg(token);
+      await acceptInvite(token);
       setPendingInvites(prev => prev.filter(i => i.token !== token));
-    } catch {
+    } catch (err) {
+      console.error(err)
       setAccepting(null);
     }
   }
 
   async function handleDecline(token) {
     try {
-      await api.post('/users/decline-invite', { token });
+      await declineInvite(token)
       setPendingInvites(prev => prev.filter(i => i.token !== token));
-    } catch {}
+    } catch (err) {
+      console.error(err)
+    }
   }
 
   return (
@@ -119,7 +122,18 @@ export default function Dashboard() {
             <ul className="db-invite-list">
               {pendingInvites.map(invite => (
                 <li key={invite.token} className="db-invite-card">
-                  <div className="db-invite-icon"><MailIcon /></div>
+                  <div className="db-ws-icon">
+                    {invite.logo_resource_url ? (
+                      <img
+                        src={`${BASE_URL}${invite.logo_resource_url}`}
+                        alt={invite.org_name}
+                        className="db-ws-icon-img"
+                      />
+                    ) : (
+                      invite.org_name[0].toUpperCase()
+                    )}
+                  {/* <div className="db-invite-icon"><MailIcon /></div> */}
+                  </div>
                   <div className="db-invite-info">
                     <span className="db-invite-org">{invite.org_name}</span>
                     <span className="db-invite-role">
@@ -151,24 +165,24 @@ export default function Dashboard() {
         <p className="db-ws-label">Jouw workspaces</p>
         <ul className="db-ws-list">
           {user.memberships.map(mem => (
-            <li key={mem.orgId}>
+            <li key={mem.org_id}>
               <button
                 className={`db-ws-card ${mem.role === 'owner' ? 'db-ws-card--owner' : ''}`}
-                onClick={() => navigate(`/w/${mem.orgSlug}`)}
+                onClick={() => navigate(`/w/${mem.org_slug}`)}
               >
                 <div className="db-ws-icon">
                   {mem.logo_resource_url ? (
                     <img
                       src={`${BASE_URL}${mem.logo_resource_url}`}
-                      alt={mem.orgName}
+                      alt={mem.org_name}
                       className="db-ws-icon-img"
                     />
                   ) : (
-                    mem.orgName[0].toUpperCase()
+                    mem.org_name[0].toUpperCase()
                   )}
                 </div>
                 <div className="db-ws-info">
-                  <span className="db-ws-name">{mem.orgName}</span>
+                  <span className="db-ws-name">{mem.org_name}</span>
                   <span className={`db-ws-role db-ws-role--${mem.role}`}>
                     {mem.role === 'owner' ? 'Eigenaar' : mem.role === 'admin' ? 'Beheerder' : 'Lid'}
                   </span>

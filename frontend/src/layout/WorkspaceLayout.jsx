@@ -46,17 +46,17 @@ export default function WorkspaceLayout() {
             <div className={`wl-ws-dropdown ${dropdownOpen ? 'open' : ''}`}>
               {user.memberships.map(ws => (
                 <button
-                  key={ws.orgSlug}
-                  className={`wl-ws-dropdown-item ${ws.orgSlug === slug ? 'active' : ''}`}
+                  key={ws.org_slug}
+                  className={`wl-ws-dropdown-item ${ws.org_slug === slug ? 'active' : ''}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     setDropdownOpen(false);
                     setSidebarOpen(false);
-                    navigate(`/w/${ws.orgSlug}`);
+                    navigate(`/w/${ws.org_slug}`);
                   }}
                 >
-                  <span className="wl-ws-dropdown-name">{ws.orgName}</span>
-                  <span className="wl-ws-dropdown-slug">w/{ws.orgSlug}</span>
+                  <span className="wl-ws-dropdown-name">{ws.org_name}</span>
+                  <span className="wl-ws-dropdown-slug">w/{ws.org_slug}</span>
                 </button>
               ))}
               <div className="wl-ws-dropdown-divider" />

@@ -4,3 +4,4 @@ export const ISPROD = process.env.NODE_ENV === "production";
 export const assetsPath = "/uploads"
 export const uploadsDirectory = ISPROD ? `${__dirname}/prodUploads` : `${__dirname}/uploads`
 export const FRONTEND_URL = process.env.FRONTEND_URL;
+export const BACKEND_URL = ISPROD ? "https://api.raggy.nl" : "http://localhost:3000"

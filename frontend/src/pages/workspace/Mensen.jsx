@@ -8,7 +8,7 @@ export default function Mensen() {
   const { slug } = useParams();
   const {
     members, invitations, currentMember,
-    inviteMember, revokeInvite, removeMember,
+    inviteMember, revokeInvite, updateMember, removeMember
   } = useWorkspace();
 
   const isAdmin = ['admin', 'owner'].includes(currentMember?.role);
@@ -32,7 +32,7 @@ export default function Mensen() {
     if (tab === 'all' && allInvites.length === 0) {
       setLoadingAll(true);
       try {
-        const res = await api.get(`/workspaces/${slug}/invites?all=true`);
+        const res = await api.get(`/invitations/${slug}/workspace/pending?all=true`);
         setAllInvites(res.data.invites ?? []);
       } catch {}
       finally { setLoadingAll(false); }
@@ -77,12 +77,10 @@ export default function Mensen() {
     if (!pendingRoleChange) return;
     setSavingRole(true);
     try {
-      await api.patch(
-        `/workspaces/${slug}/members/${pendingRoleChange.memberId}`,
-        { role: pendingRoleChange.newRole }
-      );
-    } catch {}
-    finally {
+      await updateMember(pendingRoleChange.memberId, pendingRoleChange.newRole)
+    } catch (err) {
+      console.error(err)
+    } finally {
       setPendingRoleChange(null);
       setSavingRole(false);
     }

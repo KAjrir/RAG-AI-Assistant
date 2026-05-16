@@ -35,9 +35,9 @@ export const getUserInfo = async ( userId ) => {
                 u.profile_picture_resource_url,
                 COALESCE(
                     json_agg(json_build_object(
-                        'orgId', m.organization_id,
-                        'orgName',        o.name,
-                        'orgSlug',        o.slug,
+                        'org_id', m.organization_id,
+                        'org_name',        o.name,
+                        'org_slug',        o.slug,
                         'role',            m.role,
                         'logo_resource_url', o.logo_resource_url
                     )) FILTER (WHERE m.organization_id IS NOT NULL),

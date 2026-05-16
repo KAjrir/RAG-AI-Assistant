@@ -28,6 +28,7 @@ import NietGevonden from './pages/NietGevonden.jsx'
 import WachtwoordVergeten from './pages/WachtwoordVergeten.jsx'
 import Reset from './pages/Reset.jsx'
 import Onboarding from './pages/Onboarding.jsx'
+import Invitation from './pages/Invitation.jsx'
 
 const router = createBrowserRouter([
   { path: '/',                    element: <HomePage /> },
@@ -35,6 +36,7 @@ const router = createBrowserRouter([
   { path: '/registreren',         element: <Registreren /> },
   { path: '/wachtwoord-vergeten', element: <WachtwoordVergeten />},
   { path: '/reset',               element: <Reset />},
+  { path: '/uitnodiging',         element: <Invitation />},
   {
     element: <ProtectedRoute />,
     children: [
