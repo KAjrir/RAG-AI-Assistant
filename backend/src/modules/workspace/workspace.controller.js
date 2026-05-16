@@ -130,7 +130,6 @@ router.patch("/members/:memberId", async (req, res) => {
     const role = req.body.role
 
     const member = await updateWorkspaceMemberRole(orgId, memberId, role)
-    console.log(member)
     res.status(200).json({ newRole: member.role})
 })
 

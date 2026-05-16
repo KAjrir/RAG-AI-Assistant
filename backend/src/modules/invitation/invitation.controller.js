@@ -109,8 +109,6 @@ router.post("/:slug/create", requireAuth, requireWorkspace, async (req, res) => 
         expires_at: formatDate(invitationDetails.expires_at)
     }
 
-    console.log(templateData)
-        
     const templatesDir = path.resolve(import.meta.dirname, "../../email-templates");
     const filePath = path.join(templatesDir, "invite-user.html");
     const emailTemplate = await fs.readFile(filePath, "utf8")
