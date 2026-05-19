@@ -155,8 +155,8 @@ export const openaiInputFormat3 = async (messages) => {
                             }
                         
                     }
-                })).filter(Boolean)
-            )
+                }))
+            ).filter(Boolean)
         }))
     );
 };
