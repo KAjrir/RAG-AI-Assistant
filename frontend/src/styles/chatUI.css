@@ -252,3 +252,126 @@
     padding: 16px 16px 0;
   }
 }
+
+.citation-badge { position: relative; display: inline-block; }
+
+.citation-badge::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  height: 10px;
+}
+
+.citation-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: var(--accent-light);
+  color: var(--accent);
+  border: 1px solid var(--border-dark);
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 0 2px;
+  vertical-align: middle;
+  transition: background 0.15s, border-color 0.15s;
+  user-select: none;
+}
+
+.citation-badge:hover .citation-number {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent-hover);
+}
+
+.citation-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  min-width: 260px;
+  max-width: 320px;
+  z-index: 9999;
+  box-shadow: var(--shadow-md);
+  pointer-events: auto;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.citation-badge:hover .citation-tooltip,
+.citation-tooltip:hover { display: flex; }
+
+/* Dynamisch: te ver links → klap naar rechts */
+.citation-badge:first-child .citation-tooltip,
+.citation-badge:nth-child(2) .citation-tooltip {
+  left: 0;
+  transform: none;
+}
+
+/* Dynamisch: te ver rechts → klap naar links */
+.citation-badge:last-child .citation-tooltip {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.citation-tooltip-header { display: flex; align-items: center; gap: 8px; }
+
+.citation-tooltip-index {
+  width: 22px;
+  height: 22px;
+  background: var(--accent-light);
+  color: var(--accent);
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.citation-tooltip-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.citation-tooltip-divider {
+  height: 0.5px;
+  background: var(--border);
+}
+
+.citation-tooltip-excerpt {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.citation-tooltip-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.citation-tooltip-link:hover { text-decoration: underline; }

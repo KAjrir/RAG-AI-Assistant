@@ -68,7 +68,6 @@ export const openaiInputFormat = async (messages) => {
     return formattedInput
 }
 
-
 export const openaiInputFormat2 = async (messages) => {
     return Promise.all(
         messages.map(async (msg) => ({
@@ -97,13 +96,66 @@ export const openaiInputFormat2 = async (messages) => {
                                 type: "input_image",
                                 image_url: data
                             };
+                    } else {
+                        return msg.role === "user" ? 
+                            {
+                                type: "input_text",
+                                text: c.text
+                            } : {
+                                type: "output_text",
+                                text: c.text
+                            }
+                        
                     }
-
-                    return {
-                        type: "input_text",
-                        text: c.text
-                    };
                 })
+            )
+        }))
+    );
+};
+
+export const openaiInputFormat3 = async (messages) => {
+    return Promise.all(
+        messages.map(async (msg) => ({
+            ...msg,
+            content: (await Promise.all(
+                msg.content.map(async (c) => {
+                    if (
+                        c.type === "file" ||
+                        c.type === "image"
+                    ) {
+                        const base64 = await fs.readFile(
+                            c.filepath,
+                            "base64"
+                        );
+
+                        const data =
+                            `data:${c.mimetype};base64,${base64}`;
+
+                        return c.type === "file"
+                            ? {
+                                type: "input_file",
+                                filename: c.filename,
+                                file_data: data
+                            }
+                            : {
+                                type: "input_image",
+                                image_url: data
+                            };
+                    } else {
+
+                        if(c.type === "sources") return null
+
+                        return msg.role === "user" ? 
+                            {
+                                type: "input_text",
+                                text: c.text
+                            } : {
+                                type: "output_text",
+                                text: c.text
+                            }
+                        
+                    }
+                })).filter(Boolean)
             )
         }))
     );

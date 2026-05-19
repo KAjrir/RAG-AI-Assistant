@@ -1,8 +1,8 @@
 import OpenAI from "openai";
 import db from '../database/db.js'
 
-import { EXPERIMENTAL_SYSTEM_PROMPT2 } from "./prompts.js";
-import { openaiInputFormat } from "./refactorCode.js";
+import { EXPERIMENTAL_SYSTEM_PROMPT3 } from "./prompts.js";
+import { openaiInputFormat3 } from "./refactorCode.js";
 
 
 const EMBED_MODEL = "text-embedding-3-small";
@@ -61,35 +61,19 @@ async function sdbGroepRetrieve(question, keywords) {
     LIMIT 5;
   `;
 
-  console.log(rows)
   return rows;
 }
 
-async function generalRetrieve(question, orgId) {
-  const embedding = await embed(question);
-
-  const rows = await db`
-    SELECT content, metadata,
-           1 - (embedding <=> ${JSON.stringify(embedding)}::vector) AS similarity
-    FROM document_chunks
-    WHERE organization_id = ${orgId}
-    ORDER BY embedding <=> ${JSON.stringify(embedding)}::vector
-    LIMIT 3
-  `;
-
-  return rows;
-}
-
-export async function promptAI(userInput, history, orgId) {
+export async function promptAI(userInput, history) {
   const chatModel = userInput.model;
   const tools = userInput.tools
 
   const historyMessages = history.map( ({ role, content }) => ({ role, content })).slice(0, history.length - 1);
-  const formattedInput = await openaiInputFormat(historyMessages)
+  const formattedInput = await openaiInputFormat3(historyMessages)
   // console.dir(formattedInput, {depth: null})
 
   const input = [
-    { role: "system", content: EXPERIMENTAL_SYSTEM_PROMPT2 },
+    { role: "system", content: EXPERIMENTAL_SYSTEM_PROMPT3 },
     ...formattedInput
   ];
 
@@ -108,7 +92,7 @@ export async function promptAI(userInput, history, orgId) {
       let response = {};
 
       for await (const event of stream) {
-        // console.log(event)
+        // console.dir(event, { depth: null })
         if(["response.output_item.added", "response.output_item.done", "response.created", "response.completed"].includes(event.type)) {
           console.dir(event, { depth: null })
         }
@@ -119,7 +103,7 @@ export async function promptAI(userInput, history, orgId) {
   
         if(event.type === "response.output_text.delta") {
             yield {
-              event: "token",
+              type: "token",
               content: event.delta
             };
         }
@@ -145,15 +129,34 @@ export async function promptAI(userInput, history, orgId) {
           for (const tc of toolCalls) {
             const name = tc.name
             const args = JSON.parse(tc.arguments)
-            const result = await call_function(name , args)
+            const result = await call_function(name, args)
+
+            // Nummers toevoegen aan chunks
+            const sourceMap = {};
+            result.forEach((row, index) => {
+              sourceMap[index + 1] = row;
+            });
+
+            yield {
+              type: "sources",
+              content: sourceMap
+            }
+
+            // OpenAI krijgt genummerde tekst
+            const formattedForLLM = Object.entries(sourceMap)
+              .map(([id, row]) => `[${id}] ${row.metadata.title}\n${row.content}`)
+              .join("\n\n");
             
+            // console.log("formattedForLLM: ")
+            // console.dir(formattedForLLM, { depth: null })
+
             input.push({
               type: "function_call_output",
               call_id: tc.call_id,
-              output: JSON.stringify(result)
+              output: formattedForLLM
             })
           }
-  
+
           // console.dir(input, { depth: null })
         }
       }
@@ -161,6 +164,22 @@ export async function promptAI(userInput, history, orgId) {
   }
 
   return trackAndStream()
+}
+
+
+async function generalRetrieve(question, orgId) {
+  const embedding = await embed(question);
+
+  const rows = await db`
+    SELECT content, metadata,
+           1 - (embedding <=> ${JSON.stringify(embedding)}::vector) AS similarity
+    FROM document_chunks
+    WHERE organization_id = ${orgId}
+    ORDER BY embedding <=> ${JSON.stringify(embedding)}::vector
+    LIMIT 3
+  `;
+
+  return rows;
 }
 
 async function generalRagLookup() {

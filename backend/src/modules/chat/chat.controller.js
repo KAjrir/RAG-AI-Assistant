@@ -317,23 +317,37 @@ router.post("/messages", async (req, res) => {
   
   const userInput = {
     model,
-    tools
+    tools,
+    orgId
   }
 
   try {
     let assistantText = "";
-    const stream = await promptAI(userInput, history, orgId);
+    let sourceMap = null;
 
-    for await (const token of stream) {
-      assistantText += token.content
-      res.write(toJsonLine(token))
+    const stream = await promptAI(userInput, history);
+
+    for await (const event of stream) {
+      if(event.type === "token") {
+        assistantText += event.content
+      }
+
+      if(event.type === "sources") {
+        sourceMap = event.content
+      }
+
+      res.write(toJsonLine(event))
     }
 
     const assistantContent = [
       {
         type: "text",
         text: assistantText
-      }
+      },
+      ...(sourceMap ? [{
+        type: "sources",
+        sources: sourceMap,
+      }] : [])
     ]
     
     const assistantMessage = await updateAssistantMessage(assistantId, assistantContent, "done")
@@ -344,7 +358,7 @@ router.post("/messages", async (req, res) => {
     cache.set(`chat:${chatId}:messages`, JSON.stringify(history))
 
     res.write(toJsonLine({
-      event: "done",
+      type: "done"
     }))
 
     // console.log(JSON.parse(cache.get(`chat:${chatId}:messages`)).slice(history.length - 5))

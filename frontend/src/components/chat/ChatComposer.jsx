@@ -123,7 +123,6 @@ export default function ChatComposer({ draft, setDraft, handleSubmit }) {
     formData.append('connections', JSON.stringify(activeConns));
     files.forEach(f => formData.append('files', f.file, f.name));
     console.log(payload)
-    console.log(formData)
 
     handleSubmit(payload, formData);
 

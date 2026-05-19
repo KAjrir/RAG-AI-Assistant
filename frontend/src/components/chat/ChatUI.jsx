@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
 import { useChat } from '../../context/ChatContext.jsx';
@@ -130,7 +130,16 @@ export default function ChatUI() {
           ...(payload.message ? [{ type: 'text', text: payload.message }] : [])
         ]
       },
-      { id: tempAssistantId, role: 'assistant', content: [{ type: 'text', text: '' }] }
+      { 
+        id: tempAssistantId,
+        role: 'assistant',
+        content: [
+          { type: 'text', text: '' },
+          {
+            type: 'sources', sources: {},
+          }
+        ]
+      }
     ]);
 
     if (chatId) {
@@ -170,7 +179,7 @@ export default function ChatUI() {
     const url = `${BASE_URL}/api/workspaces/${slug}/chats/messages`;
 
     assistantIdRef.current = assistantId;
-    console.log(pendingStreamRef)
+
     const response = await fetch(url, {
       method: 'POST',
       credentials: 'include',
@@ -201,23 +210,40 @@ export default function ChatUI() {
 
         const data = JSON.parse(part);
 
-        if (data.event === 'token') {
+        if (data.type === 'token') {
           setMessages(prev =>
             prev.map(msg =>
               msg.id === assistantIdRef.current
-                ? { ...msg, content: [
-                  {
-                    ...msg.content[0],
-                    text: msg.content[0].text + data.content
+                ? { ...msg, 
+                    content: msg.content.map(c => 
+                      c.type === "text"
+                        ? {...c, text: c.text + data.content}
+                        : c
+                    )
                   }
-                ]}
                 : msg
             )
           );
           updateSpacer();
         }
 
-        if (data.event === 'done') {
+        if(data.type === "sources") {
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === assistantIdRef.current
+                ? { ...msg, 
+                    content: msg.content.map(c => 
+                      c.type === "sources"
+                        ? {...c, sources: data.content}
+                        : c
+                    )
+                  }
+                : msg
+            )
+          );
+        }
+
+        if (data.type === 'done') {
           setMessages(prev =>
             prev.map(msg =>
               msg.id === assistantIdRef.current
@@ -318,8 +344,16 @@ export default function ChatUI() {
                         <ReactMarkdown
                           rehypePlugins={[rehypeRaw, rehypeHighlight]}
                           remarkPlugins={[remarkGfm]}
+                          components={{
+                            p: ({ children }) => (
+                              <p>{parseCitations(children, m.content.find(c => c.type === 'sources')?.sources)}</p>
+                            ),
+                            li: ({ children }) => (
+                              <li>{parseCitations(children, m.content.find(c => c.type === 'sources')?.sources)}</li>
+                            )
+                          }}
                         >
-                          {m.content[0].text}
+                          {m.content.find(c => c.type === 'text')?.text}
                         </ReactMarkdown>
                       </div>
                     </div>
@@ -380,4 +414,95 @@ function FileIcon() {
       <path d="M8.5 1v2.5H11" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
     </svg>
   );
+}
+
+function parseCitations(children, sources) {
+  return React.Children.map(children, child => {
+    if (typeof child !== 'string') return child
+    
+    const parts = child.split(/(\[\d+\])/g)
+    return parts.map((part, i) => {
+      const match = part.match(/^\[(\d+)\]$/)
+      if (match) {
+        return <CitationBadge key={i} id={match[1]} sources={sources} />
+      }
+      return part
+    })
+  })
+}
+
+function CitationBadge({ id, sources }) {
+  const source = sources?.[id]
+  const badgeRef = useRef(null)
+  const tooltipRef = useRef(null)
+
+  const handleMouseEnter = () => {
+    const badge = badgeRef.current
+    const tooltip = tooltipRef.current
+    if (!badge || !tooltip) return
+
+    tooltip.style.display = 'flex'
+
+    const badgeRect = badge.getBoundingClientRect()
+    const tooltipRect = tooltip.getBoundingClientRect()
+    const containerRect = badge.closest('.chatMessages').getBoundingClientRect()
+
+    // standaard: gecentreerd
+    let left = (badgeRect.width / 2) - (tooltipRect.width / 2)
+
+    // te ver naar links
+    if (badgeRect.left + left < containerRect.left + 8) {
+      left = containerRect.left - badgeRect.left + 8
+    }
+
+    // te ver naar rechts
+    if (badgeRect.left + left + tooltipRect.width > containerRect.right - 8) {
+      left = containerRect.right - badgeRect.left - tooltipRect.width - 8
+    }
+
+    tooltip.style.left = `${left}px`
+    tooltip.style.transform = 'none'
+  }
+
+  const handleMouseLeave = () => {
+    const tooltip = tooltipRef.current
+    if (tooltip) tooltip.style.display = ''
+  }
+
+  if (!source) return <span>[{id}]</span>
+
+  const summary = source.metadata?.summary
+  const title = source.metadata?.title
+  const webUrl = source.metadata?.webUrl
+
+  return (
+    <span
+      className="citation-badge"
+      ref={badgeRef}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      <span className="citation-number">{id}</span>
+      <div className="citation-tooltip" ref={tooltipRef}>
+        <div className="citation-tooltip-header">
+          <div className="citation-tooltip-index">{id}</div>
+          <span className="citation-tooltip-title">{title}</span>
+        </div>
+        <div className="citation-tooltip-divider"></div>
+        {summary && (
+          <span className="citation-tooltip-excerpt">{summary}</span>
+        )}
+        {webUrl && (
+          <a
+            href={webUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="citation-tooltip-link"
+          >
+            Bekijk artikel →
+          </a>
+        )}
+      </div>
+    </span>
+  )
 }
