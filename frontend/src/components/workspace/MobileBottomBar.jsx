@@ -1,4 +1,4 @@
-import { NavLink, useNavigate, useParams } from 'react-router';
+import { NavLink, useParams } from 'react-router';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
 
 import { OverviewIcon, DocsIcon, ConnectionsIcon, PeopleIcon, SettingsIcon } from '../icons/GeneralIcons.jsx'
@@ -9,7 +9,6 @@ import '../../styles/mobileBottomBar.css';
 export default function MobileBottomBar({ onMenuClick }) {
   const { slug } = useParams();
   const { isOwner } = useWorkspace();
-  const navigate = useNavigate();
 
   return (
     <nav className="mbb-root">

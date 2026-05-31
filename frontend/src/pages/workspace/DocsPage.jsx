@@ -6,30 +6,26 @@ import '../../styles/docsPage.css';
 import StatusPill from '../../components/StatusPill.jsx';
 
 export default function DocsPage() {
-  const { slug }                              = useParams();
-  const navigate                              = useNavigate();
-  const location                              = useLocation();
-  const { documents, loading, refreshDocuments, reindexDocument, deleteDocument } = useWorkspace();
+  const { slug }                                    = useParams();
+  const navigate                                    = useNavigate();
+  const location                                    = useLocation();
+  const { documents, loading, can, refreshDocuments, reindexDocument, deleteDocument } = useWorkspace();
 
-  const [duplicates, setDuplicates]   = useState(location?.state?.duplicates ?? []);
-  const [highlightedDoc, setHighlightedDoc] = useState(null);
-  const docRefs                             = useRef({});
+  const [duplicates, setDuplicates]               = useState(location?.state?.duplicates ?? []);
+  const [highlightedDoc, setHighlightedDoc]       = useState(null);
+  const [confirmDelete, setConfirmDelete]         = useState(null); // { id, name }
+  const docRefs                                   = useRef({});
 
   useEffect(() => {
     refreshDocuments();
   }, []);
 
   function scrollToDoc(docName) {
-    // Zoek het document op basis van naam
     const doc = documents.find(d => d.originalname === docName);
     if (!doc) return;
-
     const el = docRefs.current[doc.id];
     if (!el) return;
-
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-    // Twee keer flikker animatie
     setHighlightedDoc(doc.id);
     setTimeout(() => setHighlightedDoc(null), 1200);
   }
@@ -38,9 +34,13 @@ export default function DocsPage() {
     await reindexDocument(docId);
   }
 
-  async function handleDelete(docId) {
-    if (!confirm('Weet je zeker dat je dit document wilt verwijderen?')) return;
-    await deleteDocument(docId);
+  function handleDelete(doc) {
+    setConfirmDelete({ id: doc.id, name: doc.originalname });
+  }
+
+  async function handleConfirmDelete() {
+    await deleteDocument(confirmDelete.id);
+    setConfirmDelete(null);
   }
 
   return (
@@ -50,9 +50,11 @@ export default function DocsPage() {
           <h1 className="dp-title">Documenten</h1>
           <p className="dp-slug">w/{slug} · /docs</p>
         </div>
-        <button className="dp-btn-primary" onClick={() => navigate(`/w/${slug}/docs/upload`)}>
-          <PlusIcon /> Uploaden
-        </button>
+        {can('documents', 'create') && (
+          <button className="dp-btn-primary" onClick={() => navigate(`/w/${slug}/docs/upload`)}>
+            <PlusIcon /> Uploaden
+          </button>
+        )}
       </header>
 
       {duplicates.length > 0 && (
@@ -101,9 +103,11 @@ export default function DocsPage() {
           <div className="dp-empty-icon"><DocIcon /></div>
           <p className="dp-empty-title">Nog geen documenten</p>
           <p className="dp-empty-sub">Upload je eerste document om te beginnen.</p>
-          <button className="dp-btn-primary" onClick={() => navigate(`/w/${slug}/docs/upload`)}>
-            <PlusIcon /> Document uploaden
-          </button>
+          {can('documents', 'create') && (
+            <button className="dp-btn-primary" onClick={() => navigate(`/w/${slug}/docs/upload`)}>
+              <PlusIcon /> Document uploaden
+            </button>
+          )}
         </div>
       ) : (
         <ul className="dp-list">
@@ -127,7 +131,7 @@ export default function DocsPage() {
                 </span>
               </div>
               <div className="dp-actions">
-                {doc.status === 'failed' && (
+                {doc.status === 'failed' && can('documents', 'create') && (
                   <button
                     className="dp-action-btn"
                     title="Opnieuw indexeren"
@@ -136,18 +140,46 @@ export default function DocsPage() {
                     <ReindexIcon />
                   </button>
                 )}
-                <button
-                  className="dp-action-btn dp-action-btn--danger"
-                  title="Verwijderen"
-                  onClick={(e) => { e.stopPropagation(); handleDelete(doc.id); }}
-                >
-                  <TrashIcon />
-                </button>
+                {can('documents', 'delete') && (
+                  <button
+                    className="dp-action-btn dp-action-btn--danger"
+                    title="Verwijderen"
+                    onClick={(e) => { e.stopPropagation(); handleDelete(doc); }}
+                  >
+                    <TrashIcon />
+                  </button>
+                )}
               </div>
               <StatusPill status={doc.status} />
             </li>
           ))}
         </ul>
+      )}
+
+      {/* Verwijder modal */}
+      {confirmDelete && (
+        <>
+          <div className="dp-modal-backdrop" onClick={() => setConfirmDelete(null)} />
+          <div className="dp-modal">
+            <div className="dp-modal-icon">
+              <TrashIcon />
+            </div>
+            <div className="dp-modal-body">
+              <h2 className="dp-modal-title">Document verwijderen</h2>
+              <p className="dp-modal-desc">
+                Weet je zeker dat je <strong>{confirmDelete.name}</strong> wilt verwijderen? Dit kan niet ongedaan worden gemaakt.
+              </p>
+            </div>
+            <div className="dp-modal-footer">
+              <button className="dp-btn-secondary" onClick={() => setConfirmDelete(null)}>
+                Annuleren
+              </button>
+              <button className="dp-btn-danger" onClick={handleConfirmDelete}>
+                Verwijderen
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

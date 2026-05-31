@@ -7,36 +7,31 @@ import '../../styles/connecties.css';
 export default function Connecties() {
   const { slug }                              = useParams();
   const {
-    connections, loading, isAdmin,
+    connections, loading, can,
     connectConnection,
     disableConnection,
     deleteConnection,
     updateConnectionConfig,
   }                                           = useWorkspace();
 
-  // Connect modal (eerste keer verbinden)
   const [connectModal, setConnectModal]       = useState(null);
   const [connectValues, setConnectValues]     = useState({});
   const [connecting, setConnecting]           = useState(null);
   const [connectError, setConnectError]       = useState(null);
 
-  // Settings modal (api_key - wijzig + verwijder)
   const [settingsModal, setSettingsModal]     = useState(null);
   const [configValues, setConfigValues]       = useState({});
   const [savingConfig, setSavingConfig]       = useState(false);
   const [configError, setConfigError]         = useState(null);
 
-  // Confirm verwijder modal
-  const [confirmDelete, setConfirmDelete]     = useState(null); // { orgConnectionId }
-
-  // ── Connect ────────────────────────────────
+  const [confirmDelete, setConfirmDelete]     = useState(null);
+  const [toggling, setToggling]               = useState(null);
 
   async function handleConnect(connection) {
     if (connection.auth_type === 'oauth') {
       connectConnection(connection.id);
       return;
     }
-
     if (connection.auth_type === 'public') {
       setConnecting(connection.id);
       try {
@@ -46,8 +41,6 @@ export default function Connecties() {
       }
       return;
     }
-
-    // api_key → modal
     setConnectValues({});
     setConnectError(null);
     setConnectModal(connection);
@@ -67,7 +60,20 @@ export default function Connecties() {
     }
   }
 
-  // ── Settings ───────────────────────────────
+  async function handleToggle(connection) {
+    const orgConn   = connection.organization_connection;
+    const isEnabled = orgConn?.enabled ?? false;
+    setToggling(connection.id);
+    try {
+      if (isEnabled) {
+        await disableConnection(orgConn.id);
+      } else {
+        await connectConnection(connection.id);
+      }
+    } finally {
+      setToggling(null);
+    }
+  }
 
   function handleOpenSettings(connection) {
     setConfigValues({});
@@ -88,8 +94,6 @@ export default function Connecties() {
       setSavingConfig(false);
     }
   }
-
-  // ── Verwijderen ────────────────────────────
 
   function handleAskDelete(orgConnectionId) {
     setConfirmDelete({ orgConnectionId });
@@ -120,8 +124,8 @@ export default function Connecties() {
             const isEnabled   = orgConn?.enabled ?? false;
             const comingSoon  = connection.status === 'coming_soon' && !isConnected;
 
-            // Members zien alleen verbonden connecties
-            if (!isAdmin && !isConnected) return null;
+            // Editors/viewers zien alleen verbonden connecties
+            if (!can('connections', 'connect') && !isConnected) return null;
 
             return (
               <li key={connection.id} className={`co-item${comingSoon ? ' co-item--coming-soon' : ''}`}>
@@ -132,44 +136,38 @@ export default function Connecties() {
                 <div className="co-item-info">
                   <div className="co-item-name-row">
                     <span className="co-item-name">{connection.name}</span>
-                    {comingSoon && <span className="co-badge-soon">Binnenkort</span>}
-                    {isConnected && !isEnabled && <span className="co-badge-disabled">Uitgeschakeld</span>}
+                    {comingSoon && <span className="co-badge co-badge--soon">Binnenkort</span>}
+                    {isConnected && (
+                      <span className={`co-badge ${isEnabled ? 'co-badge--active' : 'co-badge--disabled'}`}>
+                        <span className="co-badge-dot" />
+                        {isEnabled ? 'Actief' : 'Uitgeschakeld'}
+                      </span>
+                    )}
                   </div>
-                  <span className="co-item-desc">
-                    {isConnected ? 'Verbonden' : connection.description}
-                  </span>
+                  <span className="co-item-desc">{connection.description}</span>
                 </div>
 
-                {/* Alleen admins/owners zien knoppen */}
-                {isAdmin && (
-                  <>
-                    {isConnected ? (
-                      <div className="co-item-actions">
-                        <span className={`co-pill ${isEnabled ? 'co-pill--active' : 'co-pill--disabled'}`}>
-                          {isEnabled ? 'Actief' : 'Uit'}
-                        </span>
+                <div className="co-item-actions">
+                  {isConnected ? (
+                    <>
+                      {can('connections', 'toggle') && (
+                        <label className="co-toggle" title={isEnabled ? 'Uitschakelen' : 'Inschakelen'}>
+                          <input
+                            type="checkbox"
+                            checked={isEnabled}
+                            disabled={toggling === connection.id}
+                            onChange={() => handleToggle(connection)}
+                          />
+                          <span className="co-toggle-track">
+                            <span className="co-toggle-thumb" />
+                          </span>
+                        </label>
+                      )}
 
-                        {isEnabled ? (
+                      {can('connections', 'delete') && (
+                        connection.auth_type === 'api_key' ? (
                           <button
-                            className="co-btn-toggle"
-                            onClick={() => disableConnection(orgConn.id)}
-                            title="Uitschakelen"
-                          >
-                            <PauseIcon />
-                          </button>
-                        ) : (
-                          <button
-                            className="co-btn-toggle"
-                            onClick={() => connectConnection(connection.id)}
-                            title="Inschakelen"
-                          >
-                            <PlayIcon />
-                          </button>
-                        )}
-
-                        {connection.auth_type === 'api_key' ? (
-                          <button
-                            className="co-btn-toggle"
+                            className="co-btn-icon"
                             onClick={() => handleOpenSettings(connection)}
                             title="Instellingen"
                           >
@@ -177,16 +175,19 @@ export default function Connecties() {
                           </button>
                         ) : (
                           <button
-                            className="co-btn-secondary"
+                            className="co-btn-icon co-btn-icon--danger"
                             onClick={() => handleAskDelete(orgConn.id)}
+                            title="Verwijderen"
                           >
-                            Verwijderen
+                            <TrashIcon />
                           </button>
-                        )}
-                      </div>
-                    ) : comingSoon ? (
-                      <button className="co-btn-soon" disabled>Binnenkort</button>
-                    ) : (
+                        )
+                      )}
+                    </>
+                  ) : comingSoon ? (
+                    <button className="co-btn-soon" disabled>Binnenkort</button>
+                  ) : (
+                    can('connections', 'connect') && (
                       <button
                         className="co-btn-primary"
                         disabled={connecting === connection.id}
@@ -194,9 +195,9 @@ export default function Connecties() {
                       >
                         {connecting === connection.id ? 'Verbinden…' : 'Verbinden'}
                       </button>
-                    )}
-                  </>
-                )}
+                    )
+                  )}
+                </div>
               </li>
             );
           })}
@@ -303,18 +304,10 @@ export default function Connecties() {
               Weet je zeker dat je deze verbinding wilt verwijderen? Documenten die via deze connectie zijn geïmporteerd blijven bewaard.
             </p>
             <div className="co-modal-footer">
-              <button
-                type="button"
-                className="co-btn-secondary"
-                onClick={() => setConfirmDelete(null)}
-              >
+              <button type="button" className="co-btn-secondary" onClick={() => setConfirmDelete(null)}>
                 Annuleren
               </button>
-              <button
-                type="button"
-                className="co-btn-danger-solid"
-                onClick={handleConfirmDelete}
-              >
+              <button type="button" className="co-btn-danger-solid" onClick={handleConfirmDelete}>
                 Verwijderen
               </button>
             </div>
@@ -325,36 +318,27 @@ export default function Connecties() {
   );
 }
 
-function PauseIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-      <rect x="2" y="2" width="3" height="8" rx="1" fill="currentColor"/>
-      <rect x="7" y="2" width="3" height="8" rx="1" fill="currentColor"/>
-    </svg>
-  );
-}
-
-function PlayIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-      <path d="M3 2l7 4-7 4V2z" fill="currentColor"/>
-    </svg>
-  );
-}
-
 function SettingsIcon() {
   return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-      <circle cx="6" cy="6" r="1.5" stroke="currentColor" strokeWidth="1.2"/>
-      <path d="M6 1v1.5M6 9.5V11M1 6h1.5M9.5 6H11M2.4 2.4l1.06 1.06M8.54 8.54l1.06 1.06M9.6 2.4L8.54 3.46M3.46 8.54L2.4 9.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <circle cx="7" cy="7" r="1.75" stroke="currentColor" strokeWidth="1.3"/>
+      <path d="M7 1.5v1.75M7 10.75V12.5M1.5 7h1.75M10.75 7H12.5M3.1 3.1l1.24 1.24M9.66 9.66l1.24 1.24M10.9 3.1L9.66 4.34M4.34 9.66L3.1 10.9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1M11.5 3.5l-.7 7.7a1 1 0 0 1-1 .8H4.2a1 1 0 0 1-1-.8L2.5 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
 
 function CloseIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
     </svg>
   );
 }

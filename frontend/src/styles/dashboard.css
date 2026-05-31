@@ -4,81 +4,6 @@
   font-family: var(--sans);
 }
 
-/* ── Topbar ──────────────────────────────── */
-.db-topbar {
-  height: 56px;
-  padding: 0 clamp(1.5rem, 5vw, 3rem);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-}
-
-.db-logo {
-  font-family: var(--serif);
-  font-size: 1.3rem;
-  letter-spacing: -0.02em;
-  color: var(--text);
-}
-
-.db-logo span { color: var(--accent); }
-
-.db-user {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.db-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.db-user-info {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.db-user-name {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
-  line-height: 1;
-}
-
-.db-user-email {
-  font-size: 11px;
-  color: var(--muted);
-  line-height: 1;
-}
-
-.db-logout {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--muted);
-  padding: 5px;
-  border-radius: 6px;
-  display: flex;
-  transition: color 0.15s, background 0.15s;
-}
-
-.db-logout:hover {
-  color: var(--text);
-  background: var(--surface2);
-}
-
 /* ── Main ────────────────────────────────── */
 .db-main {
   padding: clamp(2rem, 6vw, 4rem) clamp(1.5rem, 5vw, 3rem);
@@ -128,12 +53,7 @@
   line-height: 1.6;
 }
 
-.db-loading {
-  font-size: 0.875rem;
-  color: var(--muted);
-}
-
-/* ── Workspace lijst ─────────────────────── */
+/* ── Sectie label ────────────────────────── */
 .db-ws-label {
   font-size: 10px;
   font-weight: 600;
@@ -154,6 +74,7 @@
   background: var(--accent);
 }
 
+/* ── Workspace lijst ─────────────────────── */
 .db-ws-list {
   list-style: none;
   display: flex;
@@ -182,10 +103,15 @@
   box-shadow: var(--shadow-sm);
 }
 
-.db-ws-card--owner {
-  border-color: rgba(26, 86, 219, 0.3);
+.db-ws-card svg {
+  color: var(--muted);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
 }
 
+.db-ws-card:hover svg { transform: translateX(3px); }
+
+/* ── Workspace icoon ─────────────────────── */
 .db-ws-icon {
   width: 40px;
   height: 40px;
@@ -212,6 +138,7 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
+  min-width: 0;
 }
 
 .db-ws-name {
@@ -220,33 +147,87 @@
   color: var(--text);
 }
 
+/* ── Rol badges — zelfde kleuren als mensen.css ── */
 .db-ws-role {
   font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  padding: 2px 7px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
   border-radius: 100px;
   width: fit-content;
 }
 
+/* Paars voor owner */
 .db-ws-role--owner {
-  background: #FEF9ED;
-  color: #B45309;
+  background: #F5F3FF;
+  color: #5B21B6;
+  border: 1px solid rgba(91, 33, 182, 0.18);
 }
 
-.db-ws-role--member {
-  background: var(--surface2);
+/* Oranje voor admin */
+.db-ws-role--admin {
+  background: #FFF7ED;
+  color: #C2410C;
+  border: 1px solid rgba(194, 65, 12, 0.18);
+}
+
+/* Groen voor editor */
+.db-ws-role--editor {
+  background: #ECFDF5;
+  color: #065F46;
+  border: 1px solid rgba(6, 95, 70, 0.18);
+}
+
+/* Blauw voor viewer */
+.db-ws-role--viewer {
+  background: var(--accent-light);
+  color: var(--accent);
+  border: 1px solid rgba(26, 86, 219, 0.18);
+}
+
+/* ── Uitnodigingen ───────────────────────── */
+.db-invites { margin-bottom: 28px; }
+
+.db-invite-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.db-invite-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--accent-light);
+  border: 1px solid rgba(26, 86, 219, 0.18);
+  border-radius: var(--radius);
+}
+
+.db-invite-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.db-invite-org {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.db-invite-role {
+  font-size: 12px;
   color: var(--muted);
 }
 
-.db-ws-card svg { 
-  color: var(--muted); 
-  transition: transform 0.4s ease
-}
-
-.db-ws-card:hover svg { 
-  transform: translateX(4px);
+.db-invite-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 /* ── Acties ──────────────────────────────── */
@@ -257,6 +238,7 @@
   margin-bottom: 1.5rem;
 }
 
+/* ── Knoppen ─────────────────────────────── */
 .db-btn-dark {
   display: inline-flex;
   align-items: center;
@@ -294,25 +276,9 @@
 
 .db-btn-secondary:hover { background: var(--surface2); }
 
-/* ── Formulieren ─────────────────────────── */
-.db-form {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 20px;
-  margin-top: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-width: 380px;
-}
+.db-btn-sm { padding: 6px 14px; font-size: 13px; }
 
-.db-form-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
-}
-
+/* ── Input ───────────────────────────────── */
 .db-input {
   width: 100%;
   padding: 9px 12px;
@@ -324,6 +290,7 @@
   background: var(--bg);
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
 }
 
 .db-input:focus {
@@ -333,82 +300,51 @@
 
 .db-input::placeholder { color: var(--muted); }
 
-.db-form-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.db-invites {
-  margin-bottom: 28px;
-}
-
-.db-invite-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.db-invite-card {
+/* ── Slug input ──────────────────────────── */
+.db-slug-wrap {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  background: var(--accent-light);
-  border: 1px solid rgba(26, 86, 219, 0.18);
-  border-radius: var(--radius);
+  border: 1px solid var(--border-dark);
+  border-radius: 8px;
+  background: var(--bg);
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.db-invite-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: var(--surface);
-  border: 1px solid rgba(26, 86, 219, 0.15);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--accent);
-  flex-shrink: 0;
+.db-slug-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.12);
 }
 
-.db-invite-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.db-invite-org {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.db-invite-role {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.db-invite-actions {
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.db-btn-sm {
-  padding: 6px 14px;
+.db-slug-prefix {
   font-size: 13px;
-}
-
-.db-slug-preview {
-  font-size: 12px;
   color: var(--muted);
-  margin-top: -8px;
-  padding-left: 2px;
+  padding: 9px 0 9px 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
+.db-slug-input {
+  flex: 1;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding-left: 0 !important;
+}
+
+.db-slug-input:focus { box-shadow: none !important; }
+
+.db-slug-status {
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+}
+
+.db-field-error   { font-size: 12px; color: #B91C1C; margin-top: 2px; }
+.db-field-success { font-size: 12px; color: #27500A; margin-top: 2px; }
+
+/* ── Foutmelding ─────────────────────────── */
 .db-error {
   font-size: 13px;
   color: #B91C1C;
@@ -418,38 +354,11 @@
   padding: 10px 14px;
 }
 
-/* ── Avatar knop ─────────────────────────── */
-.db-avatar-btn {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  border-radius: 50%;
-  transition: opacity 0.15s;
-}
-
-.db-avatar-btn:hover {
-  opacity: 0.85;
-}
-
-.db-avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-}
-
-.db-input--readonly {
-  background: var(--surface2);
-  color: var(--muted);
-  cursor: not-allowed;
-}
-
 /* ── Modal ───────────────────────────────── */
 .db-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(15, 32, 64, 0.25);
   z-index: 100;
   backdrop-filter: blur(2px);
 }
@@ -499,89 +408,8 @@
   transition: background 0.15s, color 0.15s;
 }
 
-.db-modal-close:hover {
-  background: var(--bg);
-  color: var(--text);
-}
+.db-modal-close:hover { background: var(--bg); color: var(--text); }
 
-/* ── Modal avatar ────────────────────────── */
-.db-modal-avatar-wrap {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px;
-  background: var(--bg);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-}
-
-.db-modal-avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: var(--accent-light);
-  border: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  overflow: hidden;
-  position: relative;
-  flex-shrink: 0;
-}
-
-.db-modal-avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.db-modal-avatar-initials {
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--accent);
-}
-
-.db-modal-avatar-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-.db-modal-avatar:hover .db-modal-avatar-overlay {
-  opacity: 1;
-}
-
-.db-modal-avatar-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.db-modal-avatar-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.db-modal-avatar-sub {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.db-modal-avatar-actions {
-  display: flex;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-/* ── Modal form ──────────────────────────── */
 .db-modal-form {
   display: flex;
   flex-direction: column;
@@ -600,36 +428,10 @@
   color: var(--muted);
 }
 
-.db-modal-hint {
-  font-size: 12px;
-  color: var(--muted);
-}
-
 .db-modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 4px;
-}
-
-/* ── Danger sm knop ──────────────────────── */
-.db-btn-danger-sm {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 14px;
-  background: none;
-  color: #B91C1C;
-  border: 1px solid rgba(185, 28, 28, 0.25);
-  border-radius: 100px;
-  font-family: var(--sans);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.db-btn-danger-sm:hover {
-  background: #FEF2F2;
 }
 
 /* ── Spinner ─────────────────────────────── */
@@ -637,66 +439,4 @@
   to { transform: rotate(360deg); }
 }
 
-.spinning {
-  animation: spinning 0.8s linear infinite;
-}
-
-/* ── Slug input in modal ─────────────────── */
-.db-slug-wrap {
-  display: flex;
-  align-items: center;
-  border: 1px solid var(--border-dark);
-  border-radius: 8px;
-  background: var(--bg);
-  overflow: hidden;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.db-slug-wrap:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.12);
-}
-
-.db-slug-prefix {
-  font-size: 13px;
-  color: var(--muted);
-  padding: 9px 0 9px 12px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.db-slug-input {
-  flex: 1;
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
-  padding-left: 0px !important;
-}
-
-.db-slug-input:focus {
-  box-shadow: none !important;
-}
-
-.db-slug-status {
-  padding: 0 12px;
-  display: flex;
-  align-items: center;
-}
-
-.db-slug-available { color: #27500A; }
-.db-slug-taken     { color: #B91C1C; }
-.db-slug-checking  { color: var(--muted); }
-
-
-.db-field-error {
-  font-size: 12px;
-  color: #B91C1C;
-  margin-top: 2px;
-}
-
-.db-field-success {
-  font-size: 12px;
-  color: #27500A;
-  margin-top: 2px;
-}
+.spinning { animation: spinning 0.8s linear infinite; }

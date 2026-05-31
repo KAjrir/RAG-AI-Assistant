@@ -109,35 +109,51 @@ export const getUserPendingInvites = async (userId) => {
     return pendingInvites
 }
 
-export const inviteMember = async (orgId, email, role, invitedBy) => {
-    try {
-        const invitation = await db`
-            INSERT INTO invitations (organization_id, email, role, invited_by)
-            VALUES (${orgId}, ${email}, ${role}, ${invitedBy})
-            RETURNING *
-        `
-        return invitation[0]
-    } catch (err) {
-        console.error(err)
-        return null
-    }
+export const inviteMembers = async (orgId, invitedBy, invitees) => {
+    const invitations = await db`
+        INSERT INTO invitations (organization_id, email, role, invited_by)
+        SELECT * FROM unnest(
+            ${invitees.map(() => orgId)}::uuid[],
+            ${invitees.map(i => i.email)}::text[],
+            ${invitees.map(i => i.role)}::text[],
+            ${invitees.map(() => invitedBy)}::uuid[]
+        )
+        RETURNING *
+    `
+    return invitations
+
 }
 
-export const getInvitationDetails = async (inviteId) => {
+export const getInvite = async (inviteId) => {
+    const invitation = await db`
+        SELECT *
+        FROM invitations
+        WHERE id = ${inviteId}
+    `
+
+    return invitation[0]
+}
+
+export const getInvitationDetails = async (invitations) => {
+    const invitationIds = invitations.map(i => i.id);
+
     const details = await db`
         SELECT
+            i.id,
             u.name as user_name,
             o.name as org_name,
             o.logo_resource_url,
+            i.role,
+            i.email,
             i.token,
             i.expires_at
         FROM invitations i
         JOIN organizations o ON o.id = i.organization_id
         JOIN users u ON u.id = i.invited_by
-        WHERE i.id = ${inviteId};
+        WHERE i.id = ANY(${invitationIds}::uuid[]);
     `
 
-    return details[0]
+    return details
 }
 
 export const revokeInvite = async (orgId, inviteId) => {
@@ -159,7 +175,7 @@ export const getWorkspacePendingInvites = async (orgId) => {
     return invites
 }
 
-export const getAllInvites = async (orgId) => {
+export const getAllWorkspaceInvites = async (orgId) => {
     const invites = await db`
         SELECT *
         FROM invitations

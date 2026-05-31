@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
 import { flushSync } from 'react-dom';
 import { api } from '../lib/api.js';
 import { useAuth } from './AuthContext.jsx';
+import { PERMISSIONS } from '../lib/permissions.js';
 
 const WorkspaceContext = createContext(null);
 
@@ -15,22 +16,33 @@ export function WorkspaceProvider({ slug, children }) {
   const [loading, setLoading]             = useState(true);
   const [error, setError]                 = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [stats, setStats]     = useState({ docs: 0, connections: 0, members: 0 });
+
 
   useEffect(() => {
     if (!slug) return;
     setLoading(true);
+    
+    setWorkspace(null)
+    setMembers([])
+    setDocuments([])
+    setConnections([])
+    setStats({ docs: 0, connections: 0, members: 0 })
 
     Promise.all([
       api.get(`/workspaces/${slug}`),
       api.get(`/workspaces/${slug}/members`),
       api.get(`/workspaces/${slug}/docs`),
       api.get(`/workspaces/${slug}/connections`),
+      api.get(`/workspaces/${slug}/stats`),
     ])
-      .then(([wsRes, membersRes, docsRes, connectionsRes]) => {
+      .then(([wsRes, membersRes, docsRes, connectionsRes, statsRes]) => {
+
         setWorkspace(wsRes.data);
         setMembers(membersRes.data);
         setDocuments(docsRes.data);
         setConnections(connectionsRes.data);
+        setStats(statsRes.data);
 
         const me             = membersRes.data.find(m => m.id === user?.id);
         const isAdminOrOwner = ['admin', 'owner'].includes(me?.role);
@@ -41,7 +53,10 @@ export function WorkspaceProvider({ slug, children }) {
             .catch(() => {});
         }
       })
-      .catch(err => setError(err.message))
+      .catch(err => {
+        console.dir(err, {depth:null})
+        setError(err.message)
+      })
       .finally(() => setLoading(false));
   }, [slug]);
 
@@ -61,6 +76,11 @@ export function WorkspaceProvider({ slug, children }) {
   }, [documents, slug]);
 
   const currentMember = members.find(m => m.id === user?.id);
+  const can = useCallback((resource, action) => {
+    const role = currentMember?.role
+    return PERMISSIONS[role]?.[resource]?.[action] ?? false
+  }, [currentMember])
+  
   const isOwner       = currentMember?.role === 'owner';
   const isAdmin       = ['owner', 'admin'].includes(currentMember?.role);
 
@@ -86,8 +106,8 @@ export function WorkspaceProvider({ slug, children }) {
     return res.data;
   }
 
-  async function inviteMember(email, role = 'member') {
-    const res = await api.post(`/invitations/${slug}/create`, { email, role });
+  async function inviteMembers(invitees) {
+    const res = await api.post(`/invitations/${slug}/create`, { invitees });
     setInvitations(prev => [...prev, res.data]);
     return res.data;
   }
@@ -210,9 +230,9 @@ export function WorkspaceProvider({ slug, children }) {
     <WorkspaceContext.Provider value={{
       isSidebarOpen, toggleSidebar,
       workspace, members, invitations, loading, error,
-      isOwner, isAdmin, currentMember,
+      isOwner, isAdmin, currentMember, 
       updateWorkspace,
-      inviteMember, revokeInvite, updateMember, removeMember,
+      inviteMembers, revokeInvite, updateMember, removeMember,
       documents, reindexDocument, deleteDocument,
       uploadDocuments, refreshDocuments,
       connections,
@@ -220,6 +240,7 @@ export function WorkspaceProvider({ slug, children }) {
       disableConnection,
       updateConnectionConfig,
       deleteConnection,
+      stats, can
     }}>
       {children}
     </WorkspaceContext.Provider>

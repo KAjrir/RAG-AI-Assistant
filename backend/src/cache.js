@@ -59,7 +59,7 @@ class Cache {
             this.cleanUp()
         }, this.cleanupInterval);
 
-        // this.cleanupTimer.unref();
+        this.cleanupTimer.unref();
     }
 
     stopCleanup() {

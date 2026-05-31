@@ -5,7 +5,46 @@
   color: var(--muted);
 }
 
-/* ── Header ────────────────────────────── */
+/* ── Niet gevonden ─────────────────────── */
+.dd-not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 10px;
+  text-align: center;
+}
+
+.dd-not-found-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.dd-not-found-icon svg { width: 20px; height: 20px; }
+
+.dd-not-found-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  margin: 0;
+}
+
+.dd-not-found-sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* ── Terug knop ────────────────────────── */
 .dd-back {
   display: inline-flex;
   align-items: center;
@@ -23,6 +62,7 @@
 
 .dd-back:hover { color: var(--text); }
 
+/* ── Header ────────────────────────────── */
 .dd-header-main {
   display: flex;
   align-items: flex-start;
@@ -55,6 +95,8 @@
   color: var(--accent);
 }
 
+.dd-doc-icon--uploading,
+.dd-doc-icon--queued,
 .dd-doc-icon--processing {
   background: #FEF9ED;
   border: 1px solid rgba(180, 83, 9, 0.12);
@@ -75,9 +117,7 @@
   transition: color 0.15s;
 }
 
-.dd-title-link:hover {
-  color: var(--text);
-}
+.dd-title-link:hover { color: var(--accent); }
 
 .dd-title {
   font-family: var(--serif);
@@ -105,7 +145,7 @@
   color: var(--border-dark);
 }
 
-/* ── Pills ─────────────────────────────── */
+/* ── Status pills ──────────────────────── */
 .dd-pill {
   padding: 2px 8px;
   border-radius: 100px;
@@ -122,6 +162,8 @@
   border: 1px solid rgba(26, 86, 219, 0.18);
 }
 
+.dd-pill--uploading,
+.dd-pill--queued,
 .dd-pill--processing {
   background: #FEF9ED;
   color: #B45309;
@@ -250,7 +292,7 @@
 
 .dd-chunk {
   display: grid;
-  grid-template-columns: 32px 1fr auto;
+  grid-template-columns: 32px 1fr;
   align-items: start;
   gap: 12px;
   padding: 12px 14px;
@@ -266,7 +308,7 @@
   font-size: 11px;
   font-weight: 600;
   color: var(--muted);
-  padding-top: 1px;
+  padding-top: 2px;
 }
 
 .dd-chunk-text {
@@ -275,9 +317,10 @@
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
+  margin: 0;
 }
 
-/* ── Verwerking ────────────────────────── */
+/* ── Verwerking banner ─────────────────── */
 .dd-processing {
   display: flex;
   align-items: center;
@@ -288,23 +331,113 @@
   border-radius: var(--radius);
   font-size: 13px;
   color: #B45309;
+  margin-bottom: 24px;
 }
 
-@keyframes spin {
+.dd-processing p { margin: 0; }
+
+@keyframes dd-spin {
   to { transform: rotate(360deg); }
 }
 
 .dd-spinner {
-  animation: spin 1s linear infinite;
+  animation: dd-spin 1s linear infinite;
   flex-shrink: 0;
 }
 
-/* Op telefoon geen hover — toon altijd een subtiele underline */
-@media (max-width: 768px) {
-  .dd-title-link:active {
-    color: var(--text);
-  }
+/* ── Verwijder modal ───────────────────── */
+.dd-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 32, 64, 0.25);
+  z-index: 100;
+  backdrop-filter: blur(2px);
+}
 
+.dd-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 101;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  width: min(420px, calc(100vw - 32px));
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dd-modal-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #FEF2F2;
+  border: 1px solid rgba(185, 28, 28, 0.15);
+  color: #B91C1C;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dd-modal-icon svg { width: 18px; height: 18px; }
+
+.dd-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dd-modal-title {
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.dd-modal-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.dd-modal-desc strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.dd-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.dd-btn-danger-solid {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 18px;
+  background: #B91C1C;
+  color: #fff;
+  border: none;
+  border-radius: 100px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+
+.dd-btn-danger-solid:hover:not(:disabled) { background: #991B1B; }
+.dd-btn-danger-solid:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Responsive ────────────────────────── */
+@media (max-width: 768px) {
   .dd-stats { grid-template-columns: 1fr; }
   .dd-header-main { flex-direction: column; }
   .dd-chunk { grid-template-columns: 28px 1fr; }

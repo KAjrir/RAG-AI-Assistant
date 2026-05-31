@@ -8,7 +8,7 @@ import multer from "multer";
 import { promptAI } from "../../ai-bot/vectorized_ai_chatbot.js";
 import { cache } from "../../cache.js"
 
-import { getChatMessages, getChatsFromOrg, saveMessage, createChat, generateChatTitle, updateAssistantMessage, getChatId, deleteChat, updateChatTitle, getToolsForChat } from "./chat.service.js";
+import { getOwnChatMessages, getOwnChatsFromOrg, saveMessage, createChat, generateChatTitle, updateAssistantMessage, getChatId, deleteChat, updateChatTitle, getToolsForChat } from "./chat.service.js";
 import { toJsonLine, getUuid } from "../../utils.js";
 import { openaiToolFormat } from "../../ai-bot/refactorCode.js";
 import { assetsPath, uploadsDirectory } from "../../constants.js";
@@ -18,29 +18,18 @@ const chatsFileResourcePath = `${assetsPath}/chat-resources`
 
 await fs.mkdir(chatsFileDirectory, {recursive: true})
 
-const storage = multer.diskStorage({
-  destination(req, file, cb) {
-    cb(null, chatsFileDirectory);
-  },
-  filename(req, file, cb) {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const fileName = `${getUuid()}${ext}`;
-    cb(null, fileName);
-  }
-});
-
 const upload = multer({
-  storage: multer.memoryStorage()
-  // limits: {
-  //   fileSize: 2 * 1024 * 1024, // 2MB
-  // },
-  // fileFilter(req, file, cb) {
-  //   const allowed = ['image/jpeg', 'image/png', 'image/webp'];
-  //   if (!allowed.includes(file.mimetype)) {
-  //     return cb(new Error('Alleen JPG, PNG of WebP is toegestaan.'));
-  //   }
-  //   cb(null, true);
-  // }
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 2MB
+  },
+  fileFilter(req, file, cb) {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.mimetype)) {
+      return cb(new Error('Alleen JPG, PNG of WebP is toegestaan.'));
+    }
+    cb(null, true);
+  }
 });
 
 const router = Router();
@@ -50,7 +39,7 @@ router.get("/", async (req, res) => {
   const userId = req.userId
   const orgId = req.orgId
 
-  const chats = await getChatsFromOrg(userId, orgId) ?? []
+  const chats = await getOwnChatsFromOrg(userId, orgId)
 
   res.status(200).json(chats)
 })
@@ -144,10 +133,12 @@ router.get("/:chatId", async (req, res) => {
   const chatId = req.params.chatId
 
 
-  const chat = await getChatId(chatId, userId, orgId)
-  if (chat.length < 1) return res.status(404).json({ message: "Chat not found"})
+  // const chat = await getChatId(chatId, userId, orgId)
+  const messages = await getOwnChatMessages(orgId, userId, chatId)
+  if (messages.length === 0) {
+    return res.status(404).json({ message: "Chat not found"})
+  }
   
-  const messages = await getChatMessages(chatId)
 
   const publicMessages = messages.map(msg => ({
     ...msg,
@@ -182,29 +173,6 @@ router.delete("/:chatId", async (req, res) => {
   res.status(204).end()
 })
 
-[
-  {
-    fieldname: 'files',
-    originalname: 'Feedback for HERKANSING Professional Skills Portfolio eerste 100-dagen.pdf',
-    encoding: '7bit',
-    mimetype: 'application/pdf',
-    size: 59093,
-
-    filename: 'd42c15e7-5f6c-4506-8866-a95d17e490ac.pdf',
-    path: '/home/kajrir/repos/RAG-AI-Assistant/backend/src/uploads/chat-resources/d42c15e7-5f6c-4506-8866-a95d17e490ac.pdf',
-  },
-  {
-    fieldname: 'files',
-    originalname: 'handtekening.png',
-    encoding: '7bit',
-    mimetype: 'image/png',
-    size: 13678,
-
-    buffer: "<Buffer 89 50 4e 47 0d 0a 1a 0a 00 00 00 0d 49 48 44 52 00 00 01 90 00 00 00 c8 08 06 00 00 00 c6 15 b7 e2 00 00 10 00 49 44 41 54 78 01 ec dd 05 bc 6d 41 5d ... 13628 more bytes>",
-  }
-]
-
-
 router.post("/:chatId/messages", upload.array("files"), async (req, res) => {
   const userId = req.userId
   const orgId = req.orgId
@@ -226,7 +194,6 @@ router.post("/:chatId/messages", upload.array("files"), async (req, res) => {
       file.size = optimized.size
 
     } else {
-
       const extname = path.extname(file.originalname)
       const filename = `${getUuid()}${extname}`;
       const filepath = `${chatsFileDirectory}/${filename}`
@@ -299,8 +266,9 @@ router.post("/messages", async (req, res) => {
   const chatId = req.body.chatId
   const assistantId = req.body.assistantId
   
-  const orgId = req.orgId
-  const { model, connections } = req.body.payload
+  const userId = req.userId;
+  const orgId = req.orgId;
+  const { model, connections } = req.body.payload;
 
   const availableTools = await getToolsForChat(orgId, connections)
   // console.dir(availableTools, { depth: null })
@@ -311,7 +279,7 @@ router.post("/messages", async (req, res) => {
   let history = JSON.parse(cache.get(`chat:${chatId}:messages`))
   
   if(!history) {
-    history = await getChatMessages(chatId)
+    history = await getOwnChatMessages(orgId, userId, chatId)
     cache.set(`chat:${chatId}:messages`, JSON.stringify(history))
   }
   

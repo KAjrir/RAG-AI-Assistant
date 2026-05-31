@@ -14,28 +14,35 @@ export const getChatId = async (chatId, userId, orgId) => {
     return chat
 }
 
-export const getChatsFromOrg = async (userId, orgId) => {
+export const getOwnChatsFromOrg = async (userId, orgId) => {
     const chats = await db`
-        SELECT id, title
+        SELECT
+            id,
+            title
         FROM chats
-        WHERE organization_id = ${orgId} AND user_id = ${userId}
+        WHERE organization_id = ${orgId} 
+            AND user_id = ${userId}
         ORDER BY updated_at DESC
     `
     return chats
 }
 
 
-export const getChatMessages = async (chatId) => {
+export const getOwnChatMessages = async (orgId, userId, chatId) => {
     const messages = await db`
-        SELECT
-            id,
-            role,
-            content,
-            status
-        FROM messages
-        WHERE chat_id = ${chatId}
-        ORDER BY created_at ASC
+        SELECT 
+            m.id,
+            m.role,
+            m.content,
+            m.status
+        FROM messages m
+        JOIN chats c ON c.id = m.chat_id
+        WHERE m.chat_id        = ${chatId}
+            AND   c.user_id        = ${userId}
+            AND   c.organization_id = ${orgId}
+        ORDER BY m.created_at ASC
     `
+    // console.log("MESSAGES: ")
     // console.dir(messages, { depth:null })
     return messages
 }
@@ -106,13 +113,13 @@ export const deleteChat = async (chatId) => {
 }
 
 export const updateChatTitle = async (chatId, title) => {
-    const [newTitle] = await db`
+    const newTitle = await db`
         UPDATE chats
         SET title = ${title}
         WHERE id = ${chatId}
         RETURNING title
     `
-    return newTitle
+    return newTitle[0]
 }
 
 export const getToolsForChat = async (orgId, requestedConnectionIds) => {

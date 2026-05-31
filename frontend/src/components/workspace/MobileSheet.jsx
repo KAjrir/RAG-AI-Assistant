@@ -8,7 +8,7 @@ import '../../styles/mobileSheet.css';
 
 export default function MobileSheet({ open, onClose }) {
   const { slug } = useParams();
-  const { workspace, isOwner } = useWorkspace();
+  const { isOwner } = useWorkspace();
   const { workspaces } = useOrg();
   const navigate = useNavigate();
 

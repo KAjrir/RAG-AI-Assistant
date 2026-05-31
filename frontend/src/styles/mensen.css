@@ -1,12 +1,8 @@
-.mn-root { max-width: 720px; }
+.mn-root { max-width: 760px; }
 
 /* ── Header ────────────────────────────── */
 .mn-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
   margin-bottom: 24px;
-  gap: 16px;
 }
 
 .mn-title {
@@ -16,11 +12,11 @@
   letter-spacing: -0.025em;
   color: var(--text);
   line-height: 1.1;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
 }
 
 .mn-slug {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
   margin: 0;
 }
@@ -30,34 +26,47 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 20px;
+  padding: 24px;
   margin-bottom: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
 }
 
+.mn-invite-box-header { margin-bottom: 20px; }
+
 .mn-invite-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text);
+  margin: 0 0 4px;
 }
 
 .mn-invite-sub {
   font-size: 13px;
   color: var(--muted);
-  line-height: 1.6;
+  line-height: 1.5;
+  margin: 0;
 }
 
-.mn-invite-form {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+/* ── Invite grid ───────────────────────── */
+.mn-invite-grid-header {
+  display: grid;
+  grid-template-columns: 1fr 180px;
+  gap: 10px;
+  padding: 0 0 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.mn-invite-row {
+  display: grid;
+  grid-template-columns: 1fr 180px auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 8px;
 }
 
 .mn-input {
-  flex: 1;
-  min-width: 200px;
+  width: 100%;
   padding: 9px 12px;
   border: 1px solid var(--border-dark);
   border-radius: 8px;
@@ -67,88 +76,215 @@
   background: var(--bg);
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
 }
 
 .mn-input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.12);
+  box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
 }
 
 .mn-input::placeholder { color: var(--muted); }
 
-/* ── Uitnodigingscode ──────────────────── */
-.mn-code-row {
+/* ── Role select ───────────────────────── */
+.mn-role-select-wrapper {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
 }
 
-.mn-code {
-  flex: 1;
+.mn-role-select-wrapper svg {
+  position: absolute;
+  right: 10px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.mn-role-select {
+  width: 100%;
+  padding: 9px 32px 9px 12px;
+  border: 1px solid var(--border-dark);
+  border-radius: 8px;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg);
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.mn-role-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
+}
+
+/* ── Invite footer ─────────────────────── */
+.mn-invite-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.mn-btn-add-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  background: none;
+  border: 1px dashed var(--border-dark);
+  border-radius: 8px;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.mn-btn-add-more:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+}
+
+.mn-invite-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ── Feedback ──────────────────────────── */
+.mn-feedback {
+  font-size: 13px;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 12px 0 0;
+}
+
+.mn-feedback--error {
+  color: #B91C1C;
+  background: #FEF2F2;
+  border: 1px solid rgba(185, 28, 28, 0.15);
+}
+
+.mn-feedback--success {
+  color: #27500A;
+  background: #EAF3DE;
+  border: 1px solid rgba(59, 109, 17, 0.15);
+}
+
+/* ── Tabs bar ──────────────────────────── */
+.mn-tabs-bar {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+
+.mn-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
   font-family: var(--sans);
   font-size: 13px;
   font-weight: 500;
-  color: var(--accent);
-  letter-spacing: 0.06em;
-}
-
-.mn-copy-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
-  background: var(--surface);
-  border: 1px solid var(--border-dark);
-  border-radius: 100px;
-  font-family: var(--sans);
-  font-size: 12px;
-  color: var(--text);
+  color: var(--muted);
   cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px;
 }
 
-.mn-copy-btn:hover { background: var(--surface2); }
+.mn-tab:hover { color: var(--text); }
 
-/* ── Sectie label ──────────────────────── */
-.mn-section-label {
+.mn-tab--active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.mn-tab-count {
+  background: var(--accent);
+  color: #fff;
   font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 100px;
+  line-height: 1.4;
+}
+
+.mn-tab-count--neutral {
+  background: var(--surface2);
   color: var(--muted);
-  margin-bottom: 10px;
+}
+
+/* ── Sub tabs (uitnodigingen) ──────────── */
+.mn-invites-sub-tabs {
   display: flex;
+  gap: 2px;
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 3px;
+  margin-bottom: 14px;
+  width: fit-content;
+}
+
+.mn-sub-tab {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
+  padding: 5px 14px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
 }
 
-.mn-section-label::before {
-  content: '';
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--accent);
+.mn-sub-tab--active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
 }
 
-/* ── Ledenlijst ────────────────────────── */
+/* ── Tabel ─────────────────────────────── */
+.mn-table {}
+
+.mn-table-header {
+  display: grid;
+  grid-template-columns: 1fr 140px 36px;
+  gap: 12px;
+  padding: 0 14px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ── Lijst ─────────────────────────────── */
 .mn-list {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   margin-bottom: 16px;
 }
 
 .mn-item {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr 140px 36px;
   gap: 12px;
-  padding: 12px 16px;
+  align-items: center;
+  padding: 10px 14px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -157,20 +293,44 @@
 
 .mn-item:hover { border-color: var(--border-dark); }
 
+.mn-item-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.mn-item-role {
+  display: flex;
+  align-items: center;
+}
+
+.mn-item-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
 /* ── Avatar ────────────────────────────── */
 .mn-avatar {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--accent-light);
   color: var(--accent);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   border: 1px solid rgba(26, 86, 219, 0.15);
+}
+
+.mn-avatar--invite {
+  background: var(--surface2);
+  color: var(--muted);
+  border-color: var(--border);
 }
 
 .mn-avatar-img {
@@ -182,10 +342,9 @@
 
 /* ── Info ──────────────────────────────── */
 .mn-info {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
 }
 
@@ -193,21 +352,15 @@
   font-size: 13px;
   font-weight: 500;
   color: var(--text);
-}
-
-.mn-email {
-  font-size: 12px;
-  color: var(--muted);
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
 }
 
-.mn-domain-badge {
+.mn-you {
   font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   padding: 1px 6px;
   border-radius: 100px;
   background: var(--surface2);
@@ -215,34 +368,130 @@
   border: 1px solid var(--border);
 }
 
-/* ── Rol badge ─────────────────────────── */
-.mn-role {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+.mn-meta {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Badges ────────────────────────────── */
+.mn-badge {
+  font-size: 11px;
+  font-weight: 500;
   padding: 3px 10px;
   border-radius: 100px;
   white-space: nowrap;
-  flex-shrink: 0;
 }
 
-.mn-role--owner {
+/* Paars voor owner */
+.mn-badge--owner {
+  background: #F5F3FF;
+  color: #5B21B6;
+  border: 1px solid rgba(91, 33, 182, 0.18);
+}
+
+/* Oranje voor admin */
+.mn-badge--admin {
+  background: #FFF7ED;
+  color: #C2410C;
+  border: 1px solid rgba(194, 65, 12, 0.18);
+}
+
+/* Groen voor editor */
+.mn-badge--editor {
+  background: #ECFDF5;
+  color: #065F46;
+  border: 1px solid rgba(6, 95, 70, 0.18);
+}
+
+/* Blauw voor viewer */
+.mn-badge--viewer {
+  background: var(--accent-light);
+  color: var(--accent);
+  border: 1px solid rgba(26, 86, 219, 0.18);
+}
+
+.mn-badge--pending {
+  background: #FAEEDA;
+  color: #633806;
+  border: 1px solid rgba(186, 117, 23, 0.15);
+}
+
+.mn-badge--accepted {
   background: #ECFDF5;
   color: #065F46;
   border: 1px solid rgba(6, 95, 70, 0.15);
 }
 
-.mn-role--member {
-  background: #ECFDF5;
-  color: #065F46;
-  border: 1px solid rgba(6, 95, 70, 0.15);
+.mn-badge--expired {
+  background: var(--surface2);
+  color: var(--muted);
+  border: 1px solid var(--border);
 }
 
-/* ── Verwijderknop ─────────────────────── */
-.mn-remove-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
+.mn-badge--revoked {
+  background: #FEF2F2;
+  color: #B91C1C;
+  border: 1px solid rgba(185, 28, 28, 0.15);
+}
+
+/* ── Rol bevestiging ───────────────────── */
+.mn-confirm-change {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.mn-confirm-text {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.mn-confirm-text strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.mn-confirm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.mn-confirm-btn--yes {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+}
+
+.mn-confirm-btn--yes:hover:not(:disabled) { background: var(--accent-hover); }
+.mn-confirm-btn--yes:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.mn-confirm-btn--no {
+  background: var(--surface);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.mn-confirm-btn--no:hover { background: var(--surface2); color: var(--text); }
+
+/* ── Icoon knoppen ─────────────────────── */
+.mn-icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--muted);
@@ -250,55 +499,99 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s, background 0.15s, color 0.15s;
   flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
-.mn-item:hover .mn-remove-btn { opacity: 1; }
+.mn-icon-btn:hover {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--border-dark);
+}
 
-.mn-remove-btn:hover {
+.mn-icon-btn--danger:hover {
   background: #FEF2F2;
   color: #B91C1C;
-  border-color: rgba(185, 28, 28, 0.2);
+  border-color: rgba(185, 28, 28, 0.25);
 }
 
-/* ── Domain-join banner ────────────────── */
-.mn-domain-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 14px 16px;
+.mn-icon-btn--remove {
+  border: none;
+  background: none;
+  width: 24px;
+  height: 24px;
+}
+
+/* ── Menu ──────────────────────────────── */
+.mn-menu-wrapper {
+  position: relative;
+}
+
+.mn-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
   background: var(--surface);
-  border: 1px dashed var(--border-dark);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  min-width: 180px;
+  z-index: 50;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.mn-domain-banner-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: var(--accent-light);
-  border: 1px solid rgba(26, 86, 219, 0.12);
-  color: var(--accent);
+.mn-menu-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 4px 8px 6px;
+  margin: 0;
+}
+
+.mn-menu-item {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+  width: 100%;
+}
+
+.mn-menu-item:hover { background: var(--surface2); }
+.mn-menu-item--danger { color: #B91C1C; }
+.mn-menu-item--danger:hover { background: #FEF2F2; }
+
+.mn-menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+/* Gekleurde dots in menu */
+.mn-menu-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   flex-shrink: 0;
 }
 
-.mn-domain-banner-title {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
-  margin-bottom: 3px;
-}
-
-.mn-domain-banner-sub {
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 1.5;
-}
+.mn-menu-dot--owner  { background: #5B21B6; }
+.mn-menu-dot--admin  { background: #C2410C; }
+.mn-menu-dot--editor { background: #065F46; }
+.mn-menu-dot--viewer { background: var(--accent); }
 
 /* ── Knoppen ───────────────────────────── */
 .mn-btn-primary {
@@ -338,239 +631,102 @@
 
 .mn-btn-secondary:hover { background: var(--surface2); }
 
-/* ── Pending invite avatar ─────────────── */
-.mn-avatar--invite {
-  background: var(--surface2);
-  color: var(--muted);
-  border-color: var(--border);
-}
-
-/* ── Pending rol badge ─────────────────── */
-.mn-role--pending {
-  background: #FAEEDA;
-  color: #633806;
-  border: 1px solid rgba(186, 117, 23, 0.15);
-}
-
-.mn-role--admin {
-  background: #E6F1FB;
-  color: #0C447C;
-  border: 1px solid rgba(26, 86, 219, 0.15);
-}
-
-/* ── Rol select ────────────────────────── */
-.mn-role-select {
-  font-family: var(--sans);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  padding: 4px 8px 4px 10px;
-  border-radius: 100px;
-  border: 1px solid var(--border-dark);
-  background: var(--surface);
-  color: var(--text);
-  cursor: pointer;
-  outline: none;
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='10' height='10' viewBox='0 0 10 10' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4l3 3 3-3' stroke='%235A7399' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  padding-right: 24px;
-  min-width: unset;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.mn-role-select:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
-}
-
-.mn-role-select:hover {
-  border-color: var(--accent);
-}
-
-/* ── Select in invite form ─────────────── */
-.mn-select {
-  flex: 0;
-  min-width: 130px;
-  border-radius: 8px;
-}
-
-/* ── Feedback berichten ────────────────── */
-.mn-error {
-  font-size: 13px;
-  color: #B91C1C;
-  background: #FEF2F2;
-  border: 1px solid rgba(185, 28, 28, 0.15);
-  border-radius: 8px;
-  padding: 10px 14px;
-}
-
-.mn-success {
-  font-size: 13px;
-  color: #27500A;
-  background: #EAF3DE;
-  border: 1px solid rgba(59, 109, 17, 0.15);
-  border-radius: 8px;
-  padding: 10px 14px;
-}
-
-/* ── Invites sectie ────────────────────── */
-.mn-invites-section {
-  margin-bottom: 28px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.mn-invites-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-/* ── Tabs ──────────────────────────────── */
-.mn-tabs {
-  display: flex;
-  gap: 2px;
-  background: var(--surface2);
-  border-radius: 8px;
-  padding: 3px;
-}
-
-.mn-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  border: none;
-  border-radius: 6px;
-  background: none;
-  font-family: var(--sans);
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted);
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-
-.mn-tab--active {
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: var(--shadow-sm);
-}
-
-.mn-tab-count {
-  background: var(--accent);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 1px 6px;
-  border-radius: 100px;
-  line-height: 1.4;
-}
-
-/* ── Status badges ─────────────────────── */
-.mn-role--accepted {
-  background: #EAF3DE;
-  color: #27500A;
-  border: 1px solid rgba(59, 109, 17, 0.15);
-}
-
-.mn-role--expired {
-  background: #F1EFE8;
-  color: #444441;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.mn-role--revoked {
-  background: #FEF2F2;
-  color: #B91C1C;
-  border: 1px solid rgba(185, 28, 28, 0.15);
-}
-
 /* ── Leeg state ────────────────────────── */
 .mn-empty {
   font-size: 13px;
   color: var(--muted);
-  padding: 12px 0;
+  padding: 16px 0;
 }
 
-.mn-role-change {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
+/* ── Verwijder modal ───────────────────── */
+.mn-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 32, 64, 0.25);
+  z-index: 100;
+  backdrop-filter: blur(2px);
 }
 
-.mn-role-select {
-  font-family: var(--sans);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  padding: 5px 28px 5px 12px;
-  border-radius: 100px;
-  border: 1px solid var(--border-dark);
-  background-color: var(--surface);
-  background-image: url("data:image/svg+xml,%3Csvg width='10' height='10' viewBox='0 0 10 10' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4l3 3 3-3' stroke='%235A7399' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  color: var(--text);
-  cursor: pointer;
-  outline: none;
-  appearance: none;
-  -webkit-appearance: none;
-  min-width: 100px;
-  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
-  box-shadow: var(--shadow-sm);
-}
-
-.mn-role-select:hover {
-  border-color: var(--accent);
-  background-color: var(--accent-light);
-}
-
-.mn-role-select:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
-  background-color: var(--surface);
-}
-
-.mn-role-confirm {
-  display: flex;
-  gap: 4px;
-}
-
-.mn-role-confirm-btn {
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
+.mn-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 101;
   background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  width: min(420px, calc(100vw - 32px));
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.mn-modal-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #FEF2F2;
+  border: 1px solid rgba(185, 28, 28, 0.15);
+  color: #B91C1C;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-  flex-shrink: 0;
 }
 
-.mn-role-confirm-btn--yes {
-  color: #27500A;
-  border-color: rgba(59, 109, 17, 0.2);
+.mn-modal-icon svg {
+  width: 18px;
+  height: 18px;
 }
 
-.mn-role-confirm-btn--yes:hover {
-  background: #EAF3DE;
-  border-color: rgba(59, 109, 17, 0.35);
+.mn-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.mn-role-confirm-btn--no {
-  color: var(--muted);
-}
-
-.mn-role-confirm-btn--no:hover {
-  background: var(--surface2);
+.mn-modal-title {
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  font-weight: 400;
   color: var(--text);
+  letter-spacing: -0.02em;
+  margin: 0;
 }
+
+.mn-modal-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.mn-modal-desc strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.mn-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.mn-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 18px;
+  background: #B91C1C;
+  color: #fff;
+  border: none;
+  border-radius: 100px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+
+.mn-btn-danger:hover { background: #991B1B; }

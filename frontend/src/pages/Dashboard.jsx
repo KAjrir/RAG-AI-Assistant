@@ -2,17 +2,17 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext.jsx';
 import { api, BASE_URL } from '../lib/api.js';
+import { ROLE_LABELS } from '../lib/permissions.js';
 import '../styles/dashboard.css';
 import AppHeader from '../components/AppHeader.jsx';
 
 export default function Dashboard() {
-  const { user, createOrg, acceptInvite, declineInvite }      = useAuth();
-  const navigate                          = useNavigate();
+  const { user, createOrg, acceptInvite, declineInvite } = useAuth();
+  const navigate                                          = useNavigate();
 
   const [pendingInvites, setPendingInvites] = useState([]);
   const [accepting, setAccepting]           = useState(null);
 
-  // Workspace aanmaken modal
   const [showCreate, setShowCreate]     = useState(false);
   const [newName, setNewName]           = useState('');
   const [newSlug, setNewSlug]           = useState('');
@@ -28,7 +28,6 @@ export default function Dashboard() {
       .catch(() => {})
   }, []);
 
-  // Slug auto-genereren
   useEffect(() => {
     if (slugManual) return;
     const generated = newName
@@ -38,7 +37,6 @@ export default function Dashboard() {
     setNewSlug(generated);
   }, [newName, slugManual]);
 
-  // Slug beschikbaarheidscheck
   useEffect(() => {
     if (!newSlug) { setSlugStatus('idle'); return; }
     setSlugStatus('checking');
@@ -89,17 +87,17 @@ export default function Dashboard() {
       await acceptInvite(token);
       setPendingInvites(prev => prev.filter(i => i.token !== token));
     } catch (err) {
-      console.error(err)
+      console.error(err);
       setAccepting(null);
     }
   }
 
   async function handleDecline(token) {
     try {
-      await declineInvite(token)
+      await declineInvite(token);
       setPendingInvites(prev => prev.filter(i => i.token !== token));
     } catch (err) {
-      console.error(err)
+      console.error(err);
     }
   }
 
@@ -132,12 +130,11 @@ export default function Dashboard() {
                     ) : (
                       invite.org_name[0].toUpperCase()
                     )}
-                  {/* <div className="db-invite-icon"><MailIcon /></div> */}
                   </div>
                   <div className="db-invite-info">
                     <span className="db-invite-org">{invite.org_name}</span>
                     <span className="db-invite-role">
-                      Uitgenodigd als {invite.role === 'admin' ? 'Beheerder' : 'Lid'}
+                      Uitgenodigd als {ROLE_LABELS[invite.role] ?? invite.role}
                     </span>
                   </div>
                   <div className="db-invite-actions">
@@ -167,7 +164,7 @@ export default function Dashboard() {
           {user.memberships.map(mem => (
             <li key={mem.org_id}>
               <button
-                className={`db-ws-card ${mem.role === 'owner' ? 'db-ws-card--owner' : ''}`}
+                className="db-ws-card"
                 onClick={() => navigate(`/w/${mem.org_slug}`)}
               >
                 <div className="db-ws-icon">
@@ -184,7 +181,7 @@ export default function Dashboard() {
                 <div className="db-ws-info">
                   <span className="db-ws-name">{mem.org_name}</span>
                   <span className={`db-ws-role db-ws-role--${mem.role}`}>
-                    {mem.role === 'owner' ? 'Eigenaar' : mem.role === 'admin' ? 'Beheerder' : 'Lid'}
+                    {ROLE_LABELS[mem.role] ?? mem.role}
                   </span>
                 </div>
                 <ArrowIcon />
@@ -200,7 +197,7 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* ── Workspace aanmaken modal ── */}
+      {/* Workspace aanmaken modal */}
       {showCreate && (
         <>
           <div className="db-modal-backdrop" onClick={closeCreateModal} />
@@ -241,12 +238,8 @@ export default function Dashboard() {
                     <div className="db-slug-status"><SpinnerIcon /></div>
                   )}
                 </div>
-                {slugStatus === 'taken' && (
-                  <p className="db-field-error">Deze URL is al in gebruik.</p>
-                )}
-                {slugStatus === 'available' && (
-                  <p className="db-field-success">Deze URL is beschikbaar.</p>
-                )}
+                {slugStatus === 'taken'     && <p className="db-field-error">Deze URL is al in gebruik.</p>}
+                {slugStatus === 'available' && <p className="db-field-success">Deze URL is beschikbaar.</p>}
               </div>
               {error && <p className="db-error">{error}</p>}
               <div className="db-modal-footer">
@@ -277,27 +270,10 @@ function ArrowIcon() {
   );
 }
 
-function MailIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <rect x="2" y="4" width="12" height="9" rx="2" stroke="currentColor" strokeWidth="1.3"/>
-      <path d="M2 6l6 4 6-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-    </svg>
-  );
-}
-
 function CloseIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path d="M2 7.5l3 3L12 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }

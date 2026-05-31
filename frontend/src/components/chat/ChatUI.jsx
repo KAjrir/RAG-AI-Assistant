@@ -169,7 +169,7 @@ export default function ChatUI() {
       );
       
       pendingStreamRef.current = { chatId: newChatId, assistantId: assistantMessageId, payload };
-      console.log(payload)
+      
       setTitleLoading(true);
       navigate(`/w/${slug}/chat/${newChatId}`);
     }

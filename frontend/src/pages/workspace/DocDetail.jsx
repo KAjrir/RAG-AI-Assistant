@@ -6,27 +6,42 @@ import { useWorkspace } from '../../context/WorkspaceContext.jsx';
 import '../../styles/docDetail.css';
 
 export default function DocDetail() {
-  const { slug, docId }               = useParams();
-  const navigate                      = useNavigate();
-  const { documents, loading, deleteDocument, reindexDocument } = useWorkspace();
+  const { slug, docId }                   = useParams();
+  const navigate                          = useNavigate();
+  const { documents, loading, can, deleteDocument, reindexDocument } = useWorkspace();
 
-  const [chunks, setChunks]           = useState([]);
+  const [chunks, setChunks]               = useState([]);
   const [chunksLoading, setChunksLoading] = useState(true);
-  const [reindexing, setReindexing]   = useState(false);
-  const [deleting, setDeleting]       = useState(false);
+  const [reindexing, setReindexing]       = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting]           = useState(false);
 
-  // Haal het document op uit de context — wordt automatisch bijgewerkt door polling
   const doc = documents.find(d => d.id === docId);
 
-  // Chunks ophalen — alleen als het document completed is
+  // Doc niet gevonden na laden
+  if (!loading && !doc) {
+    return (
+      <div className="dd-root">
+        <button className="dd-back" onClick={() => navigate(`/w/${slug}/docs`)}>
+          <BackIcon /> Terug naar documenten
+        </button>
+        <div className="dd-not-found">
+          <div className="dd-not-found-icon"><DocIcon /></div>
+          <p className="dd-not-found-title">Document niet gevonden</p>
+          <p className="dd-not-found-sub">Dit document bestaat niet of is verwijderd.</p>
+        </div>
+      </div>
+    )
+  }
+
   useEffect(() => {
-    if (!doc || doc.status !== 'completed') return;
+    if (!doc || doc.status !== 'completed') {
+      setChunksLoading(false);
+      return;
+    }
 
     api.get(`/workspaces/${slug}/docs/${docId}/chunks`)
-      .then(res => {
-        console.log(res.data)
-        setChunks(res.data)
-      })
+      .then(res => setChunks(res.data))
       .finally(() => setChunksLoading(false));
   }, [doc?.status]);
 
@@ -40,66 +55,80 @@ export default function DocDetail() {
     }
   }
 
-  async function handleDelete() {
-    if (!confirm('Weet je zeker dat je dit document wilt verwijderen? Dit kan niet ongedaan worden gemaakt.')) return;
+  async function handleConfirmDelete() {
     setDeleting(true);
     try {
       await deleteDocument(docId);
       navigate(`/w/${slug}/docs`);
     } catch {
       setDeleting(false);
+      setConfirmDelete(false);
     }
   }
 
-  if (loading)  return <p className="dd-loading">Laden…</p>;
-  if (!doc)     return <p className="dd-loading">Document niet gevonden.</p>;
+  if (chunksLoading) {
+    return (
+      <div className="section-loading">
+        <div className="spinner" />
+      </div>
+    )
+  }
 
   return (
     <div className="dd-root">
-      <header className="dd-header">
-        <button className="dd-back" onClick={() => navigate(`/w/${slug}/docs`)}>
-          <BackIcon /> Terug naar documenten
-        </button>
-        <div className="dd-header-main">
-          <div className="dd-header-left">
-            <div className={`dd-doc-icon dd-doc-icon--${doc.status}`}>
-              <DocIcon />
-            </div>
-            <div>
-              <a href={`${BASE_URL}${doc.resource_url}`} target="_blank" rel="noopener noreferrer" className='dd-title-link'><h1 className="dd-title">{doc.originalname}</h1></a>
-              <div className="dd-meta-row">
-                <span className="dd-meta">{formatFileSize(doc.size)}</span>
-                <span className="dd-meta-sep">·</span>
-                <span className="dd-meta">{formatTimeAgo(doc.uploaded_at)}</span>
-                <span className="dd-meta-sep">·</span>
-                <span className={`dd-pill dd-pill--${doc.status}`}>
-                  {statusLabel(doc.status)}
-                </span>
-              </div>
+      <button className="dd-back" onClick={() => navigate(`/w/${slug}/docs`)}>
+        <BackIcon /> Terug naar documenten
+      </button>
+
+      <div className="dd-header-main">
+        <div className="dd-header-left">
+          <div className={`dd-doc-icon dd-doc-icon--${doc.status}`}>
+            <DocIcon />
+          </div>
+          <div>
+            <a
+              href={`${BASE_URL}${doc.resource_url}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="dd-title-link"
+            >
+              <h1 className="dd-title">{doc.originalname}</h1>
+            </a>
+            <div className="dd-meta-row">
+              <span className="dd-meta">{formatFileSize(doc.size)}</span>
+              <span className="dd-meta-sep">·</span>
+              <span className="dd-meta">{formatTimeAgo(doc.uploaded_at)}</span>
+              <span className="dd-meta-sep">·</span>
+              <span className={`dd-pill dd-pill--${doc.status}`}>
+                {statusLabel(doc.status)}
+              </span>
             </div>
           </div>
-          <div className="dd-header-actions">
-            {(doc.status === 'failed' || doc.status === 'completed') && (
-              <button
-                className="dd-btn-secondary"
-                onClick={handleReindex}
-                disabled={reindexing}
-              >
-                <ReindexIcon />
-                {reindexing ? 'Bezig…' : 'Opnieuw indexeren'}
-              </button>
-            )}
+        </div>
+
+        <div className="dd-header-actions">
+          {(doc.status === 'failed' || doc.status === 'completed') && can('documents', 'create') && (
+            <button
+              className="dd-btn-secondary"
+              onClick={handleReindex}
+              disabled={reindexing}
+            >
+              <ReindexIcon />
+              {reindexing ? 'Bezig…' : 'Opnieuw indexeren'}
+            </button>
+          )}
+          {can('documents', 'delete') && (
             <button
               className="dd-btn-danger"
-              onClick={handleDelete}
+              onClick={() => setConfirmDelete(true)}
               disabled={deleting}
             >
               <TrashIcon />
               {deleting ? 'Verwijderen…' : 'Verwijderen'}
             </button>
-          </div>
+          )}
         </div>
-      </header>
+      </div>
 
       <div className="dd-stats">
         <div className="dd-stat">
@@ -131,6 +160,32 @@ export default function DocDetail() {
             ))}
           </ul>
         </section>
+      )}
+
+      {/* Verwijder modal */}
+      {confirmDelete && (
+        <>
+          <div className="dd-modal-backdrop" onClick={() => setConfirmDelete(false)} />
+          <div className="dd-modal">
+            <div className="dd-modal-icon">
+              <TrashIcon />
+            </div>
+            <div className="dd-modal-body">
+              <h2 className="dd-modal-title">Document verwijderen</h2>
+              <p className="dd-modal-desc">
+                Weet je zeker dat je <strong>{doc.originalname}</strong> wilt verwijderen? Dit kan niet ongedaan worden gemaakt.
+              </p>
+            </div>
+            <div className="dd-modal-footer">
+              <button className="dd-btn-secondary" onClick={() => setConfirmDelete(false)}>
+                Annuleren
+              </button>
+              <button className="dd-btn-danger-solid" onClick={handleConfirmDelete} disabled={deleting}>
+                {deleting ? 'Verwijderen…' : 'Verwijderen'}
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

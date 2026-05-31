@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useParams } from 'react-router';
-import { WorkspaceProvider } from '../context/WorkspaceContext';
+import { WorkspaceProvider } from '../context/WorkspaceContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 
 export default function WorkspaceRoute() {

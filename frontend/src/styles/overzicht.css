@@ -108,6 +108,64 @@
   background: var(--accent);
 }
 
+/* ── Leeg state ────────────────────────── */
+.ov-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 8px;
+  text-align: center;
+  background: var(--surface);
+  border: 1px dashed var(--border-dark);
+  border-radius: var(--radius);
+}
+
+.ov-empty-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.ov-empty-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  margin: 0;
+}
+
+.ov-empty-sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.ov-empty-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: rgba(26, 86, 219, 0.4);
+  transition: text-decoration-color 0.15s;
+}
+
+.ov-empty-link:hover {
+  text-decoration-color: var(--accent);
+}
+
 /* ── Documentenlijst ───────────────────── */
 .ov-doc-list {
   list-style: none;
@@ -136,6 +194,7 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* ── Doc icoon ─────────────────────────── */
 .ov-doc-icon {
   width: 32px;
   height: 32px;
@@ -152,6 +211,8 @@
   color: var(--accent);
 }
 
+.ov-doc-icon--uploading,
+.ov-doc-icon--queued,
 .ov-doc-icon--processing {
   background: #FEF9ED;
   border: 1px solid rgba(180, 83, 9, 0.12);
@@ -164,6 +225,7 @@
   color: #B91C1C;
 }
 
+/* ── Doc info ──────────────────────────── */
 .ov-doc-info {
   flex: 1;
   display: flex;
@@ -184,4 +246,30 @@
 .ov-doc-meta {
   font-size: 11px;
   color: var(--muted);
+}
+
+/* ── Meer knop ─────────────────────────── */
+.ov-doc-more {
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: 1px dashed var(--border-dark);
+  border-radius: var(--radius);
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.ov-doc-more:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+}
+
+/* ── Responsive ────────────────────────── */
+@media (max-width: 600px) {
+  .ov-stats { grid-template-columns: 1fr; }
 }
