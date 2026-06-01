@@ -6,19 +6,19 @@ import MobileBottomBar from '../components/workspace/MobileBottomBar.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import AppHeader from '../components/AppHeader.jsx';
 
-import { OverviewIcon, DocsIcon, ConnectionsIcon, PeopleIcon, SettingsIcon } from '../components/icons/GeneralIcons.jsx'
+import { OverviewIcon, DocsIcon, ConnectionsIcon, PeopleIcon, SettingsIcon } from '../components/icons/GeneralIcons.jsx';
 
 import '../styles/workspaceLayout.css';
 
 export default function WorkspaceLayout() {
-  const { slug } = useParams();
-  const { workspace, isOwner, loading } = useWorkspace();
-  const { user } = useAuth();
-  const navigate = useNavigate();
+  const { slug }                        = useParams();
+  const { workspace, can, loading }     = useWorkspace();
+  const { user }                        = useAuth();
+  const navigate                        = useNavigate();
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const [sidebarOpen, setSidebarOpen]   = useState(false);
+  const dropdownRef                     = useRef(null);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -35,7 +35,7 @@ export default function WorkspaceLayout() {
       <div className="route-loading">
         <div className="spinner" />
       </div>
-    )
+    );
   }
 
   return (
@@ -92,7 +92,7 @@ export default function WorkspaceLayout() {
             <NavLink to={`/w/${slug}/mensen`} className="wl-nav-item" onClick={() => setSidebarOpen(false)}>
               <PeopleIcon /> Mensen
             </NavLink>
-            {isOwner && (
+            {can('workspace', 'delete') && (
               <>
                 <span className="wl-nav-section">Beheer</span>
                 <NavLink to={`/w/${slug}/instellingen`} className="wl-nav-item" onClick={() => setSidebarOpen(false)}>
@@ -106,6 +106,7 @@ export default function WorkspaceLayout() {
             <ChatIcon /> Start chat
           </button>
         </aside>
+
         <div className="wl-content">
           <main className="wl-main">
             <Outlet />
@@ -126,20 +127,12 @@ function ChatIcon() {
   );
 }
 
-function BackIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path d="M9 11L5 7l4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
 function ChevronUp() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       <path d="M6 15L12 9L18 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
-  )
+  );
 }
 
 function ChevronDown() {
@@ -147,5 +140,5 @@ function ChevronDown() {
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
-  )
+  );
 }

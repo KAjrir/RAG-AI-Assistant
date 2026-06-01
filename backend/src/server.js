@@ -55,7 +55,7 @@ const chatLimiter = rateLimit({
 app.use("/api/auth", authRouter)
 app.use("/api/invitations", invitationRouter)
 app.use("/api/users", requireAuth, userRouter)
-app.use("/api/workspaces/:slug", requireAuth, requireWorkspace, requireActiveSubscription, workspaceRouter)
+app.use("/api/workspaces/:slug", requireAuth, requireWorkspace, workspaceRouter)
 app.use(assetsPath, requireAuth, express.static(uploadsDirectory))
 
 

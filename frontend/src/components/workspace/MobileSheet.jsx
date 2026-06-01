@@ -1,24 +1,20 @@
 import { NavLink, useNavigate, useParams } from 'react-router';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
-import { useOrg } from '../../context/OrgContext.jsx';
-
-import { OverviewIcon, DocsIcon, ConnectionsIcon, PeopleIcon, SettingsIcon } from '../icons/GeneralIcons.jsx'
-
+import { useAuth } from '../../context/AuthContext.jsx';
+import { OverviewIcon, DocsIcon, ConnectionsIcon, PeopleIcon, SettingsIcon } from '../icons/GeneralIcons.jsx';
 import '../../styles/mobileSheet.css';
 
 export default function MobileSheet({ open, onClose }) {
-  const { slug } = useParams();
-  const { isOwner } = useWorkspace();
-  const { workspaces } = useOrg();
-  const navigate = useNavigate();
+  const { slug }       = useParams();
+  const { can }        = useWorkspace();
+  const { user }       = useAuth();
+  const navigate       = useNavigate();
 
-  function handleNav() {
-    onClose();
-  }
+  function handleNav() { onClose(); }
 
-  function handleWorkspace(ws) {
+  function handleWorkspace(orgSlug) {
     onClose();
-    navigate(`/w/${ws.slug}`);
+    navigate(`/w/${orgSlug}`);
   }
 
   function handleDashboard() {
@@ -33,20 +29,20 @@ export default function MobileSheet({ open, onClose }) {
         <div className="ms-handle" />
 
         <div className="ms-workspaces">
-          {workspaces.map(ws => (
+          {user.memberships.map(ws => (
             <button
-              key={ws.slug}
-              className={`ms-ws-item ${ws.slug === slug ? 'active' : ''}`}
-              onClick={() => handleWorkspace(ws)}
+              key={ws.org_slug}
+              className={`ms-ws-item ${ws.org_slug === slug ? 'active' : ''}`}
+              onClick={() => handleWorkspace(ws.org_slug)}
             >
               <div className="ms-ws-avatar">
-                {ws.name.charAt(0).toUpperCase()}
+                {ws.org_name.charAt(0).toUpperCase()}
               </div>
               <div className="ms-ws-identity">
-                <span className="ms-ws-name">{ws.name}</span>
-                <span className="ms-ws-slug">w/{ws.slug}</span>
+                <span className="ms-ws-name">{ws.org_name}</span>
+                <span className="ms-ws-slug">w/{ws.org_slug}</span>
               </div>
-              {ws.slug === slug && <CheckIcon />}
+              {ws.org_slug === slug && <CheckIcon />}
             </button>
           ))}
           <button className="ms-ws-item ms-ws-all" onClick={handleDashboard}>
@@ -72,7 +68,7 @@ export default function MobileSheet({ open, onClose }) {
           <NavLink to={`/w/${slug}/mensen`} className="ms-nav-item" onClick={handleNav}>
             <PeopleIcon /> Mensen
           </NavLink>
-          {isOwner && (
+          {can('workspace', 'delete') && (
             <NavLink to={`/w/${slug}/instellingen`} className="ms-nav-item" onClick={handleNav}>
               <SettingsIcon /> Instellingen
             </NavLink>

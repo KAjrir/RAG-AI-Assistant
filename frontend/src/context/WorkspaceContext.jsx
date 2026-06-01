@@ -16,20 +16,19 @@ export function WorkspaceProvider({ slug, children }) {
   const [loading, setLoading]             = useState(true);
   const [error, setError]                 = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [stats, setStats]     = useState({ docs: 0, connections: 0, members: 0 });
-
+  const [stats, setStats]                 = useState({ docs: 0, connections: 0, members: 0 });
 
   useEffect(() => {
     if (!slug) return;
     setLoading(true);
-    
-    setWorkspace(null)
-    setMembers([])
-    setDocuments([])
-    setConnections([])
-    setStats({ docs: 0, connections: 0, members: 0 })
 
-    Promise.all([
+    setWorkspace(null);
+    setMembers([]);
+    setDocuments([]);
+    setConnections([]);
+    setStats({ docs: 0, connections: 0, members: 0 });
+
+    Promise.allSettled([
       api.get(`/workspaces/${slug}`),
       api.get(`/workspaces/${slug}/members`),
       api.get(`/workspaces/${slug}/docs`),
@@ -37,25 +36,23 @@ export function WorkspaceProvider({ slug, children }) {
       api.get(`/workspaces/${slug}/stats`),
     ])
       .then(([wsRes, membersRes, docsRes, connectionsRes, statsRes]) => {
+        const ws = wsRes.status === 'fulfilled' ? wsRes.value.data : null;
 
-        setWorkspace(wsRes.data);
-        setMembers(membersRes.data);
-        setDocuments(docsRes.data);
-        setConnections(connectionsRes.data);
-        setStats(statsRes.data);
+        setWorkspace(ws);
+        setMembers(membersRes.status === 'fulfilled' ? membersRes.value.data : []);
+        setDocuments(docsRes.status === 'fulfilled' ? docsRes.value.data : []);
+        setConnections(connectionsRes.status === 'fulfilled' ? connectionsRes.value.data : []);
+        setStats(statsRes.status === 'fulfilled' ? statsRes.value.data : { docs: 0, connections: 0, members: 0 });
 
-        const me             = membersRes.data.find(m => m.id === user?.id);
-        const isAdminOrOwner = ['admin', 'owner'].includes(me?.role);
-
-        if (isAdminOrOwner) {
+        if (PERMISSIONS[ws?.role]?.invitations?.read) {
           api.get(`/invitations/${slug}/workspace/pending`)
             .then(res => setInvitations(res.data.invites ?? []))
             .catch(() => {});
         }
       })
       .catch(err => {
-        console.dir(err, {depth:null})
-        setError(err.message)
+        console.dir(err, { depth: null });
+        setError(err.message);
       })
       .finally(() => setLoading(false));
   }, [slug]);
@@ -75,14 +72,9 @@ export function WorkspaceProvider({ slug, children }) {
     return () => clearInterval(interval);
   }, [documents, slug]);
 
-  const currentMember = members.find(m => m.id === user?.id);
   const can = useCallback((resource, action) => {
-    const role = currentMember?.role
-    return PERMISSIONS[role]?.[resource]?.[action] ?? false
-  }, [currentMember])
-  
-  const isOwner       = currentMember?.role === 'owner';
-  const isAdmin       = ['owner', 'admin'].includes(currentMember?.role);
+    return PERMISSIONS[workspace?.role]?.[resource]?.[action] ?? false
+  }, [workspace?.role]);
 
   async function updateWorkspace(data) {
     const res = await api.patch(`/workspaces/${slug}`, data);
@@ -108,7 +100,7 @@ export function WorkspaceProvider({ slug, children }) {
 
   async function inviteMembers(invitees) {
     const res = await api.post(`/invitations/${slug}/create`, { invitees });
-    setInvitations(prev => [...prev, res.data]);
+    setInvitations(prev => [...prev, ...res.data]);
     return res.data;
   }
 
@@ -118,16 +110,10 @@ export function WorkspaceProvider({ slug, children }) {
   }
 
   async function updateMember(memberId, newRole) {
-    const res = await api.patch(`/workspaces/${slug}/members/${memberId}`,
-      { role: newRole }
+    const res = await api.patch(`/workspaces/${slug}/members/${memberId}`, { role: newRole });
+    setMembers(prev =>
+      prev.map(mem => mem.id === memberId ? { ...mem, role: res.data.newRole } : mem)
     );
-    setMembers(prev => 
-      prev.map(mem => (
-        mem.id === memberId ?
-         {...mem , role: res.data.newRole} :
-         mem
-      ))
-    )
   }
 
   async function removeMember(memberId) {
@@ -164,8 +150,6 @@ export function WorkspaceProvider({ slug, children }) {
     );
   };
 
-  // ── Connections ──────────────────────────
-
   async function connectConnection(connectionId, config = {}) {
     const connection = connections.find(c => c.id === connectionId);
     if (!connection) return;
@@ -181,18 +165,14 @@ export function WorkspaceProvider({ slug, children }) {
     );
 
     setConnections(prev => prev.map(c =>
-      c.id === connectionId
-        ? { ...c, organization_connection: res.data }
-        : c
+      c.id === connectionId ? { ...c, organization_connection: res.data } : c
     ));
 
     return res.data;
   }
 
   async function disableConnection(orgConnectionId) {
-    await api.patch(
-      `/workspaces/${slug}/connections/${orgConnectionId}/disable`
-    );
+    await api.patch(`/workspaces/${slug}/connections/${orgConnectionId}/disable`);
 
     setConnections(prev => prev.map(c =>
       c.organization_connection?.id === orgConnectionId
@@ -230,7 +210,7 @@ export function WorkspaceProvider({ slug, children }) {
     <WorkspaceContext.Provider value={{
       isSidebarOpen, toggleSidebar,
       workspace, members, invitations, loading, error,
-      isOwner, isAdmin, currentMember, 
+      can,
       updateWorkspace,
       inviteMembers, revokeInvite, updateMember, removeMember,
       documents, reindexDocument, deleteDocument,
@@ -240,7 +220,7 @@ export function WorkspaceProvider({ slug, children }) {
       disableConnection,
       updateConnectionConfig,
       deleteConnection,
-      stats, can
+      stats,
     }}>
       {children}
     </WorkspaceContext.Provider>

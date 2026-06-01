@@ -1,14 +1,11 @@
 import { NavLink, useParams } from 'react-router';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
-
-import { OverviewIcon, DocsIcon, ConnectionsIcon, PeopleIcon, SettingsIcon } from '../icons/GeneralIcons.jsx'
-
-
+import { OverviewIcon, DocsIcon, ConnectionsIcon, PeopleIcon, SettingsIcon } from '../icons/GeneralIcons.jsx';
 import '../../styles/mobileBottomBar.css';
 
 export default function MobileBottomBar({ onMenuClick }) {
   const { slug } = useParams();
-  const { isOwner } = useWorkspace();
+  const { can } = useWorkspace();
 
   return (
     <nav className="mbb-root">
@@ -25,7 +22,7 @@ export default function MobileBottomBar({ onMenuClick }) {
         <NavLink to={`/w/${slug}/mensen`} className="mbb-item">
           <PeopleIcon />
         </NavLink>
-        {isOwner && (
+        {can('workspace', 'delete') && (
           <NavLink to={`/w/${slug}/instellingen`} className="mbb-item">
             <SettingsIcon />
           </NavLink>

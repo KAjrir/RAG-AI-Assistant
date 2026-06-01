@@ -44,11 +44,12 @@ class Cache {
 
         for (const [key, item] of this.cache) {
             if( now > item.expiresAt ) {
-                this.delete(key);
+                this.delete(key, item.size);
                 cleaned++
             }
         }
-
+        
+        console.log("CACHE: ", this.cache)
         return cleaned
     }
 

@@ -7,8 +7,7 @@ import '../../styles/instellingen.css';
 
 export default function Instellingen() {
   const { slug }                                = useParams();
-  const { workspace, isOwner, updateWorkspace } = useWorkspace();
-  const { user }                                = useAuth();
+  const { workspace, can, updateWorkspace } = useWorkspace();
   const navigate                                = useNavigate();
 
   // Workspace naam + slug
@@ -24,7 +23,7 @@ export default function Instellingen() {
   const [uploadingLogo, setUploadingLogo]   = useState(false);
   const logoInputRef                        = useRef(null);
 
-  if (!isOwner) {
+  if (!can('workspace', 'delete')) {
     return (
       <div className="is-no-access">
         <p className="is-no-access-title">Geen toegang</p>
@@ -255,11 +254,6 @@ export default function Instellingen() {
           <div className="is-info-card" onClick={() => navigate(`/w/${slug}/instellingen/facturering`)}>
             <div className="is-info-card-label">Volgende afschrijving</div>
             <div className="is-info-card-value">{workspace?.nextBillingDate ?? '—'}</div>
-            <ChevronIcon />
-          </div>
-          <div className="is-info-card" onClick={() => navigate(`/w/${slug}/instellingen/referrals`)}>
-            <div className="is-info-card-label">Referrals</div>
-            <div className="is-info-card-value">{workspace?.referralCount ?? 0} actief</div>
             <ChevronIcon />
           </div>
         </div>

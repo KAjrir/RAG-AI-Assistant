@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { ROLE_HIERARCHY, ROLE_LABELS } from '../../lib/permissions.js';
 import { api, BASE_URL } from '../../lib/api.js';
 import '../../styles/mensen.css';
 
 export default function Mensen() {
   const { slug } = useParams();
+  const { user } = useAuth();
   const {
-    members, invitations, currentMember, can,
+    workspace, members, invitations, can,
     inviteMembers, revokeInvite, updateMember, removeMember
   } = useWorkspace();
 
@@ -24,7 +26,7 @@ export default function Mensen() {
   const [pendingRoleChange, setPendingRoleChange] = useState(null);
   const [savingRole, setSavingRole]               = useState(false);
   const [openMenu, setOpenMenu]                   = useState(null);
-  const [confirmDelete, setConfirmDelete]         = useState(null); // { id, name }
+  const [confirmDelete, setConfirmDelete]         = useState(null);
 
   useEffect(() => {
     function handleClick(e) {
@@ -35,14 +37,14 @@ export default function Mensen() {
   }, []);
 
   function canManageMember(member) {
-    if (member.id === currentMember?.id) return false;
+    if (member.id === user.id) return false;
     if (!can('members', 'update') && !can('members', 'delete')) return false;
-    return ROLE_HIERARCHY[currentMember?.role] > ROLE_HIERARCHY[member.role];
+    return ROLE_HIERARCHY[workspace?.role] > ROLE_HIERARCHY[member.role];
   }
 
   const assignableRoles = Object.keys(ROLE_HIERARCHY).filter(r =>
     r !== 'owner' &&
-    ROLE_HIERARCHY[currentMember?.role] > ROLE_HIERARCHY[r]
+    ROLE_HIERARCHY[workspace?.role] > ROLE_HIERARCHY[r]
   );
 
   async function handleTabChange(tab) {
@@ -74,14 +76,12 @@ export default function Mensen() {
   async function handleInvite(e) {
     e.preventDefault();
     const valid = inviteRows.filter(r => r.email.trim());
-    console.log(valid)
-
     if (!valid.length) return;
     setBusy(true);
     setError(null);
     setSuccess(false);
     try {
-      await inviteMembers(valid)
+      await inviteMembers(valid);
       setInviteRows([{ email: '', role: 'editor' }]);
       setSuccess(true);
     } catch (err) {
@@ -255,8 +255,7 @@ export default function Mensen() {
           </div>
           <ul className="mn-list">
             {members.map(member => {
-              const initials = member.name
-                ?.split(' ').map(w => w[0]).join('').toUpperCase() ?? '?';
+              const initials         = member.name?.split(' ').map(w => w[0]).join('').toUpperCase() ?? '?';
               const hasPendingChange = pendingRoleChange?.memberId === member.id;
               const canManage        = canManageMember(member);
 
@@ -275,7 +274,7 @@ export default function Mensen() {
                     <div className="mn-info">
                       <span className="mn-name">
                         {member.name}
-                        {member.id === currentMember?.id && (
+                        {member.id === user.id && (
                           <span className="mn-you">jij</span>
                         )}
                       </span>

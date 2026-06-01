@@ -38,9 +38,10 @@ export const getCurrentWorkspace = async (orgId, userId) => {
             m.role,
             m.status,
             o.name,
+            o.plan,
             o.slug,
             o.logo_resource_url
-            FROM memberships m
+        FROM memberships m
         JOIN organizations o ON o.id = m.organization_id
         WHERE o.id = ${orgId}
         AND m.user_id = ${userId}
