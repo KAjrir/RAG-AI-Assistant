@@ -3,7 +3,7 @@ import { Router } from "express";
 import multer from "multer";
 
 import { getDoc, getDocs, addDocs, deleteDoc, getDocStatus, getDocChunks } from "./doc.service.js";
-import { requirePolicy } from "../middleware.js";
+import { requireActiveSubscription, requirePolicy } from "../middleware.js";
 import { documentPolicy } from "./doc.policy.js";
 
 import { processDocument } from "../jobs/processDocument.js";
@@ -29,6 +29,8 @@ router.get("/",
         res.status(200).json(docs)
     }
 )
+
+router.use(requireActiveSubscription)
 
 router.post("/", 
     requirePolicy(documentPolicy, 'create'),
@@ -113,7 +115,6 @@ router.post("/",
 router.get("/:docId", async (req, res) => {
     const { docId } = req.params;
     const orgId = req.orgId
-
 
     const { filepath, uploaded_by, ...restDoc} = await getDoc(docId, orgId)
     

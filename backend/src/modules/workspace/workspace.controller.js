@@ -46,8 +46,8 @@ const upload = multer({
 const router = Router();
 
 router.use("/chats", requireActiveSubscription, chatRouter)
-router.use("/docs", requireActiveSubscription, docRouter)
-router.use("/connections", requireActiveSubscription, connectionRouter)
+router.use("/docs", docRouter)
+router.use("/connections", connectionRouter)
 
 router.get("/", async (req, res) => {
     const userId = req.userId

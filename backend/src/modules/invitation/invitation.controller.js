@@ -63,11 +63,10 @@ router.get("/user/pending", requireAuth, async (req, res) => {
 // 2. WORKSPACE / ADMIN ROUTES (Wel een slug nodig)
 // ==========================================
 
-router.use(requireActiveSubscription)
-
 router.get("/:slug/workspace/pending",
     requireAuth,
     requireWorkspace,
+    requireActiveSubscription,
     async (req, res) => {
         const orgId = req.orgId
         const { all } = req.query
@@ -90,6 +89,7 @@ router.get("/:slug/workspace/pending",
 router.post("/:slug/create",
     requireAuth,
     requireWorkspace,
+    requireActiveSubscription,
     requirePolicy(invitationPolicy, "create", (req) => ({
         invitees: req.body.invitees
     })),
@@ -151,6 +151,7 @@ router.post("/:slug/create",
 router.post("/:slug/workspace/revoke",
     requireAuth,
     requireWorkspace,
+    requireActiveSubscription,
     requirePolicy(invitationPolicy, "revoke", async (req) => {
         const invitation = await getInvite(req.body.inviteId)
         return {

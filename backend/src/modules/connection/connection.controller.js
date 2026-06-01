@@ -1,7 +1,7 @@
 import { Router } from "express";
 
 import { getConnectionsForOrganization, enableOrgConnection, disableOrgConnection, deleteOrgConnection, updateOrgConnectionConfig } from "./connection.service.js";
-import { requireOwner } from "../middleware.js";
+import { requireActiveSubscription, requireOwner } from "../middleware.js";
 
 const router = Router();
 
@@ -13,7 +13,7 @@ router.get("/", async (req, res) => {
     res.status(200).json(connections)
 })
 
-router.use(requireOwner)
+router.use(requireOwner, requireActiveSubscription)
 
 router.post("/:connectionId/connect",
     async (req, res) => {
