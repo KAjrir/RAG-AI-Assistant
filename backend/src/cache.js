@@ -49,7 +49,6 @@ class Cache {
             }
         }
         
-        console.log("CACHE: ", this.cache)
         return cleaned
     }
 
