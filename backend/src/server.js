@@ -10,7 +10,7 @@ import userRouter from "./modules/user/user.controller.js"
 import workspaceRouter from "./modules/workspace/workspace.controller.js"
 import invitationRouter from "./modules/invitation/invitation.controller.js"
 
-import { requireActiveSubscription, requireAuth, requireWorkspace } from "./modules/middleware.js";
+import { requireAuth, requireWorkspace } from "./modules/middleware.js";
 
 import { assetsPath, uploadsDirectory, ISPROD, FRONTEND_URL } from "./constants.js";
 
@@ -21,7 +21,11 @@ config({
 })
 
 const app = express();
-app.use(express.json())
+
+app.use(express.json({
+  limit: "1mb"
+}))
+
 app.use(cookieParser())
 
 app.set("trust proxy", 1);
