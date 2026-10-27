@@ -16,6 +16,8 @@ class Cache {
     set(key, value, ttl = this.defaultTTL) {
         const expiresAt = Date.now() + ttl;
         const size = this._getSize(value)
+        const existing = this.cache.get(key)
+        if (existing) this.size -= existing.size
         this.size += size
         this.cache.set(key, { value, size, expiresAt})
     }
@@ -32,9 +34,12 @@ class Cache {
         return item.value
     }
 
-    delete(key, size) {
-        this.size -= size
-        this.cache.delete(key)
+    // `size` argument is kept for backwards compatibility but no longer needed
+    delete(key) {
+        const item = this.cache.get(key)
+        if (!item) return false
+        this.size -= item.size
+        return this.cache.delete(key)
     }
 
     cleanUp() {
