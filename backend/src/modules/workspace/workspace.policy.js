@@ -26,9 +26,9 @@ export const memberPolicy = {
       return { allowed: false, reason: 'Geen rechten om members aan te passen' }
     }
 
-    // Alleen owner mag admin rol toewijzen
-    if (resource.newRole === 'admin' && role !== 'owner') {
-      return { allowed: false, reason: 'Alleen de owner mag admins aanwijzen' }
+    // Alleen owner mag admin- of owner-rol toewijzen
+    if (['admin', 'owner'].includes(resource.newRole) && role !== 'owner') {
+      return { allowed: false, reason: 'Alleen de owner mag admins of owners aanwijzen' }
     }
 
     // Hiërarchie check
