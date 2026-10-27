@@ -20,16 +20,18 @@
 
 /* LOGO */
 .auth-logo {
-  font-family: var(--serif);
-  font-size: 24px;
-  color: var(--text);
-  letter-spacing: -0.3px;
-  margin-bottom: 36px;
-  display: block;
-  text-decoration: none;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
 }
 
-.auth-logo span { color: var(--accent); }
+.auth-logo img {
+  height: 40px;
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
+  display: block;
+}
 
 .auth-back {
   display: inline-flex;

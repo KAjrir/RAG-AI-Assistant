@@ -97,7 +97,7 @@ function Nav({ scrolled }) {
 
   return (
     <nav className={`nav${scrolled ? " scrolled" : ""}`}>
-      <a className="nav-logo" href="#">VLNK<span>.</span></a>
+      <a className="nav-logo" href="#"><img src="images/logo.png" alt="Logo" /></a>
       <ul className="nav-links">
         {[["#hoe-het-werkt", "Hoe het werkt"], ["#privacy", "Privacy"], ["#testimonials", "Klanten"], ["#prijzen", "Prijzen"]].map(([href, label]) => (
           <li key={href}><a href={href}>{label}</a></li>

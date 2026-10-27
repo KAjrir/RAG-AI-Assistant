@@ -12,14 +12,18 @@
 }
 
 .ah-logo {
-  font-family: var(--serif);
-  font-size: 1.3rem;
-  letter-spacing: -0.02em;
-  color: var(--text);
+  display: flex;
+  align-items: center;
   cursor: pointer;
 }
 
-.ah-logo span { color: var(--accent); }
+.ah-logo img {
+  height: 40px;
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
+  display: block;
+}
 
 .ah-user {
   display: flex;

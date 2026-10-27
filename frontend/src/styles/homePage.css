@@ -48,14 +48,19 @@
 }
 
 .nav-logo {
-  font-family: var(--serif);
-  font-size: 1.45rem;
-  letter-spacing: -0.02em;
-  color: var(--text);
+  display: flex;
+  align-items: center;
   text-decoration: none;
+  cursor: pointer;
 }
 
-.nav-logo span { color: var(--accent); }
+.nav-logo img {
+  height: 40px;
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
+  display: block;
+}
 
 .nav-links {
   display: flex;
