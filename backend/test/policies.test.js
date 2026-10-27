@@ -79,7 +79,7 @@ describe('memberPolicy', () => {
     assert.equal(memberPolicy.update('admin', target('viewer', { newRole: 'editor' })).allowed, true)
   })
 
-  test('an admin should not be able to promote a member to owner', { todo: 'known bug: policy only blocks newRole "admin", not "owner"' }, () => {
+  test('an admin should not be able to promote a member to owner', () => {
     assert.equal(memberPolicy.update('admin', target('editor', { newRole: 'owner' })).allowed, false)
   })
 })

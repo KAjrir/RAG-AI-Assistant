@@ -28,7 +28,7 @@ describe('jwt helpers', () => {
     assert.deepEqual(verifyToken(expired), { error: 'EXPIRED' })
   })
 
-  test('a token signed with another secret returns { error: "INVALID" }', { todo: 'known bug: catch block logs undefined `err`, so verifyToken throws ReferenceError instead' }, () => {
+  test('a token signed with another secret returns { error: "INVALID" }', () => {
     const forged = jsonwebtoken.sign({ userId: 1 }, 'wrong-secret')
     assert.deepEqual(verifyToken(forged), { error: 'INVALID' })
   })
