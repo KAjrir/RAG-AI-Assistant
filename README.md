@@ -4,6 +4,10 @@ A multi-tenant knowledge assistant: teams upload their own documents, and an AI 
 
 Built from scratch with Node.js, React and PostgreSQL + pgvector — no LangChain or other RAG framework.
 
+## Architecture
+
+![Architecture](docs/architecture.png)
+
 ## Features
 
 - **Document ingestion pipeline** – PDF uploads are parsed per page, split into overlapping chunks, embedded with `text-embedding-3-small` and stored in PostgreSQL with **pgvector**. Processing runs in a background job queue (max 3 concurrent jobs) with status tracking per document.
