@@ -36,13 +36,13 @@ describe('Cache', () => {
     assert.equal(cache.get('long'), 'y')
   })
 
-  test('delete without a size argument keeps size consistent', { todo: 'known bug: chat.controller calls cache.delete(key) without size, which makes size NaN' }, () => {
+  test('delete without a size argument keeps size consistent', () => {
     cache.set('k', 'abc')
     cache.delete('k')
     assert.equal(cache.size, 0)
   })
 
-  test('overwriting a key does not double-count its size', { todo: 'known bug: set() adds the new size without subtracting the old one' }, () => {
+  test('overwriting a key does not double-count its size', () => {
     cache.set('k', 'abc')
     cache.set('k', 'abc')
     assert.equal(cache.size, 3)
