@@ -1,0 +1,33 @@
+
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+
+            source ~/.nvm/nvm.sh
+
+            cd /home/karim/RAG-AI-Assistent
+            git pull --ff-only origin main
+
+            cd backend
+            npm ci --omit=dev
+
+            pm2 restart api.raggy.nl
