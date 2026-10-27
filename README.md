@@ -82,3 +82,13 @@ npm run dev               # http://localhost:5173
 - Designing a multi-tenant data model where every query is scoped to an organisation
 - Building authorization as small, testable policies instead of scattered `if` statements
 - Running slow work (document processing) outside the request/response cycle
+
+## Tests
+
+The backend has a small test suite built on Node's built-in test runner (no extra dependencies, no database or API keys needed):
+
+```bash
+cd backend && npm install && npm test
+```
+
+It covers the role-based permission matrix and policies (owner/admin/editor/viewer for documents, invitations and members), plan limits, the in-memory cache with TTL expiry, JWT signing/verification and the utility helpers. Tests marked `TODO` document known bugs that are not fixed yet.
