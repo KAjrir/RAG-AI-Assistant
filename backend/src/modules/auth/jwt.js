@@ -22,7 +22,7 @@ export function verifyToken(token) {
     if (error.name === 'TokenExpiredError') {
       return { error: 'EXPIRED' };
     }
-    console.error(err)
+    console.error(error)
     return { error: 'INVALID' };
   }
 }
