@@ -90,7 +90,7 @@ export default function Onboarding() {
   return (
     <div className="auth-bg">
       <div className="auth-card onboarding-card">
-        <div className="auth-logo" onClick={() => navigate('/')}>VLNK<span>.</span></div>
+        <div className="auth-logo" onClick={() => navigate('/')}><img alt="Logo" src="/images/logo.png" /></div>
 
         {/* ── Keuze scherm ── */}
         {step === 'choose' && (

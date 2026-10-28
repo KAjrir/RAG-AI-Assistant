@@ -37,7 +37,7 @@ export default function Login() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-logo"><img src="images/logo.png" alt="Logo" /></div>
+        <div className="auth-logo"><img src="/images/logo.png" alt="Logo" /></div>
 
         <Link to="/" className="auth-back">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

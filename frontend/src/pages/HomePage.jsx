@@ -97,7 +97,7 @@ function Nav({ scrolled }) {
 
   return (
     <nav className={`nav${scrolled ? " scrolled" : ""}`}>
-      <a className="nav-logo" href="#"><img src="images/logo.png" alt="Logo" /></a>
+      <a className="nav-logo" href="#"><img src="/images/logo.png" alt="Logo" /></a>
       <ul className="nav-links">
         {[["#hoe-het-werkt", "Hoe het werkt"], ["#privacy", "Privacy"], ["#testimonials", "Klanten"], ["#prijzen", "Prijzen"]].map(([href, label]) => (
           <li key={href}><a href={href}>{label}</a></li>
@@ -329,7 +329,7 @@ function CTA() {
 function Footer() {
   return (
     <footer className="footer">
-      <a className="nav-logo" href="#">VLNK<span>.</span></a>
+      <a className="nav-logo" href="#"><img alt="Logo" src="/images/logo.png" /></a>
       <p>© 2026 VLNK. Alle rechten voorbehouden.</p>
       <ul className="footer-links">
         {["Privacy", "Voorwaarden", "Contact"].map((l) => (

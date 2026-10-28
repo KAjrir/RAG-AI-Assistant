@@ -69,7 +69,7 @@ export default function AppHeader() {
     <>
       <header className="ah-header">
         <span className="ah-logo" onClick={() => navigate('/dashboard')}>
-          <img src="images/logo.png" alt="Logo" />
+          <img src="/images/logo.png" alt="Logo" />
         </span>
         <div className="ah-user">
           <button

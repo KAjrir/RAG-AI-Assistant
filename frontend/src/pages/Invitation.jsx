@@ -94,7 +94,7 @@ export default function Invitation() {
   return (
     <div className="invitation-page">
       <div className="invitation-card">
-        <span className="invitation-logo">VLNK<span>.</span></span>
+        <span className="invitation-logo"><img alt="Logo" src="/images/logo.png" /></span>
 
         {/* Laden */}
         {status === 'loading' && (

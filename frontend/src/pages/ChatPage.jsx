@@ -95,7 +95,7 @@ export default function ChatPage() {
         <div className="cpl-header">
           {sidebarOpen && (
             <span className="cpl-logo" onClick={() => navigate('/dashboard')}>
-              VLNK<span>.</span>
+              <img alt="Logo" src="/images/logo.png" />
             </span>
           )}
           <button className="cpl-toggle cpl-toggle--desktop" onClick={() => setSidebarOpen(p => !p)}>
