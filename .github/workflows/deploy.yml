@@ -24,7 +24,7 @@ jobs:
 
             source ~/.nvm/nvm.sh
 
-            cd /home/karim/RAG-AI-Assistent
+            cd /home/karim/RAG-AI-Assistant
             git pull --ff-only origin main
 
             cd backend
