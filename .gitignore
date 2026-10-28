@@ -63,3 +63,4 @@ docs/
 scripts/
 oldPython-backend/
 *uploads/
+*prodUploads/
