@@ -1,31 +1,36 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext.jsx';
-import { api, BASE_URL } from '../lib/api.js';
+import { useToast } from '../context/ToastContext.jsx';
+import { BASE_URL } from '../lib/api.js';
 import { ROLE_LABELS } from '../lib/permissions.js';
+import { getErrorMessage } from '../lib/utils.js';
 import '../styles/dashboard.css';
 import AppHeader from '../components/AppHeader.jsx';
 
 export default function Dashboard() {
-  const { user, createOrg, acceptInvite, declineInvite } = useAuth();
-  const navigate                                          = useNavigate();
+  const {
+    user, createOrg, acceptInvite, declineInvite,
+    fetchPendingInvites, checkSlug,
+  } = useAuth();
+  const toast    = useToast();
+  const navigate = useNavigate();
 
   const [pendingInvites, setPendingInvites] = useState([]);
-  const [accepting, setAccepting]           = useState(null);
+  const [handlingInvite, setHandlingInvite] = useState(null); // token
 
-  const [showCreate, setShowCreate]     = useState(false);
-  const [newName, setNewName]           = useState('');
-  const [newSlug, setNewSlug]           = useState('');
-  const [slugStatus, setSlugStatus]     = useState('idle');
-  const [slugManual, setSlugManual]     = useState(false);
-  const [busy, setBusy]                 = useState(false);
-  const [error, setError]               = useState(null);
-  const slugDebounceRef                 = useRef(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newName, setNewName]       = useState('');
+  const [newSlug, setNewSlug]       = useState('');
+  const [slugStatus, setSlugStatus] = useState('idle');
+  const [slugManual, setSlugManual] = useState(false);
+  const [busy, setBusy]             = useState(false);
+  const slugDebounceRef             = useRef(null);
 
   useEffect(() => {
-    api.get('/invitations/user/pending')
-      .then(res => setPendingInvites(res.data.invites ?? []))
-      .catch(() => {})
+    fetchPendingInvites()
+      .then(setPendingInvites)
+      .catch(err => toast.error(getErrorMessage(err, 'Uitnodigingen ophalen is mislukt.')));
   }, []);
 
   useEffect(() => {
@@ -43,8 +48,8 @@ export default function Dashboard() {
     clearTimeout(slugDebounceRef.current);
     slugDebounceRef.current = setTimeout(async () => {
       try {
-        const res = await api.get(`/users/check-slug?slug=${newSlug}`);
-        setSlugStatus(res.data.available ? 'available' : 'taken');
+        const available = await checkSlug(newSlug);
+        setSlugStatus(available ? 'available' : 'taken');
       } catch {
         setSlugStatus('idle');
       }
@@ -52,52 +57,67 @@ export default function Dashboard() {
     return () => clearTimeout(slugDebounceRef.current);
   }, [newSlug]);
 
+  // Escape sluit de aanmaak-modal
+  useEffect(() => {
+    if (!showCreate) return;
+    function onKey(e) {
+      if (e.key === 'Escape' && !busy) setShowCreate(false);
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [showCreate, busy]);
+
   function openCreateModal() {
     setNewName('');
     setNewSlug('');
     setSlugStatus('idle');
     setSlugManual(false);
-    setError(null);
     setShowCreate(true);
   }
 
   function closeCreateModal() {
+    if (busy) return;
     setShowCreate(false);
-    setError(null);
   }
 
   async function handleCreate(e) {
     e.preventDefault();
     if (!newName.trim() || slugStatus === 'taken' || slugStatus === 'checking') return;
+
     setBusy(true);
-    setError(null);
     try {
-      await createOrg({ name: newName, slug: newSlug });
+      await createOrg({ name: newName.trim(), slug: newSlug });
+      toast.success(`Workspace ${newName.trim()} is aangemaakt.`);
       navigate(`/w/${newSlug}`);
     } catch (err) {
-      setError(err.message);
-    } finally {
+      toast.error(getErrorMessage(err, 'Workspace aanmaken is mislukt.'));
       setBusy(false);
     }
   }
 
-  async function handleAccept(token) {
-    setAccepting(token);
+  async function handleAccept(invite) {
+    setHandlingInvite(invite.token);
     try {
-      await acceptInvite(token);
-      setPendingInvites(prev => prev.filter(i => i.token !== token));
+      await acceptInvite(invite.token);
+      setPendingInvites(prev => prev.filter(i => i.token !== invite.token));
+      toast.success(`Je bent nu lid van ${invite.org_name}.`);
     } catch (err) {
-      console.error(err);
-      setAccepting(null);
+      toast.error(getErrorMessage(err, 'Uitnodiging accepteren is mislukt.'));
+    } finally {
+      setHandlingInvite(null);
     }
   }
 
-  async function handleDecline(token) {
+  async function handleDecline(invite) {
+    setHandlingInvite(invite.token);
     try {
-      await declineInvite(token);
-      setPendingInvites(prev => prev.filter(i => i.token !== token));
+      await declineInvite(invite.token);
+      setPendingInvites(prev => prev.filter(i => i.token !== invite.token));
+      toast.success(`Uitnodiging voor ${invite.org_name} geweigerd.`);
     } catch (err) {
-      console.error(err);
+      toast.error(getErrorMessage(err, 'Uitnodiging weigeren is mislukt.'));
+    } finally {
+      setHandlingInvite(null);
     }
   }
 
@@ -113,47 +133,51 @@ export default function Dashboard() {
           Kies een workspace om verder te gaan, of maak een nieuwe aan.
         </p>
 
-        {/* Pending invites */}
+        {/* Openstaande uitnodigingen */}
         {pendingInvites.length > 0 && (
           <div className="db-invites">
             <p className="db-ws-label">Uitnodigingen</p>
             <ul className="db-invite-list">
-              {pendingInvites.map(invite => (
-                <li key={invite.token} className="db-invite-card">
-                  <div className="db-ws-icon">
-                    {invite.logo_resource_url ? (
-                      <img
-                        src={`${BASE_URL}${invite.logo_resource_url}`}
-                        alt={invite.org_name}
-                        className="db-ws-icon-img"
-                      />
-                    ) : (
-                      invite.org_name[0].toUpperCase()
-                    )}
-                  </div>
-                  <div className="db-invite-info">
-                    <span className="db-invite-org">{invite.org_name}</span>
-                    <span className="db-invite-role">
-                      Uitgenodigd als {ROLE_LABELS[invite.role] ?? invite.role}
-                    </span>
-                  </div>
-                  <div className="db-invite-actions">
-                    <button
-                      className="db-btn-dark db-btn-sm"
-                      onClick={() => handleAccept(invite.token)}
-                      disabled={accepting === invite.token}
-                    >
-                      {accepting === invite.token ? '…' : 'Accepteren'}
-                    </button>
-                    <button
-                      className="db-btn-secondary db-btn-sm"
-                      onClick={() => handleDecline(invite.token)}
-                    >
-                      Weigeren
-                    </button>
-                  </div>
-                </li>
-              ))}
+              {pendingInvites.map(invite => {
+                const isHandling = handlingInvite === invite.token;
+                return (
+                  <li key={invite.token} className="db-invite-card">
+                    <div className="db-ws-icon">
+                      {invite.logo_resource_url ? (
+                        <img
+                          src={`${BASE_URL}${invite.logo_resource_url}`}
+                          alt={invite.org_name}
+                          className="db-ws-icon-img"
+                        />
+                      ) : (
+                        invite.org_name?.[0]?.toUpperCase()
+                      )}
+                    </div>
+                    <div className="db-invite-info">
+                      <span className="db-invite-org">{invite.org_name}</span>
+                      <span className="db-invite-role">
+                        Uitgenodigd als {ROLE_LABELS[invite.role] ?? invite.role}
+                      </span>
+                    </div>
+                    <div className="db-invite-actions">
+                      <button
+                        className="db-btn-dark db-btn-sm"
+                        onClick={() => handleAccept(invite)}
+                        disabled={isHandling}
+                      >
+                        {isHandling ? '…' : 'Accepteren'}
+                      </button>
+                      <button
+                        className="db-btn-secondary db-btn-sm"
+                        onClick={() => handleDecline(invite)}
+                        disabled={isHandling}
+                      >
+                        Weigeren
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}
@@ -175,7 +199,7 @@ export default function Dashboard() {
                       className="db-ws-icon-img"
                     />
                   ) : (
-                    mem.org_name[0].toUpperCase()
+                    mem.org_name?.[0]?.toUpperCase()
                   )}
                 </div>
                 <div className="db-ws-info">
@@ -201,17 +225,18 @@ export default function Dashboard() {
       {showCreate && (
         <>
           <div className="db-modal-backdrop" onClick={closeCreateModal} />
-          <div className="db-modal">
+          <div className="db-modal" role="dialog" aria-modal="true" aria-labelledby="db-create-title">
             <div className="db-modal-header">
-              <h2 className="db-modal-title">Nieuwe workspace</h2>
-              <button className="db-modal-close" onClick={closeCreateModal}>
+              <h2 className="db-modal-title" id="db-create-title">Nieuwe workspace</h2>
+              <button className="db-modal-close" onClick={closeCreateModal} disabled={busy}>
                 <CloseIcon />
               </button>
             </div>
             <form className="db-modal-form" onSubmit={handleCreate}>
               <div className="db-modal-field">
-                <label className="db-modal-label">Naam organisatie</label>
+                <label className="db-modal-label" htmlFor="db-new-name">Naam organisatie</label>
                 <input
+                  id="db-new-name"
                   className="db-input"
                   placeholder="Acme BV"
                   value={newName}
@@ -221,10 +246,11 @@ export default function Dashboard() {
                 />
               </div>
               <div className="db-modal-field">
-                <label className="db-modal-label">URL</label>
+                <label className="db-modal-label" htmlFor="db-new-slug">URL</label>
                 <div className="db-slug-wrap">
                   <span className="db-slug-prefix">raggy.nl/w/</span>
                   <input
+                    id="db-new-slug"
                     className="db-input db-slug-input"
                     placeholder="acme-bv"
                     value={newSlug}
@@ -241,9 +267,8 @@ export default function Dashboard() {
                 {slugStatus === 'taken'     && <p className="db-field-error">Deze URL is al in gebruik.</p>}
                 {slugStatus === 'available' && <p className="db-field-success">Deze URL is beschikbaar.</p>}
               </div>
-              {error && <p className="db-error">{error}</p>}
               <div className="db-modal-footer">
-                <button type="button" className="db-btn-secondary" onClick={closeCreateModal}>
+                <button type="button" className="db-btn-secondary" onClick={closeCreateModal} disabled={busy}>
                   Annuleren
                 </button>
                 <button

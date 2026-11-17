@@ -155,26 +155,6 @@
   gap: 8px;
 }
 
-/* ── Feedback ──────────────────────────── */
-.mn-feedback {
-  font-size: 13px;
-  border-radius: 8px;
-  padding: 10px 14px;
-  margin: 12px 0 0;
-}
-
-.mn-feedback--error {
-  color: #B91C1C;
-  background: #FEF2F2;
-  border: 1px solid rgba(185, 28, 28, 0.15);
-}
-
-.mn-feedback--success {
-  color: #27500A;
-  background: #EAF3DE;
-  border: 1px solid rgba(59, 109, 17, 0.15);
-}
-
 /* ── Tabs bar ──────────────────────────── */
 .mn-tabs-bar {
   display: flex;

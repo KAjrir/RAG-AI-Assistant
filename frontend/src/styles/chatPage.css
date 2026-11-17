@@ -480,3 +480,106 @@
     display: none;
   }
 }
+
+/* ── Logo (afbeelding) ──────────────────── */
+.cpl-logo {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.cpl-logo img {
+  display: block;
+  height: 26px;
+  width: auto;
+  max-width: 140px;
+  object-fit: contain;
+}
+
+.cpl-sidebar--closed .cpl-header {
+  justify-content: center;
+}
+
+/* ── Focus: geen zwarte rand na klikken, wel bij toetsenbord ── */
+.cpl-chat:focus { outline: none; }
+
+.cpl-chat:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* ── Zoeken (actief) ────────────────────── */
+.cpl-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: calc(100% - 20px);
+  margin: 0 10px 4px;
+  padding: 0 8px 0 12px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.08);
+  flex-shrink: 0;
+}
+
+.cpl-search-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--text);
+}
+
+.cpl-search-input::placeholder { color: var(--muted); }
+
+.cpl-search-clear {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface2);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.cpl-search-clear:hover { color: var(--text); }
+
+/* ── Groepen in de lijst ────────────────── */
+.cpl-chat-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cpl-chat-group + .cpl-chat-group {
+  margin-top: 12px;
+}
+
+.cpl-chat-group-label {
+  margin: 4px 10px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.cpl-chats-empty {
+  margin: 12px 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+@media (max-width: 768px) {
+  .cpl-search-input { font-size: 16px; } /* voorkomt inzoomen op iOS */
+}

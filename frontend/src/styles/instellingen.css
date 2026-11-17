@@ -119,50 +119,6 @@
 .is-btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
 .is-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
 
-/* ── Info kaarten ──────────────────────── */
-.is-card-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 10px;
-}
-
-.is-info-card {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 14px 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  position: relative;
-}
-
-.is-info-card:hover {
-  border-color: var(--border-dark);
-  box-shadow: var(--shadow-sm);
-}
-
-.is-info-card svg {
-  position: absolute;
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--muted);
-}
-
-.is-info-card-label {
-  font-size: 11px;
-  color: var(--muted);
-}
-
-.is-info-card-value {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text);
-}
-
 /* ── Gevarenzone ───────────────────────── */
 .is-section--danger .is-section-title { margin-bottom: 14px; }
 
@@ -422,4 +378,288 @@
 
 .is-btn-danger-sm:hover {
   background: #FEF2F2;
+}
+
+/* ── Tabs ──────────────────────────────── */
+.is-tabs {
+  display: flex;
+  gap: 2px;
+  width: fit-content;
+  padding: 3px;
+  margin-bottom: 28px;
+  background: var(--surface2);
+  border-radius: 10px;
+}
+
+.is-tab {
+  padding: 6px 14px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.is-tab:hover { color: var(--text); }
+
+.is-tab--active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Plannen ───────────────────────────── */
+.is-plans {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.is-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.is-plan--current {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.08);
+}
+
+.is-plan-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.is-plan-name {
+  font-family: var(--serif);
+  font-size: 1.4rem;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  line-height: 1;
+}
+
+.is-plan--pro .is-plan-name {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.is-plan-badge {
+  padding: 3px 9px;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: var(--accent-light);
+  color: var(--accent);
+  border: 1px solid rgba(26, 86, 219, 0.18);
+}
+
+.is-plan-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.is-plan-features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.is-plan-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.is-plan-feature svg {
+  color: var(--accent);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ── Pro actief ────────────────────────── */
+.is-plan-active {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 18px;
+  background: #EAF3DE;
+  border: 1px solid rgba(59, 109, 17, 0.18);
+  border-radius: var(--radius);
+  color: #27500A;
+}
+
+.is-plan-active svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.is-plan-active-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.is-plan-active-sub {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ── Activeringscode ───────────────────── */
+.is-code-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.is-code-input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+.is-code-toggle {
+  position: absolute;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.is-code-toggle:hover {
+  color: var(--text);
+  background: var(--surface2);
+}
+
+/* ── Modal ─────────────────────────────── */
+.is-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(2px);
+}
+
+.is-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 101;
+  transform: translate(-50%, -50%);
+  width: min(460px, calc(100vw - 32px));
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.is-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.is-modal-title {
+  font-family: var(--serif);
+  font-size: 1.3rem;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.is-modal-close {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.is-modal-close:hover:not(:disabled) {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.is-modal-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #FEF2F2;
+  border: 1px solid rgba(185, 28, 28, 0.18);
+  border-radius: 10px;
+  color: #991B1B;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.is-modal-warning svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #B91C1C;
+}
+
+.is-modal-warning strong {
+  font-weight: 600;
+}
+
+.is-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.is-modal-confirm-name {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.is-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.is-btn-danger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.is-btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

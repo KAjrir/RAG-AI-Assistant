@@ -1,48 +1,63 @@
 import { useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { formatFileSize } from "../../lib/utils"
-import '../../styles/docsUpload.css';
+import { formatFileSize, getErrorMessage } from '../../lib/utils.js';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
+import { useToast } from '../../context/ToastContext.jsx';
+import '../../styles/docsUpload.css';
 
 const ACCEPTED_TYPES = ['.pdf', '.docx', '.txt'];
-const MAX_MB = 25;
+const MAX_MB         = 25;
 
 export default function DocsUpload() {
-  const { slug }                    = useParams();
-  const navigate                    = useNavigate();
-  const inputRef                    = useRef(null);
-  const { uploadDocuments }         = useWorkspace();
+  const { slug }            = useParams();
+  const navigate            = useNavigate();
+  const toast               = useToast();
+  const inputRef            = useRef(null);
+  const { uploadDocuments } = useWorkspace();
 
-  const [dragging, setDragging]     = useState(false);
-  const [files, setFiles]           = useState([]);
-  const [error, setError]           = useState(null);
-  const [uploading, setUploading]   = useState(false);
+  const [dragging, setDragging]   = useState(false);
+  const [files, setFiles]         = useState([]);
+  const [uploading, setUploading] = useState(false);
 
-  function validateFiles(fileList) {
-    for (const file of Array.from(fileList)) {
-      const ext = '.' + file.name.split('.').pop().toLowerCase();
-      if (!ACCEPTED_TYPES.includes(ext)) {
-        return `Bestandstype niet ondersteund. Gebruik ${ACCEPTED_TYPES.join(', ')}.`;
-      }
-      if (file.size > MAX_MB * 1024 * 1024) {
-        return `"${file.name}" is te groot. Maximaal ${MAX_MB} MB per bestand.`;
-      }
-    }
+  // Geeft de reden terug waarom een bestand niet mag, of null als het goed is
+  function getRejectReason(file) {
+    const ext = '.' + file.name.split('.').pop().toLowerCase();
+    if (!ACCEPTED_TYPES.includes(ext)) return 'type';
+    if (file.size > MAX_MB * 1024 * 1024) return 'size';
     return null;
   }
 
   function handleSelect(fileList) {
-    setError(null);
-    const validationError = validateFiles(fileList);
-    if (validationError) {
-      setError(validationError);
-      return;
+    const incoming = Array.from(fileList);
+    const valid    = [];
+    const wrongType = [];
+    const tooBig    = [];
+
+    for (const file of incoming) {
+      const reason = getRejectReason(file);
+      if (reason === 'type') wrongType.push(file.name);
+      else if (reason === 'size') tooBig.push(file.name);
+      else valid.push(file);
     }
-    setFiles(prev => {
-      const existing = new Set(prev.map(f => f.name));
-      const nieuweFiles = Array.from(fileList).filter(f => !existing.has(f.name));
-      return [...prev, ...nieuweFiles];
-    });
+
+    // Geldige bestanden toevoegen, ook als er ongeldige tussen zaten
+    if (valid.length) {
+      setFiles(prev => {
+        const existing = new Set(prev.map(f => f.name));
+        return [...prev, ...valid.filter(f => !existing.has(f.name))];
+      });
+    }
+
+    if (wrongType.length) {
+      toast.error(
+        `${listNames(wrongType)} ${wrongType.length > 1 ? 'worden' : 'wordt'} niet ondersteund. Gebruik ${ACCEPTED_TYPES.join(', ')}.`
+      );
+    }
+    if (tooBig.length) {
+      toast.error(
+        `${listNames(tooBig)} ${tooBig.length > 1 ? 'zijn' : 'is'} te groot. Maximaal ${MAX_MB} MB per bestand.`
+      );
+    }
   }
 
   function removeFile(name) {
@@ -52,22 +67,36 @@ export default function DocsUpload() {
   function handleDrop(e) {
     e.preventDefault();
     setDragging(false);
+    if (uploading) return;
     if (e.dataTransfer.files.length > 0) handleSelect(e.dataTransfer.files);
+  }
+
+  function handleInputChange(e) {
+    if (e.target.files.length > 0) handleSelect(e.target.files);
+    e.target.value = ''; // zodat hetzelfde bestand opnieuw gekozen kan worden
   }
 
   async function handleUpload() {
     if (!files.length) return;
     setUploading(true);
-    setError(null);
 
     try {
-      const result = await uploadDocuments(files);
-      console.log(result)
-      navigate(`/w/${slug}/docs`, {
-        state: { duplicates: result.duplicateDocs ?? [] }
-      });
+      const result     = await uploadDocuments(files);
+      const uploaded   = result.docs?.length ?? 0;
+      const duplicates = result.duplicateDocs ?? [];
+
+      if (uploaded > 0) {
+        toast.success(
+          uploaded === 1
+            ? '1 document geüpload, indexeren is gestart.'
+            : `${uploaded} documenten geüpload, indexeren is gestart.`
+        );
+      }
+
+      // Duplicaten worden op de documentenpagina in de banner getoond
+      navigate(`/w/${slug}/docs`, { state: { duplicates } });
     } catch (err) {
-      setError(err.response.data.error);
+      toast.error(getErrorMessage(err, 'Uploaden is mislukt.'));
       setUploading(false);
     }
   }
@@ -87,7 +116,7 @@ export default function DocsUpload() {
       <div
         className={`du-dropzone ${dragging ? 'du-dropzone--dragging' : ''}`}
         onClick={() => !uploading && inputRef.current?.click()}
-        onDragOver={e => { e.preventDefault(); setDragging(true); }}
+        onDragOver={e => { e.preventDefault(); if (!uploading) setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
       >
@@ -97,7 +126,7 @@ export default function DocsUpload() {
           multiple
           accept={ACCEPTED_TYPES.join(',')}
           className="du-input"
-          onChange={e => e.target.files.length > 0 && handleSelect(e.target.files)}
+          onChange={handleInputChange}
         />
         <div className="du-dropzone-empty">
           <div className="du-dropzone-icon"><UploadIcon /></div>
@@ -109,8 +138,6 @@ export default function DocsUpload() {
           </p>
         </div>
       </div>
-
-      {error && <p className="du-failed"><AlertIcon /> {error}</p>}
 
       {files.length > 0 && (
         <ul className="du-file-list">
@@ -142,7 +169,9 @@ export default function DocsUpload() {
             onClick={handleUpload}
             disabled={uploading}
           >
-            {uploading ? <><SpinnerIcon /> Uploaden…</> : 'Uploaden en indexeren'}
+            {uploading
+              ? <><SpinnerIcon /> Uploaden…</>
+              : `Uploaden en indexeren${files.length > 1 ? ` (${files.length})` : ''}`}
           </button>
         )}
         <button
@@ -156,19 +185,20 @@ export default function DocsUpload() {
     </div>
   );
 }
+
+// "a.exe", "a.exe en b.zip", "a.exe, b.zip en 3 andere"
+function listNames(names) {
+  const quoted = names.map(n => `"${n}"`);
+  if (quoted.length === 1) return quoted[0];
+  if (quoted.length === 2) return `${quoted[0]} en ${quoted[1]}`;
+  if (quoted.length === 3) return `${quoted[0]}, ${quoted[1]} en ${quoted[2]}`;
+  return `${quoted[0]}, ${quoted[1]} en ${quoted.length - 2} andere`;
+}
+
 function BackIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
       <path d="M9 11L5 7l4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-      <line x1="6.5" y1="1" x2="6.5" y2="12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-      <line x1="1" y1="6.5" x2="12" y2="6.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
     </svg>
   );
 }
@@ -199,29 +229,10 @@ function CloseIcon() {
   );
 }
 
-function AlertIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.2"/>
-      <line x1="7" y1="4.5" x2="7" y2="7.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-      <circle cx="7" cy="9.5" r="0.7" fill="currentColor"/>
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
 function SpinnerIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="du-spinner">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="du-spinner">
       <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeDasharray="40 20" strokeLinecap="round"/>
     </svg>
   );
 }
-

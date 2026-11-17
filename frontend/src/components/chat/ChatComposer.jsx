@@ -1,20 +1,33 @@
 import { useRef, useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
+import { useToast } from '../../context/ToastContext.jsx';
 import '../../styles/chatComposer.css';
 
+// key = wat de backend krijgt, label = wat de gebruiker ziet
 const MODELS = [
-  { key: 'gpt-4o-mini', label: 'GPT-5' },
-  { key: 'gpt-4o',      label: 'Sonnet 4.6' },
+  { key: 'gpt-4o-mini', label: 'GPT-4o mini' },
+  { key: 'gpt-4o',      label: 'GPT-4o' },
   // Toekomst:
   // { key: 'grok-2',   label: 'Grok 2' },
 ];
 
-export default function ChatComposer({ draft, setDraft, handleSubmit }) {
-  const { slug }                              = useParams();
-  const { connections }                       = useWorkspace();
-  const navigate                              = useNavigate();
-  const fileInputRef                          = useRef(null);
+const ACCEPTED_EXT = ['.pdf', '.txt', '.docx'];
+const MAX_FILE_MB  = 25;
+const MAX_FILES    = 10;
+
+export default function ChatComposer({
+  draft, setDraft, handleSubmit,
+  busy = false,
+  submitSignal = 0,   // verhoog om de huidige draft te versturen (bijv. vanuit Ctrl+K)
+  focusKey,           // wijzigt → tekstvak krijgt focus (alleen met muis/trackpad)
+}) {
+  const { slug }        = useParams();
+  const { connections, workspace } = useWorkspace();
+  const navigate        = useNavigate();
+  const toast           = useToast();
+  const fileInputRef    = useRef(null);
+  const textareaRef     = useRef(null);
 
   // Plus menu
   const [plusOpen, setPlusOpen]               = useState(false);
@@ -22,26 +35,37 @@ export default function ChatComposer({ draft, setDraft, handleSubmit }) {
   const plusRef                               = useRef(null);
 
   // Model dropdown
-  const [modelOpen, setModelOpen]             = useState(false);
-  const [selectedModel, setSelectedModel]     = useState(MODELS[0]);
-  const modelRef                              = useRef(null);
+  const [modelOpen, setModelOpen]         = useState(false);
+  const [selectedModel, setSelectedModel] = useState(MODELS[0]);
+  const modelRef                          = useRef(null);
 
-  // Files
-  const [files, setFiles]                     = useState([]);
+  // Bestanden
+  const [files, setFiles] = useState([]);
+  const filesRef          = useRef(files);
+  filesRef.current        = files;
 
-  // Actieve connectors (frontend state)
+  // Connecties: standaard alles aan wat in de workspace actief is.
+  // We onthouden welke de gebruiker UIT heeft gezet, zodat connecties
+  // die later binnenkomen (na laden) gewoon aan staan.
+  const [disabledConns, setDisabledConns] = useState([]);
   const availableConns = connections.filter(c => c.organization_connection?.enabled);
-  const [activeConns, setActiveConns]         = useState(
-    () => availableConns.map(c => c.id)
-  );
+  const activeConnIds  = availableConns
+    .filter(c => !disabledConns.includes(c.id))
+    .map(c => c.id);
 
   function toggleConn(id) {
-    setActiveConns(prev =>
+    setDisabledConns(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     );
   }
 
-  // Sluit menus bij klik buiten
+  function closeMenus() {
+    setPlusOpen(false);
+    setConnSubmenuOpen(false);
+    setModelOpen(false);
+  }
+
+  // Klik buiten of Escape sluit de menu's
   useEffect(() => {
     function handleClickOutside(e) {
       if (plusRef.current && !plusRef.current.contains(e.target)) {
@@ -52,42 +76,68 @@ export default function ChatComposer({ draft, setDraft, handleSubmit }) {
         setModelOpen(false);
       }
     }
+    function handleKey(e) {
+      if (e.key === 'Escape') closeMenus();
+    }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKey);
+    };
   }, []);
 
-  // Ctrl+V paste detecteren (screenshots/images)
+  // Previews opruimen als de composer verdwijnt
   useEffect(() => {
-    function handlePaste(e) {
-      const items = e.clipboardData?.items;
-      if (!items) return;
+    return () => {
+      filesRef.current.forEach(f => { if (f.preview) URL.revokeObjectURL(f.preview); });
+    };
+  }, []);
 
-      const pastedFiles = [];
-      for (const item of items) {
-        if (item.kind === 'file') {
-          const file = item.getAsFile();
-          if (file) pastedFiles.push(file);
-        }
-      }
+  // ── Bestanden ────────────────────────────
 
-      if (pastedFiles.length > 0) {
-        addFiles(pastedFiles);
-      }
+  function isAccepted(file) {
+    if (file.type.startsWith('image/')) return true;
+    const ext = '.' + (file.name.split('.').pop() ?? '').toLowerCase();
+    return ACCEPTED_EXT.includes(ext);
+  }
+
+  function addFiles(incoming) {
+    const wrongType = [];
+    const tooBig    = [];
+    const valid     = [];
+
+    for (const f of incoming) {
+      if (!isAccepted(f)) wrongType.push(f.name || 'bestand');
+      else if (f.size > MAX_FILE_MB * 1024 * 1024) tooBig.push(f.name || 'bestand');
+      else valid.push(f);
     }
 
-    window.addEventListener('paste', handlePaste);
-    return () => window.removeEventListener('paste', handlePaste);
-  }, []);
+    if (wrongType.length) {
+      toast.error(`${wrongType.join(', ')} ${wrongType.length > 1 ? 'worden' : 'wordt'} niet ondersteund. Gebruik een afbeelding, PDF, DOCX of TXT.`);
+    }
+    if (tooBig.length) {
+      toast.error(`${tooBig.join(', ')} ${tooBig.length > 1 ? 'zijn' : 'is'} te groot. Maximaal ${MAX_FILE_MB} MB per bestand.`);
+    }
+    if (!valid.length) return;
 
-  function addFiles(newFiles) {
+    const room = MAX_FILES - filesRef.current.length;
+    if (room <= 0) {
+      toast.error(`Je kunt maximaal ${MAX_FILES} bestanden tegelijk meesturen.`);
+      return;
+    }
+    if (valid.length > room) {
+      toast.error(`Je kunt maximaal ${MAX_FILES} bestanden tegelijk meesturen. ${valid.length - room} ${valid.length - room > 1 ? 'zijn' : 'is'} niet toegevoegd.`);
+    }
+
     setFiles(prev => [
       ...prev,
-      ...newFiles.map(f => ({
+      ...valid.slice(0, room).map(f => ({
         id: crypto.randomUUID(),
         file: f,
         name: f.name || `screenshot-${Date.now()}.png`,
         preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null,
-      }))
+      })),
     ]);
   }
 
@@ -102,52 +152,84 @@ export default function ChatComposer({ draft, setDraft, handleSubmit }) {
   function handleFileInput(e) {
     const selected = Array.from(e.target.files);
     if (selected.length > 0) addFiles(selected);
-    e.target.value = '';  // Reset zodat je hetzelfde bestand opnieuw kan toevoegen
+    e.target.value = ''; // zodat hetzelfde bestand opnieuw gekozen kan worden
     setPlusOpen(false);
   }
 
-  function onSubmit() {
-    if (!draft.trim() && files.length === 0) return;
+  // Alleen plakken in het tekstvak, niet overal op de pagina
+  function handlePaste(e) {
+    const pasted = Array.from(e.clipboardData?.files ?? []);
+    if (!pasted.length) return;
+    // Alleen default blokkeren als er geen tekst mee komt
+    if (!e.clipboardData.getData('text')) e.preventDefault();
+    addFiles(pasted);
+  }
 
-    // Bouw FormData op
-    const payload = {
-      message: draft,
-      model: selectedModel.key,
-      connections: activeConns,
-      files: files.map(f => f.file)
+  // Focus op het tekstvak bij openen van een (nieuw) gesprek.
+  // Niet op touch-apparaten: daar zou het toetsenbord ongevraagd openklappen.
+  useEffect(() => {
+    if (window.matchMedia?.('(pointer: fine)').matches) {
+      textareaRef.current?.focus();
     }
-    
+  }, [focusKey]);
+
+  // ── Versturen ────────────────────────────
+
+  const canSend = !busy && (draft.trim().length > 0 || files.length > 0);
+
+  function onSubmit() {
+    if (!canSend) return;
+
+    const message = draft.trim();
+    const payload = {
+      message,
+      model: selectedModel.key,
+      connections: activeConnIds,
+      files: files.map(f => f.file),
+    };
+
     const formData = new FormData();
-    formData.append('message', draft);
+    formData.append('message', message);
     formData.append('model', selectedModel.key);
-    formData.append('connections', JSON.stringify(activeConns));
+    formData.append('connections', JSON.stringify(activeConnIds));
     files.forEach(f => formData.append('files', f.file, f.name));
-    console.log(payload)
 
     handleSubmit(payload, formData);
 
-    // Reset files na submit
     files.forEach(f => { if (f.preview) URL.revokeObjectURL(f.preview); });
     setFiles([]);
-    setDraft("");
+    setDraft('');
   }
+
+  // Extern verzoek om te versturen
+  const lastSignalRef = useRef(submitSignal);
+  useEffect(() => {
+    if (submitSignal === lastSignalRef.current) return;
+    lastSignalRef.current = submitSignal;
+    onSubmit();
+  }, [submitSignal]);
 
   return (
     <div className="composer">
       <div className="composer-inner">
 
-        {/* File previews */}
+        {/* Bestand previews */}
         {files.length > 0 && (
           <div className="composer-files">
             {files.map(f => (
-              <div key={f.id} className="composer-file">
+              <div key={f.id} className="composer-file" title={f.name}>
                 {f.preview ? (
                   <img src={f.preview} className="composer-file-preview" alt={f.name} />
                 ) : (
                   <div className="composer-file-icon"><AttachIcon /></div>
                 )}
                 <span className="composer-file-name">{f.name}</span>
-                <button className="composer-file-remove" onClick={() => removeFile(f.id)}>
+                <button
+                  type="button"
+                  className="composer-file-remove"
+                  onClick={() => removeFile(f.id)}
+                  aria-label={`${f.name} verwijderen`}
+                >
                   <CloseIcon />
                 </button>
               </div>
@@ -155,26 +237,30 @@ export default function ChatComposer({ draft, setDraft, handleSubmit }) {
           </div>
         )}
 
-        {/* Textarea */}
+        {/* Tekstvak */}
         <textarea
+          ref={textareaRef}
           className="composer-input"
-          placeholder="Typ een bericht…"
+          placeholder={workspace?.name ? `Vraag iets aan ${workspace.name}…` : 'Stel een vraag…'}
           value={draft}
           onChange={e => setDraft(e.target.value)}
+          onPaste={handlePaste}
           onKeyDown={e => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            // isComposing: niet versturen tijdens IME-invoer
+            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault();
               onSubmit();
             }
           }}
+          aria-label="Bericht"
         />
 
-        {/* Hidden file input */}
+        {/* Verborgen bestandskiezer */}
         <input
           ref={fileInputRef}
           type="file"
           multiple
-          accept="image/*,.pdf,.txt,.docx"
+          accept={['image/*', ...ACCEPTED_EXT].join(',')}
           style={{ display: 'none' }}
           onChange={handleFileInput}
         />
@@ -188,19 +274,21 @@ export default function ChatComposer({ draft, setDraft, handleSubmit }) {
             {/* Plus knop + menu */}
             <div className="composer-plus-wrap" ref={plusRef}>
               <button
+                type="button"
                 className="composer-plus"
                 onClick={() => { setPlusOpen(p => !p); setConnSubmenuOpen(false); }}
+                aria-label="Toevoegen"
+                aria-expanded={plusOpen}
               >
                 <PlusIcon />
               </button>
 
               {plusOpen && (
                 <div className="composer-menu">
-
-                  {/* Bestand toevoegen */}
                   <button
+                    type="button"
                     className="composer-menu-item"
-                    onClick={() => { fileInputRef.current?.click(); }}
+                    onClick={() => fileInputRef.current?.click()}
                   >
                     <AttachIcon />
                     Bestand toevoegen
@@ -208,8 +296,8 @@ export default function ChatComposer({ draft, setDraft, handleSubmit }) {
 
                   <div className="composer-menu-divider" />
 
-                  {/* Connecties trigger */}
                   <button
+                    type="button"
                     className={`composer-menu-item composer-menu-item--arrow ${connSubmenuOpen ? 'composer-menu-item--active' : ''}`}
                     onClick={() => setConnSubmenuOpen(p => !p)}
                   >
@@ -228,12 +316,15 @@ export default function ChatComposer({ draft, setDraft, handleSubmit }) {
                   )}
 
                   {availableConns.map(conn => {
-                    const isOn = activeConns.includes(conn.id);
+                    const isOn = activeConnIds.includes(conn.id);
                     return (
                       <button
+                        type="button"
                         key={conn.id}
                         className="composer-submenu-item"
                         onClick={() => toggleConn(conn.id)}
+                        role="switch"
+                        aria-checked={isOn}
                       >
                         <span className="composer-submenu-name">{conn.name}</span>
                         <span className={`composer-toggle ${isOn ? 'composer-toggle--on' : ''}`}>
@@ -246,8 +337,9 @@ export default function ChatComposer({ draft, setDraft, handleSubmit }) {
                   <div className="composer-menu-divider" />
 
                   <button
+                    type="button"
                     className="composer-submenu-item composer-submenu-item--manage"
-                    onClick={() => { setPlusOpen(false); setConnSubmenuOpen(false); navigate(`/w/${slug}/connecties`); }}
+                    onClick={() => { closeMenus(); navigate(`/w/${slug}/connecties`); }}
                   >
                     <ManageIcon />
                     Connecties beheren
@@ -256,11 +348,12 @@ export default function ChatComposer({ draft, setDraft, handleSubmit }) {
               )}
             </div>
 
-            {/* Active connector pills */}
+            {/* Actieve connectie pills */}
             {availableConns
-              .filter(c => activeConns.includes(c.id))
+              .filter(c => activeConnIds.includes(c.id))
               .map(conn => (
                 <button
+                  type="button"
                   key={conn.id}
                   className="composer-pill"
                   onClick={() => toggleConn(conn.id)}
@@ -271,12 +364,14 @@ export default function ChatComposer({ draft, setDraft, handleSubmit }) {
               ))}
           </div>
 
-          {/* Rechts: model + send */}
+          {/* Rechts: model + versturen */}
           <div className="composer-toolbar-right">
             <div className="composer-model-wrap" ref={modelRef}>
               <button
+                type="button"
                 className="composer-model"
                 onClick={() => setModelOpen(p => !p)}
+                aria-expanded={modelOpen}
               >
                 {selectedModel.label}
                 <ChevronDownIcon />
@@ -286,6 +381,7 @@ export default function ChatComposer({ draft, setDraft, handleSubmit }) {
                 <div className="composer-menu composer-menu--right">
                   {MODELS.map(m => (
                     <button
+                      type="button"
                       key={m.key}
                       className={`composer-menu-item ${m.key === selectedModel.key ? 'composer-menu-item--selected' : ''}`}
                       onClick={() => { setSelectedModel(m); setModelOpen(false); }}
@@ -298,9 +394,11 @@ export default function ChatComposer({ draft, setDraft, handleSubmit }) {
             </div>
 
             <button
+              type="button"
               className="composer-send"
               onClick={onSubmit}
-              disabled={!draft.trim() && files.length === 0}
+              disabled={!canSend}
+              aria-label="Versturen"
             >
               <SendIcon />
             </button>

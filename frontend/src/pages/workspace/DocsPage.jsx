@@ -1,27 +1,44 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router';
-import { formatFileSize, formatTimeAgo } from '../../lib/utils.js';
+import { formatFileSize, formatTimeAgo, getErrorMessage } from '../../lib/utils.js';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
+import { useToast } from '../../context/ToastContext.jsx';
 import '../../styles/docsPage.css';
 import StatusPill from '../../components/StatusPill.jsx';
 
 export default function DocsPage() {
-  const { slug }                                    = useParams();
-  const navigate                                    = useNavigate();
-  const location                                    = useLocation();
+  const { slug }   = useParams();
+  const navigate   = useNavigate();
+  const location   = useLocation();
+  const toast      = useToast();
   const { documents, loading, can, refreshDocuments, reindexDocument, deleteDocument } = useWorkspace();
 
-  const [duplicates, setDuplicates]               = useState(location?.state?.duplicates ?? []);
-  const [highlightedDoc, setHighlightedDoc]       = useState(null);
-  const [confirmDelete, setConfirmDelete]         = useState(null); // { id, name }
-  const docRefs                                   = useRef({});
+  const [duplicates, setDuplicates]         = useState(location?.state?.duplicates ?? []);
+  const [highlightedDoc, setHighlightedDoc] = useState(null);
+  const [confirmDelete, setConfirmDelete]   = useState(null); // { id, name }
+  const [deleting, setDeleting]             = useState(false);
+  const [reindexing, setReindexing]         = useState(null);
+  const docRefs                             = useRef({});
 
   useEffect(() => {
-    refreshDocuments();
+    refreshDocuments().catch(err =>
+      toast.error(getErrorMessage(err, 'Documenten ophalen is mislukt.'))
+    );
   }, []);
 
-  function scrollToDoc(docName) {
-    const doc = documents.find(d => d.originalname === docName);
+  // Escape sluit de verwijder-modal
+  useEffect(() => {
+    if (!confirmDelete) return;
+    function onKey(e) {
+      if (e.key === 'Escape' && !deleting) setConfirmDelete(null);
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [confirmDelete, deleting]);
+
+  // doc.originalname = het bestand dat al in de workspace staat
+  function scrollToDoc(existingName) {
+    const doc = documents.find(d => d.originalname === existingName);
     if (!doc) return;
     const el = docRefs.current[doc.id];
     if (!el) return;
@@ -30,8 +47,16 @@ export default function DocsPage() {
     setTimeout(() => setHighlightedDoc(null), 1200);
   }
 
-  async function handleReindex(docId) {
-    await reindexDocument(docId);
+  async function handleReindex(doc) {
+    setReindexing(doc.id);
+    try {
+      await reindexDocument(doc.id);
+      toast.success(`${doc.originalname} wordt opnieuw geïndexeerd.`);
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Opnieuw indexeren is mislukt.'));
+    } finally {
+      setReindexing(null);
+    }
   }
 
   function handleDelete(doc) {
@@ -39,8 +64,16 @@ export default function DocsPage() {
   }
 
   async function handleConfirmDelete() {
-    await deleteDocument(confirmDelete.id);
-    setConfirmDelete(null);
+    setDeleting(true);
+    try {
+      await deleteDocument(confirmDelete.id);
+      toast.success(`${confirmDelete.name} is verwijderd.`);
+      setConfirmDelete(null);
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Document verwijderen is mislukt.'));
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -135,7 +168,8 @@ export default function DocsPage() {
                   <button
                     className="dp-action-btn"
                     title="Opnieuw indexeren"
-                    onClick={(e) => { e.stopPropagation(); handleReindex(doc.id); }}
+                    disabled={reindexing === doc.id}
+                    onClick={(e) => { e.stopPropagation(); handleReindex(doc); }}
                   >
                     <ReindexIcon />
                   </button>
@@ -159,23 +193,27 @@ export default function DocsPage() {
       {/* Verwijder modal */}
       {confirmDelete && (
         <>
-          <div className="dp-modal-backdrop" onClick={() => setConfirmDelete(null)} />
-          <div className="dp-modal">
+          <div className="dp-modal-backdrop" onClick={() => !deleting && setConfirmDelete(null)} />
+          <div className="dp-modal" role="dialog" aria-modal="true" aria-labelledby="dp-delete-title">
             <div className="dp-modal-icon">
               <TrashIcon />
             </div>
             <div className="dp-modal-body">
-              <h2 className="dp-modal-title">Document verwijderen</h2>
+              <h2 className="dp-modal-title" id="dp-delete-title">Document verwijderen</h2>
               <p className="dp-modal-desc">
                 Weet je zeker dat je <strong>{confirmDelete.name}</strong> wilt verwijderen? Dit kan niet ongedaan worden gemaakt.
               </p>
             </div>
             <div className="dp-modal-footer">
-              <button className="dp-btn-secondary" onClick={() => setConfirmDelete(null)}>
+              <button
+                className="dp-btn-secondary"
+                onClick={() => setConfirmDelete(null)}
+                disabled={deleting}
+              >
                 Annuleren
               </button>
-              <button className="dp-btn-danger" onClick={handleConfirmDelete}>
-                Verwijderen
+              <button className="dp-btn-danger" onClick={handleConfirmDelete} disabled={deleting}>
+                {deleting ? 'Verwijderen…' : 'Verwijderen'}
               </button>
             </div>
           </div>

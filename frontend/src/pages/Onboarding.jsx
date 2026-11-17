@@ -1,33 +1,35 @@
 // pages/Onboarding.jsx
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router';
-import { api } from '../lib/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
+import { ROLE_LABELS } from '../lib/permissions.js';
+import { getErrorMessage } from '../lib/utils.js';
 import '../styles/auth.css';
 import '../styles/onboarding.css';
 
 export default function Onboarding() {
-  const navigate                              = useNavigate();
-  const { user, createOrg, joinOrg }          = useAuth();
+  const navigate = useNavigate();
+  const toast    = useToast();
+  const { user, createOrg, acceptInvite, fetchPendingInvites, checkSlug } = useAuth();
 
-  const [step, setStep]                       = useState('choose');
+  const [step, setStep]                       = useState('choose'); // choose | create | join
   const [pendingInvites, setPendingInvites]   = useState([]);
   const [checkingInvites, setCheckingInvites] = useState(true);
+  const [acceptingToken, setAcceptingToken]   = useState(null);
 
-  // Create
-  const [orgName, setOrgName]                 = useState('');
-  const [slug, setSlug]                       = useState('');
-  const [slugStatus, setSlugStatus]           = useState('idle');
-  const [slugManual, setSlugManual]           = useState(false);
-  const slugDebounceRef                       = useRef(null);
-
-  const [loading, setLoading]                 = useState(false);
-  const [error, setError]                     = useState(null);
+  // Aanmaken
+  const [orgName, setOrgName]       = useState('');
+  const [slug, setSlug]             = useState('');
+  const [slugStatus, setSlugStatus] = useState('idle'); // idle | checking | available | taken
+  const [slugManual, setSlugManual] = useState(false);
+  const [creating, setCreating]     = useState(false);
+  const slugDebounceRef             = useRef(null);
 
   useEffect(() => {
-    api.get('/invitations/user/pending')
-      .then(res => setPendingInvites(res.data.invites ?? []))
-      .catch((err) => console.log(err))
+    fetchPendingInvites()
+      .then(setPendingInvites)
+      .catch(err => toast.error(getErrorMessage(err, 'Uitnodigingen ophalen is mislukt.')))
       .finally(() => setCheckingInvites(false));
   }, []);
 
@@ -46,8 +48,8 @@ export default function Onboarding() {
     clearTimeout(slugDebounceRef.current);
     slugDebounceRef.current = setTimeout(async () => {
       try {
-        const res = await api.get(`/users/check-slug?slug=${slug}`);
-        setSlugStatus(res.data.available ? 'available' : 'taken');
+        const available = await checkSlug(slug);
+        setSlugStatus(available ? 'available' : 'taken');
       } catch {
         setSlugStatus('idle');
       }
@@ -57,61 +59,60 @@ export default function Onboarding() {
 
   async function handleCreate(e) {
     e.preventDefault();
-    if (!orgName.trim() || slugStatus === 'taken' || slugStatus === 'checking') return;
-    setLoading(true);
-    setError(null);
+    const name = orgName.trim();
+    if (!name || !slug || slugStatus === 'taken' || slugStatus === 'checking') return;
+
+    setCreating(true);
     try {
-      await createOrg({ name: orgName, slug });
-      navigate('/dashboard');
+      await createOrg({ name, slug });
+      toast.success(`Workspace ${name} is aangemaakt.`);
+      navigate(`/w/${slug}`, { replace: true });
     } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      toast.error(getErrorMessage(err, 'Organisatie aanmaken is mislukt.'));
+      setCreating(false);
     }
   }
 
-  async function handleAcceptInvite(token) {
-    setLoading(true);
-    setError(null);
+  async function handleAcceptInvite(invite) {
+    setAcceptingToken(invite.token);
     try {
-      await joinOrg(token);
-      navigate('/dashboard');
+      const ws = await acceptInvite(invite.token);
+      toast.success(`Je bent nu lid van ${invite.org_name}.`);
+      navigate(ws?.slug ? `/w/${ws.slug}` : '/dashboard', { replace: true });
     } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      toast.error(getErrorMessage(err, 'Uitnodiging accepteren is mislukt.'));
+      setAcceptingToken(null);
     }
   }
 
-  const firstName = user?.name?.split(' ')[0] ?? '';
+  const firstName  = user?.name?.split(' ')[0] ?? '';
+  const inviteCount = pendingInvites.length;
+  const busy        = !!acceptingToken;
 
   if (checkingInvites) return null;
 
   return (
     <div className="auth-bg">
       <div className="auth-card onboarding-card">
-        <div className="auth-logo" onClick={() => navigate('/')}><img alt="Logo" src="/images/logo.png" /></div>
+        <Link to="/" className="auth-logo"><img alt="Raggy" src="/images/logo.png" /></Link>
 
-        {/* ── Keuze scherm ── */}
+        {/* ── Keuze ── */}
         {step === 'choose' && (
           <>
             <div className="onboarding-heading">
               <h1 className="auth-title">
-                Welkom{firstName ? `, ${firstName}` : ''}{' '}
-                <span className="auth-title-italic">👋</span>
+                Welkom{firstName ? `, ${firstName}` : ''} <span aria-hidden="true">👋</span>
               </h1>
-              <p className="auth-sub" style={{ marginBottom: 0 }}>
-                Hoe wil je beginnen?
-              </p>
+              <p className="auth-sub onboarding-sub">Hoe wil je beginnen?</p>
             </div>
 
             <div className="onboarding-options">
-
-              {pendingInvites.length === 1 && (
+              {/* Precies één uitnodiging: direct accepteren */}
+              {inviteCount === 1 && (
                 <button
                   className="onboarding-option onboarding-option--highlight"
-                  onClick={() => handleAcceptInvite(pendingInvites[0].token)}
-                  disabled={loading}
+                  onClick={() => handleAcceptInvite(pendingInvites[0])}
+                  disabled={busy}
                 >
                   <div className="onboarding-option-icon"><InviteIcon /></div>
                   <div className="onboarding-option-text">
@@ -119,8 +120,25 @@ export default function Onboarding() {
                       {pendingInvites[0].org_name} wacht op je
                     </span>
                     <span className="onboarding-option-sub">
-                      Uitgenodigd als {pendingInvites[0].role}
+                      {busy
+                        ? 'Accepteren…'
+                        : `Uitgenodigd als ${ROLE_LABELS[pendingInvites[0].role] ?? pendingInvites[0].role}`}
                     </span>
+                  </div>
+                  <ChevronIcon />
+                </button>
+              )}
+
+              {/* Meerdere uitnodigingen: naar de lijst */}
+              {inviteCount > 1 && (
+                <button
+                  className="onboarding-option onboarding-option--highlight"
+                  onClick={() => setStep('join')}
+                >
+                  <div className="onboarding-option-icon"><InviteIcon /></div>
+                  <div className="onboarding-option-text">
+                    <span className="onboarding-option-title">Organisatie joinen</span>
+                    <span className="onboarding-option-sub">Je hebt {inviteCount} uitnodigingen</span>
                   </div>
                   <ChevronIcon />
                 </button>
@@ -128,24 +146,8 @@ export default function Onboarding() {
 
               <button
                 className="onboarding-option"
-                onClick={() => setStep('join')}
-              >
-                <div className="onboarding-option-icon"><InviteIcon /></div>
-                <div className="onboarding-option-text">
-                  <span className="onboarding-option-title">Organisatie joinen</span>
-                  <span className="onboarding-option-sub">
-                    {pendingInvites.length > 0
-                      ? `Je hebt ${pendingInvites.length} uitnodiging${pendingInvites.length > 1 ? 'en' : ''}`
-                      : 'Bekijk je uitnodigingen'
-                    }
-                  </span>
-                </div>
-                <ChevronIcon />
-              </button>
-
-              <button
-                className="onboarding-option"
                 onClick={() => setStep('create')}
+                disabled={busy}
               >
                 <div className="onboarding-option-icon"><BuildingIcon /></div>
                 <div className="onboarding-option-text">
@@ -155,7 +157,8 @@ export default function Onboarding() {
                 <ChevronIcon />
               </button>
 
-              {pendingInvites.length > 0 && (
+              {/* Geen uitnodigingen: uitleggen hoe joinen werkt */}
+              {inviteCount === 0 && (
                 <button
                   className="onboarding-option"
                   onClick={() => setStep('join')}
@@ -163,24 +166,23 @@ export default function Onboarding() {
                   <div className="onboarding-option-icon"><InviteIcon /></div>
                   <div className="onboarding-option-text">
                     <span className="onboarding-option-title">Organisatie joinen</span>
-                    <span className="onboarding-option-sub">
-                      Je hebt {pendingInvites.length} uitnodiging{pendingInvites.length > 1 ? 'en' : ''}
-                    </span>
+                    <span className="onboarding-option-sub">Bekijk je uitnodigingen</span>
                   </div>
                   <ChevronIcon />
                 </button>
               )}
-
             </div>
           </>
         )}
 
-        {/* ── Org aanmaken ── */}
+        {/* ── Aanmaken ── */}
         {step === 'create' && (
           <>
             <button
+              type="button"
               className="auth-back"
-              onClick={() => { setStep('choose'); setError(null); }}
+              onClick={() => setStep('choose')}
+              disabled={creating}
             >
               <BackIcon /> Terug
             </button>
@@ -192,8 +194,9 @@ export default function Onboarding() {
             </p>
             <form className="auth-form" onSubmit={handleCreate}>
               <div className="auth-field">
-                <label className="auth-label">Naam organisatie</label>
+                <label className="auth-label" htmlFor="ob-name">Naam organisatie</label>
                 <input
+                  id="ob-name"
                   className="auth-input"
                   type="text"
                   placeholder="Acme BV"
@@ -208,13 +211,14 @@ export default function Onboarding() {
               </div>
 
               <div className="auth-field">
-                <label className="auth-label">
+                <label className="auth-label" htmlFor="ob-slug">
                   URL
                   <span className="auth-label-hint">Zichtbaar in de adresbalk</span>
                 </label>
                 <div className="slug-input-wrap">
                   <span className="slug-prefix">raggy.nl/w/</span>
                   <input
+                    id="ob-slug"
                     className="auth-input slug-input"
                     type="text"
                     placeholder="acme-bv"
@@ -241,66 +245,67 @@ export default function Onboarding() {
                 )}
               </div>
 
-              {error && <p className="auth-error">{error}</p>}
-
               <button
                 className="auth-btn-primary"
                 type="submit"
-                disabled={loading || !orgName.trim() || !slug || slugStatus === 'taken' || slugStatus === 'checking'}
+                disabled={creating || !orgName.trim() || !slug || slugStatus === 'taken' || slugStatus === 'checking'}
               >
-                {loading ? 'Aanmaken…' : 'Organisatie aanmaken'}
+                {creating ? 'Aanmaken…' : 'Organisatie aanmaken'}
               </button>
             </form>
           </>
         )}
 
-        {/* ── Joinen — alleen pending invites, geen code ── */}
-        {/* ── Joinen — altijd zichtbaar ── */}
+        {/* ── Joinen ── */}
         {step === 'join' && (
           <>
             <button
+              type="button"
               className="auth-back"
-              onClick={() => { setStep('choose'); setError(null); }}
+              onClick={() => setStep('choose')}
+              disabled={busy}
             >
               <BackIcon /> Terug
             </button>
             <h1 className="auth-title">
               Organisatie <span className="auth-title-italic">joinen</span>
             </h1>
-            <p className="auth-sub">
-              Accepteer één van je openstaande uitnodigingen.
-            </p>
 
-            {pendingInvites.length === 0 ? (
-              <div className="pending-invites-empty">
-                <p>Je hebt geen openstaande uitnodigingen.</p>
-              </div>
+            {inviteCount === 0 ? (
+              <>
+                <p className="auth-sub">
+                  Om lid te worden van een organisatie heb je een uitnodiging nodig van een beheerder.
+                </p>
+                <div className="pending-invites-empty">
+                  <p>Je hebt geen openstaande uitnodigingen.</p>
+                </div>
+              </>
             ) : (
-              <div className="pending-invites">
-                {pendingInvites.map(invite => (
-                  <div key={invite.token} className="pending-invite-card">
-                    <div className="pending-invite-info">
-                      <span className="pending-invite-org">{invite.org_name}</span>
-                      <span className="pending-invite-role">
-                        Uitgenodigd als {invite.role === 'admin' ? 'Beheerder' : 'Lid'}
-                      </span>
+              <>
+                <p className="auth-sub">Accepteer één van je openstaande uitnodigingen.</p>
+                <div className="pending-invites">
+                  {pendingInvites.map(invite => (
+                    <div key={invite.token} className="pending-invite-card">
+                      <div className="pending-invite-info">
+                        <span className="pending-invite-org">{invite.org_name}</span>
+                        <span className="pending-invite-role">
+                          Uitgenodigd als {ROLE_LABELS[invite.role] ?? invite.role}
+                        </span>
+                      </div>
+                      <button
+                        className="pending-invite-btn"
+                        onClick={() => handleAcceptInvite(invite)}
+                        disabled={busy}
+                      >
+                        {acceptingToken === invite.token ? '…' : 'Accepteren'}
+                      </button>
                     </div>
-                    <button
-                      className="pending-invite-btn"
-                      onClick={() => handleAcceptInvite(invite.token)}
-                      disabled={loading}
-                    >
-                      {loading ? '…' : 'Accepteren'}
-                    </button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </>
             )}
-
-            {error && <p className="auth-error">{error}</p>}
           </>
         )}
-
       </div>
     </div>
   );
@@ -338,22 +343,6 @@ function ChevronIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
       <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path d="M2 7.5l3 3L12 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
-function CrossIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-      <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
     </svg>
   );
 }

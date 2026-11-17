@@ -1,25 +1,91 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { api, BASE_URL } from '../../lib/api';
-import { formatFileSize, formatTimeAgo } from '../../lib/utils.js';
+import { BASE_URL } from '../../lib/api';
+import { formatFileSize, formatTimeAgo, getErrorMessage } from '../../lib/utils.js';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
+import { useToast } from '../../context/ToastContext.jsx';
 import '../../styles/docDetail.css';
 
 export default function DocDetail() {
-  const { slug, docId }                   = useParams();
-  const navigate                          = useNavigate();
-  const { documents, loading, can, deleteDocument, reindexDocument } = useWorkspace();
+  const { slug, docId } = useParams();
+  const navigate        = useNavigate();
+  const toast           = useToast();
+  const { documents, loading, can, deleteDocument, reindexDocument, fetchChunks } = useWorkspace();
 
   const [chunks, setChunks]               = useState([]);
-  const [chunksLoading, setChunksLoading] = useState(true);
+  const [chunksLoading, setChunksLoading] = useState(false);
   const [reindexing, setReindexing]       = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting]           = useState(false);
 
   const doc = documents.find(d => d.id === docId);
 
-  // Doc niet gevonden na laden
-  if (!loading && !doc) {
+  // Chunks ophalen zodra het document geïndexeerd is (ook na opnieuw indexeren)
+  useEffect(() => {
+    if (doc?.status !== 'completed') return;
+
+    let cancelled = false;
+    setChunksLoading(true);
+
+    fetchChunks(docId)
+      .then(data => { if (!cancelled) setChunks(data); })
+      .catch(err => {
+        if (!cancelled) toast.error(getErrorMessage(err, 'Chunks ophalen is mislukt.'));
+      })
+      .finally(() => { if (!cancelled) setChunksLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [doc?.status, docId]);
+
+  // Escape sluit de verwijder-modal
+  useEffect(() => {
+    if (!confirmDelete) return;
+    function onKey(e) {
+      if (e.key === 'Escape' && !deleting) setConfirmDelete(false);
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [confirmDelete, deleting]);
+
+  async function handleReindex() {
+    setReindexing(true);
+    try {
+      await reindexDocument(docId);
+      setChunks([]);
+      toast.success(`${doc.originalname} wordt opnieuw geïndexeerd.`);
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Opnieuw indexeren is mislukt.'));
+    } finally {
+      setReindexing(false);
+    }
+  }
+
+  async function handleConfirmDelete() {
+    const name = doc.originalname;
+    setDeleting(true);
+    try {
+      await deleteDocument(docId);
+      toast.success(`${name} is verwijderd.`);
+      navigate(`/w/${slug}/docs`, { replace: true });
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Document verwijderen is mislukt.'));
+      setDeleting(false);
+    }
+  }
+
+  // ── Workspace nog aan het laden ──────────
+  if (loading) {
+    return (
+      <div className="section-loading">
+        <div className="spinner" />
+      </div>
+    );
+  }
+
+  // ── Niet gevonden ────────────────────────
+  // (na verwijderen niet tonen: dan zijn we al aan het navigeren)
+  if (!doc) {
+    if (deleting) return null;
     return (
       <div className="dd-root">
         <button className="dd-back" onClick={() => navigate(`/w/${slug}/docs`)}>
@@ -31,48 +97,11 @@ export default function DocDetail() {
           <p className="dd-not-found-sub">Dit document bestaat niet of is verwijderd.</p>
         </div>
       </div>
-    )
+    );
   }
 
-  useEffect(() => {
-    if (!doc || doc.status !== 'completed') {
-      setChunksLoading(false);
-      return;
-    }
-
-    api.get(`/workspaces/${slug}/docs/${docId}/chunks`)
-      .then(res => setChunks(res.data))
-      .finally(() => setChunksLoading(false));
-  }, [doc?.status]);
-
-  async function handleReindex() {
-    setReindexing(true);
-    setChunks([]);
-    try {
-      await reindexDocument(docId);
-    } finally {
-      setReindexing(false);
-    }
-  }
-
-  async function handleConfirmDelete() {
-    setDeleting(true);
-    try {
-      await deleteDocument(docId);
-      navigate(`/w/${slug}/docs`);
-    } catch {
-      setDeleting(false);
-      setConfirmDelete(false);
-    }
-  }
-
-  if (chunksLoading) {
-    return (
-      <div className="section-loading">
-        <div className="spinner" />
-      </div>
-    )
-  }
+  const isProcessing = ['uploading', 'queued', 'processing'].includes(doc.status);
+  const chunkCount   = chunks.length || doc.chunks || null;
 
   return (
     <div className="dd-root">
@@ -107,11 +136,22 @@ export default function DocDetail() {
         </div>
 
         <div className="dd-header-actions">
+          {doc.status === 'completed' && (
+            <button
+              className="dd-btn-primary"
+              onClick={() => navigate(`/w/${slug}`, {
+                state: { draft: `Vat "${doc.originalname}" samen.` },
+              })}
+            >
+              <SparkIcon />
+              Vraag over dit document
+            </button>
+          )}
           {(doc.status === 'failed' || doc.status === 'completed') && can('documents', 'create') && (
             <button
               className="dd-btn-secondary"
               onClick={handleReindex}
-              disabled={reindexing}
+              disabled={reindexing || deleting}
             >
               <ReindexIcon />
               {reindexing ? 'Bezig…' : 'Opnieuw indexeren'}
@@ -132,7 +172,7 @@ export default function DocDetail() {
 
       <div className="dd-stats">
         <div className="dd-stat">
-          <span className="dd-stat-num">{chunks.length || '—'}</span>
+          <span className="dd-stat-num">{chunkCount ?? '—'}</span>
           <span className="dd-stat-label">Chunks</span>
         </div>
         <div className="dd-stat">
@@ -141,43 +181,51 @@ export default function DocDetail() {
         </div>
       </div>
 
-      {doc.status === 'processing' && (
+      {isProcessing && (
         <div className="dd-processing">
           <SpinnerIcon />
           <p>Document wordt verwerkt en geïndexeerd…</p>
         </div>
       )}
 
-      {doc.status === 'completed' && chunks.length > 0 && (
-        <section className="dd-chunks-section">
-          <p className="dd-section-label">Chunks ({chunks.length})</p>
-          <ul className="dd-chunk-list">
-            {chunks.map((chunk, i) => (
-              <li key={i} className="dd-chunk">
-                <span className="dd-chunk-num">#{chunk.chunk_index + 1}</span>
-                <p className="dd-chunk-text">{chunk.content}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
+      {doc.status === 'completed' && (
+        chunksLoading ? (
+          <p className="dd-loading">Chunks laden…</p>
+        ) : chunks.length > 0 && (
+          <section className="dd-chunks-section">
+            <p className="dd-section-label">Chunks ({chunks.length})</p>
+            <ul className="dd-chunk-list">
+              {chunks.map(chunk => (
+                <li key={chunk.id ?? chunk.chunk_index} className="dd-chunk">
+                  <span className="dd-chunk-num">#{chunk.chunk_index + 1}</span>
+                  <p className="dd-chunk-text">{chunk.content}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
       )}
 
       {/* Verwijder modal */}
       {confirmDelete && (
         <>
-          <div className="dd-modal-backdrop" onClick={() => setConfirmDelete(false)} />
-          <div className="dd-modal">
+          <div className="dd-modal-backdrop" onClick={() => !deleting && setConfirmDelete(false)} />
+          <div className="dd-modal" role="dialog" aria-modal="true" aria-labelledby="dd-delete-title">
             <div className="dd-modal-icon">
               <TrashIcon />
             </div>
             <div className="dd-modal-body">
-              <h2 className="dd-modal-title">Document verwijderen</h2>
+              <h2 className="dd-modal-title" id="dd-delete-title">Document verwijderen</h2>
               <p className="dd-modal-desc">
                 Weet je zeker dat je <strong>{doc.originalname}</strong> wilt verwijderen? Dit kan niet ongedaan worden gemaakt.
               </p>
             </div>
             <div className="dd-modal-footer">
-              <button className="dd-btn-secondary" onClick={() => setConfirmDelete(false)}>
+              <button
+                className="dd-btn-secondary"
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleting}
+              >
                 Annuleren
               </button>
               <button className="dd-btn-danger-solid" onClick={handleConfirmDelete} disabled={deleting}>
@@ -200,6 +248,14 @@ function statusLabel(status) {
     failed:     'Mislukt',
   };
   return labels[status] ?? status;
+}
+
+function SparkIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M7 1.5l1.3 3.6 3.7 1.4-3.7 1.4L7 11.5 5.7 7.9 2 6.5l3.7-1.4L7 1.5z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+    </svg>
+  );
 }
 
 function BackIcon() {

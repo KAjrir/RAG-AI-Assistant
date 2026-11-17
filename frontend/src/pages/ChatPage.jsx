@@ -4,73 +4,140 @@ import { NavLink, Outlet, useNavigate, useParams } from 'react-router';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useWorkspace } from '../context/WorkspaceContext.jsx';
 import { useChat } from '../context/ChatContext.jsx';
-import '../styles/chatPage.css';
+import { useToast } from '../context/ToastContext.jsx';
+import useModal from '../modals/ModalContext.jsx';
+import ConfirmModal from '../modals/ConfirmModal.jsx';
 import { BASE_URL } from '../lib/api.js';
+import { getErrorMessage } from '../lib/utils.js';
+import '../styles/chatPage.css';
 
 export default function ChatPage() {
-  const { slug, chatId }                    = useParams();
-  const { workspace }                       = useWorkspace();
-  const { user }                            = useAuth();
-  const navigate                            = useNavigate();
-  const { chats, deleteChat, updateChatTitle, titleLoading } = useChat();
+  const { slug, chatId } = useParams();
+  const { workspace }    = useWorkspace();
+  const { user }         = useAuth();
+  const navigate         = useNavigate();
+  const toast            = useToast();
+  const { openModal }    = useModal();
+  const { chats, chatsLoading, deleteChat, updateChatTitle, titleLoading } = useChat();
 
+  const [sidebarOpen, setSidebarOpen]      = useState(true);
+  const [mobileSidebarOpen, setMobileOpen] = useState(false);
+  const [chatMenu, setChatMenu]            = useState(null); // { chatId, x, y }
+  const [editingChat, setEditingChat]      = useState(null);
+  const [editingTitle, setEditingTitle]    = useState('');
 
-  const [sidebarOpen, setSidebarOpen]       = useState(true);
-  const [mobileSidebarOpen, setMobileOpen]  = useState(false);
-  const [chatMenu, setChatMenu]             = useState(null);
-  const [editingChat, setEditingChat]       = useState(null);
-  const [editingTitle, setEditingTitle]     = useState('');
+  const [searchOpen, setSearchOpen]       = useState(false);
+  const [query, setQuery]                 = useState('');
 
-  const menuRef                             = useRef(null);
-  const editInputRef                        = useRef(null);
+  const menuRef        = useRef(null);
+  const savingTitleRef = useRef(false); // voorkomt dubbel opslaan (Enter + blur)
+  const editingIdRef   = useRef(null);  // welk gesprek nu bewerkt wordt (sync, i.t.t. state)
 
+  // Menu sluiten bij klik buiten / Escape
   useEffect(() => {
     function handleClickOutside(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setChatMenu(null);
-      }
+      if (menuRef.current && !menuRef.current.contains(e.target)) setChatMenu(null);
+    }
+    function handleKey(e) {
+      if (e.key === 'Escape') setChatMenu(null);
     }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKey);
+    };
   }, []);
 
   function openMenu(e, id) {
     e.preventDefault();
     e.stopPropagation();
-    const rect = e.currentTarget.getBoundingClientRect();
-    
-    // Pak de sidebar breedte als startpunt
-    const sidebar = document.querySelector('.cpl-sidebar');
-    const sidebarRect = sidebar.getBoundingClientRect();
-    
-    setChatMenu({ 
-      chatId: id, 
-      x: sidebarRect.right - 45,
-      y: rect.bottom
+    if (chatMenu?.chatId === id) { setChatMenu(null); return; }
+
+    const rect        = e.currentTarget.getBoundingClientRect();
+    const sidebarRect = e.currentTarget.closest('.cpl-sidebar')?.getBoundingClientRect();
+
+    setChatMenu({
+      chatId: id,
+      x: (sidebarRect?.right ?? rect.right) - 45,
+      y: rect.bottom,
     });
   }
 
+  // ── Naam wijzigen ────────────────────────
+
   function startEdit(chat) {
     setChatMenu(null);
+    if (!chat) return;
+    editingIdRef.current = chat.id;
     setEditingChat(chat);
     setEditingTitle(chat.title || '');
-    setTimeout(() => editInputRef.current?.focus(), 50);
-  }
-
-  async function confirmEdit() {
-
-    if (!editingTitle.trim() || editingTitle === editingChat?.title) {
-      cancelEdit();
-      return;
-    }
-    await updateChatTitle(editingChat?.id, editingTitle.trim());
-    setEditingChat(null);
   }
 
   function cancelEdit() {
+    editingIdRef.current = null;
     setEditingChat(null);
     setEditingTitle('');
   }
+
+  async function confirmEdit() {
+    // Ref-check vangt een late blur na Enter/opslaan af (oude closure)
+    if (!editingChat || savingTitleRef.current || editingIdRef.current !== editingChat.id) return;
+
+    const title = editingTitle.trim();
+    if (!title || title === (editingChat.title ?? '')) {
+      cancelEdit();
+      return;
+    }
+
+    savingTitleRef.current = true;
+    try {
+      await updateChatTitle(editingChat.id, title);
+      toast.success('Naam van het gesprek gewijzigd.');
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Naam wijzigen is mislukt.'));
+    } finally {
+      savingTitleRef.current = false;
+      cancelEdit();
+    }
+  }
+
+  // ── Verwijderen ──────────────────────────
+
+  function askDelete(id) {
+    setChatMenu(null);
+    const chat  = chats.find(c => c.id === id);
+    const title = chat?.title || 'dit gesprek';
+
+    openModal(
+      <ConfirmModal
+        title="Gesprek verwijderen"
+        description={<>Weet je zeker dat je <strong>{title}</strong> wilt verwijderen? Dit kan niet ongedaan worden gemaakt.</>}
+        confirmLabel="Verwijderen"
+        busyLabel="Verwijderen…"
+        danger
+        onConfirm={async () => {
+          try {
+            await deleteChat(id);
+          } catch (err) {
+            toast.error(getErrorMessage(err, 'Gesprek verwijderen is mislukt.'));
+            throw err; // modal blijft open
+          }
+          toast.success('Gesprek verwijderd.');
+          if (chatId === id) navigate(`/w/${slug}/chat`, { replace: true });
+        }}
+      />
+    );
+  }
+
+  function closeSearch() {
+    setSearchOpen(false);
+    setQuery('');
+  }
+
+  const q            = query.trim().toLowerCase();
+  const visibleChats = q ? chats.filter(c => (c.title || '').toLowerCase().includes(q)) : chats;
+  const groups       = groupChats(visibleChats);
 
   const initials = user?.name
     ?.split(' ')
@@ -95,13 +162,17 @@ export default function ChatPage() {
         <div className="cpl-header">
           {sidebarOpen && (
             <span className="cpl-logo" onClick={() => navigate('/dashboard')}>
-              <img alt="Logo" src="/images/logo.png" />
+              <img alt="Raggy" src="/images/logo.png" />
             </span>
           )}
-          <button className="cpl-toggle cpl-toggle--desktop" onClick={() => setSidebarOpen(p => !p)}>
+          <button
+            className="cpl-toggle cpl-toggle--desktop"
+            onClick={() => setSidebarOpen(p => !p)}
+            aria-label={sidebarOpen ? 'Zijbalk inklappen' : 'Zijbalk uitklappen'}
+          >
             {sidebarOpen ? <CollapseIcon /> : <ExpandIcon />}
           </button>
-          <button className="cpl-toggle cpl-toggle--mobile" onClick={closeMobile}>
+          <button className="cpl-toggle cpl-toggle--mobile" onClick={closeMobile} aria-label="Sluiten">
             <CloseIcon />
           </button>
         </div>
@@ -110,6 +181,7 @@ export default function ChatPage() {
           <button
             className={`cpl-new-btn ${sidebarOpen ? '' : 'cpl-new-btn--icon'}`}
             onClick={() => { navigate(`/w/${slug}/chat`); closeMobile(); }}
+            title="Nieuw gesprek"
           >
             <PlusIcon />
             {sidebarOpen && 'Nieuw gesprek'}
@@ -117,45 +189,76 @@ export default function ChatPage() {
         </div>
 
         {sidebarOpen && (
-          <button className="cpl-search-btn">
-            <SearchIcon /> Zoeken
-          </button>
+          searchOpen ? (
+            <div className="cpl-search">
+              <SearchIcon />
+              <input
+                className="cpl-search-input"
+                placeholder="Zoek in gesprekken…"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Escape') { e.stopPropagation(); closeSearch(); }
+                }}
+                onBlur={() => { if (!query.trim()) closeSearch(); }}
+                autoFocus
+              />
+              {query && (
+                <button
+                  className="cpl-search-clear"
+                  onMouseDown={e => { e.preventDefault(); setQuery(''); }}
+                  aria-label="Zoekopdracht wissen"
+                >
+                  <CloseSmallIcon />
+                </button>
+              )}
+            </div>
+          ) : (
+            <button className="cpl-search-btn" onClick={() => setSearchOpen(true)}>
+              <SearchIcon /> Zoeken
+            </button>
+          )
         )}
 
         <hr className="cpl-divider" />
 
-        <nav className="cpl-chats">
-          {sidebarOpen && chats.map(chat => {
-            const isActive = chat.id === chatId;
-            const showSkeleton = isActive && titleLoading;
+        <nav className="cpl-chats" onScroll={() => chatMenu && setChatMenu(null)}>
+          {sidebarOpen && groups.map(group => (
+            <div key={group.label ?? 'all'} className="cpl-chat-group">
+              {group.label && <p className="cpl-chat-group-label">{group.label}</p>}
+              {group.chats.map(chat => {
+            const isActive     = chat.id === chatId;
+            const showSkeleton = isActive && titleLoading && !chat.title;
 
             return (
               <div key={chat.id} className="cpl-chat-wrap">
                 {editingChat?.id === chat.id ? (
                   <div className="cpl-chat-edit">
                     <input
-                      ref={editInputRef}
                       className="cpl-chat-edit-input"
                       value={editingTitle}
-                      onChange={e => {
-                        setEditingTitle(e.target.value)
-                      }}
+                      onChange={e => setEditingTitle(e.target.value)}
                       onKeyDown={e => {
-                        if (e.key === 'Enter')  confirmEdit();
-                        if (e.key === 'Escape') cancelEdit();
+                        if (e.key === 'Enter')  { e.preventDefault(); confirmEdit(); }
+                        if (e.key === 'Escape') { e.stopPropagation(); cancelEdit(); }
                       }}
                       onBlur={confirmEdit}
+                      onFocus={e => e.target.select()}
+                      maxLength={120}
+                      autoFocus
                     />
                     <div className="cpl-chat-edit-actions">
                       <button
                         className="cpl-chat-edit-btn"
                         onMouseDown={e => { e.preventDefault(); confirmEdit(); }}
+                        aria-label="Opslaan"
                       >
                         <CheckIcon />
                       </button>
                       <button
                         className="cpl-chat-edit-btn cpl-chat-edit-btn--cancel"
                         onMouseDown={e => { e.preventDefault(); cancelEdit(); }}
+                        aria-label="Annuleren"
                       >
                         <CloseSmallIcon />
                       </button>
@@ -168,7 +271,6 @@ export default function ChatPage() {
                       className={({ isActive }) => `cpl-chat ${isActive ? 'cpl-chat--active' : ''}`}
                       onClick={closeMobile}
                     >
-
                       {showSkeleton ? (
                         <span className="cpl-chat-title-skeleton" />
                       ) : (
@@ -180,14 +282,23 @@ export default function ChatPage() {
                     <button
                       className="cpl-chat-menu-btn"
                       onClick={(e) => openMenu(e, chat.id)}
+                      aria-label="Gespreksopties"
                     >
                       <DotsIcon />
                     </button>
                   </>
                 )}
               </div>
-            )
-          })}
+            );
+              })}
+            </div>
+          ))}
+
+          {sidebarOpen && !chatsLoading && visibleChats.length === 0 && (
+            <p className="cpl-chats-empty">
+              {q ? 'Geen gesprekken gevonden.' : 'Nog geen gesprekken.'}
+            </p>
+          )}
         </nav>
 
         <div
@@ -223,20 +334,13 @@ export default function ChatPage() {
         >
           <button
             className="cpl-chat-menu-item"
-            onClick={() => {
-              const chat = chats.find(c => c.id === chatMenu.chatId);
-              startEdit(chat);
-            }}
+            onClick={() => startEdit(chats.find(c => c.id === chatMenu.chatId))}
           >
             <EditIcon /> Naam wijzigen
           </button>
           <button
             className="cpl-chat-menu-item cpl-chat-menu-item--danger"
-            onClick={async () => {
-              setChatMenu(null);
-              await deleteChat(chatMenu.chatId);
-              if (chatId === chatMenu.chatId) navigate(`/w/${slug}/chat`);
-            }}
+            onClick={() => askDelete(chatMenu.chatId)}
           >
             <TrashIcon /> Verwijderen
           </button>
@@ -333,4 +437,35 @@ function CloseSmallIcon() {
       <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
     </svg>
   );
+}
+
+// Groepeert op laatste activiteit: Vandaag, Gisteren, Afgelopen 7 dagen, …
+// Heeft geen enkel gesprek een datum, dan één groep zonder kopje.
+function groupChats(chats) {
+  const dateOf = c => {
+    const raw = c.updated_at ?? c.created_at;
+    const d   = raw ? new Date(raw) : null;
+    return d && !isNaN(d) ? d : null;
+  };
+
+  if (!chats.some(dateOf)) return chats.length ? [{ label: null, chats }] : [];
+
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const DAY = 24 * 60 * 60 * 1000;
+
+  const buckets = [
+    { label: 'Vandaag',            from: startOfToday.getTime() },
+    { label: 'Gisteren',           from: startOfToday.getTime() - DAY },
+    { label: 'Afgelopen 7 dagen',  from: startOfToday.getTime() - 7 * DAY },
+    { label: 'Afgelopen 30 dagen', from: startOfToday.getTime() - 30 * DAY },
+    { label: 'Ouder',              from: -Infinity },
+  ].map(b => ({ ...b, chats: [] }));
+
+  for (const chat of chats) {
+    const t = dateOf(chat)?.getTime() ?? Date.now(); // zonder datum = net aangemaakt
+    buckets.find(b => t >= b.from).chats.push(chat);
+  }
+
+  return buckets.filter(b => b.chats.length > 0);
 }

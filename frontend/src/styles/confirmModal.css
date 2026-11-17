@@ -1,0 +1,105 @@
+/* confirmModal.css: inhoud voor <ConfirmModal> binnen jouw .modal */
+
+.cm-root {
+  width: min(420px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cm-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--accent-light);
+  border: 1px solid rgba(26, 86, 219, 0.15);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cm-icon--danger {
+  background: #FEF2F2;
+  border-color: rgba(185, 28, 28, 0.15);
+  color: #B91C1C;
+}
+
+.cm-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cm-title {
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.cm-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+  word-break: break-word;
+}
+
+.cm-desc strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.cm-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.cm-btn-secondary,
+.cm-btn-primary,
+.cm-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 18px;
+  border-radius: 100px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+
+.cm-btn-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-dark);
+}
+
+.cm-btn-secondary:hover:not(:disabled) { background: var(--surface2); }
+
+.cm-btn-primary {
+  background: var(--dark-btn);
+  color: #fff;
+  border: none;
+}
+
+.cm-btn-primary:hover:not(:disabled) { background: var(--dark-btn-hover); }
+
+.cm-btn-danger {
+  background: #B91C1C;
+  color: #fff;
+  border: none;
+}
+
+.cm-btn-danger:hover:not(:disabled) { background: #991B1B; }
+
+.cm-btn-secondary:disabled,
+.cm-btn-primary:disabled,
+.cm-btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -1,24 +1,28 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { api } from '../lib/api.js';
+import { useAuth } from '../context/AuthContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
+import { getErrorMessage } from '../lib/utils.js';
 import '../styles/auth.css';
 
 export default function WachtwoordVergeten() {
-  const [email,   setEmail]   = useState('');
-  const [sent,    setSent]    = useState(false);
+  const { forgotPassword } = useAuth();
+  const toast              = useToast();
+
+  const [email, setEmail]     = useState('');
+  const [sent, setSent]       = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState(null);
 
   async function handleSubmit(e) {
     e.preventDefault();
     if (!email.trim()) return;
+
     setLoading(true);
-    setError(null);
     try {
-      await api.post('/auth/forgot-password', { email });
+      await forgotPassword(email.trim());
       setSent(true);
     } catch (err) {
-      setError(err.message);
+      toast.error(getErrorMessage(err, 'Versturen is mislukt. Probeer het later opnieuw.'));
     } finally {
       setLoading(false);
     }
@@ -27,7 +31,7 @@ export default function WachtwoordVergeten() {
   return (
     <div className="auth-bg">
       <div className="auth-card">
-        <div className="auth-logo">VLNK.</div>
+        <Link to="/" className="auth-logo"><img src="/images/logo.png" alt="Raggy" /></Link>
 
         <Link to="/inloggen" className="auth-back">
           <BackIcon /> Terug naar inloggen
@@ -43,10 +47,12 @@ export default function WachtwoordVergeten() {
             </p>
             <form className="auth-form" onSubmit={handleSubmit}>
               <div className="auth-field">
-                <label className="auth-label">E-mailadres</label>
+                <label className="auth-label" htmlFor="forgot-email">E-mailadres</label>
                 <input
+                  id="forgot-email"
                   className="auth-input"
                   type="email"
+                  autoComplete="email"
                   placeholder="jouw@email.nl"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
@@ -54,14 +60,14 @@ export default function WachtwoordVergeten() {
                   required
                 />
               </div>
-              {error && <p className="auth-error">{error}</p>}
               <button className="auth-btn-primary" type="submit" disabled={loading}>
                 {loading ? 'Versturen…' : 'Stuur herstellink'}
               </button>
             </form>
           </>
         ) : (
-          <>
+          <div className="auth-sent">
+            <div className="auth-sent-icon"><MailIcon /></div>
             <h1 className="auth-title">
               Controleer je <span className="auth-title-italic">inbox</span>
             </h1>
@@ -69,15 +75,17 @@ export default function WachtwoordVergeten() {
               Als <strong>{email}</strong> bij ons bekend is, ontvang je zo een mail met een herstellink. Klik op de link in de mail om je wachtwoord te wijzigen.
             </p>
             <p className="auth-hint">
-              Geen mail ontvangen?{' '}
+              Geen mail ontvangen? Kijk ook in je spam, of{' '}
               <button
+                type="button"
                 className="auth-link-btn"
-                onClick={() => { setSent(false); setError(null); }}
+                onClick={() => setSent(false)}
               >
-                Probeer opnieuw
+                probeer het opnieuw
               </button>
+              .
             </p>
-          </>
+          </div>
         )}
       </div>
     </div>
@@ -88,6 +96,15 @@ function BackIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
       <path d="M9 11L5 7l4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function MailIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" strokeWidth="1.6"/>
+      <path d="M3 8l9 6 9-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }

@@ -1,32 +1,33 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { useToast } from '../../context/ToastContext.jsx';
 import { ROLE_HIERARCHY, ROLE_LABELS } from '../../lib/permissions.js';
-import { api, BASE_URL } from '../../lib/api.js';
+import { BASE_URL } from '../../lib/api.js';
+import { getErrorMessage } from '../../lib/utils.js';
 import '../../styles/mensen.css';
 
 export default function Mensen() {
-  const { slug } = useParams();
   const { user } = useAuth();
+  const toast    = useToast();
   const {
     workspace, members, invitations, can,
-    inviteMembers, revokeInvite, updateMember, removeMember
+    inviteMembers, fetchAllInvitations, revokeInvite, updateMember, removeMember,
   } = useWorkspace();
 
   const [activeTab, setActiveTab]                 = useState('members');
   const [inviteTab, setInviteTab]                 = useState('pending');
   const [allInvites, setAllInvites]               = useState([]);
+  const [allLoaded, setAllLoaded]                 = useState(false);
   const [loadingAll, setLoadingAll]               = useState(false);
   const [inviteRows, setInviteRows]               = useState([{ email: '', role: 'editor' }]);
   const [busy, setBusy]                           = useState(false);
-  const [error, setError]                         = useState(null);
-  const [success, setSuccess]                     = useState(false);
   const [revoking, setRevoking]                   = useState(null);
   const [pendingRoleChange, setPendingRoleChange] = useState(null);
   const [savingRole, setSavingRole]               = useState(false);
   const [openMenu, setOpenMenu]                   = useState(null);
   const [confirmDelete, setConfirmDelete]         = useState(null);
+  const [deleting, setDeleting]                   = useState(false);
 
   useEffect(() => {
     function handleClick(e) {
@@ -35,6 +36,16 @@ export default function Mensen() {
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
+
+  // Escape sluit de verwijder-modal
+  useEffect(() => {
+    if (!confirmDelete) return;
+    function onKey(e) {
+      if (e.key === 'Escape' && !deleting) setConfirmDelete(null);
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [confirmDelete, deleting]);
 
   function canManageMember(member) {
     if (member.id === user.id) return false;
@@ -47,15 +58,20 @@ export default function Mensen() {
     ROLE_HIERARCHY[workspace?.role] > ROLE_HIERARCHY[r]
   );
 
+  // ── Uitnodigingen ────────────────────────
+
   async function handleTabChange(tab) {
     setInviteTab(tab);
-    if (tab === 'all' && allInvites.length === 0) {
-      setLoadingAll(true);
-      try {
-        const res = await api.get(`/invitations/${slug}/workspace/pending?all=true`);
-        setAllInvites(res.data.invites ?? []);
-      } catch {}
-      finally { setLoadingAll(false); }
+    if (tab !== 'all' || allLoaded) return;
+
+    setLoadingAll(true);
+    try {
+      setAllInvites(await fetchAllInvitations());
+      setAllLoaded(true);
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Uitnodigingen ophalen is mislukt.'));
+    } finally {
+      setLoadingAll(false);
     }
   }
 
@@ -77,30 +93,40 @@ export default function Mensen() {
     e.preventDefault();
     const valid = inviteRows.filter(r => r.email.trim());
     if (!valid.length) return;
+
     setBusy(true);
-    setError(null);
-    setSuccess(false);
     try {
       await inviteMembers(valid);
       setInviteRows([{ email: '', role: 'editor' }]);
-      setSuccess(true);
+      setAllLoaded(false); // "Alles" opnieuw ophalen bij volgende keer openen
+      toast.success(
+        valid.length === 1
+          ? `Uitnodiging verstuurd naar ${valid[0].email.trim()}.`
+          : `${valid.length} uitnodigingen verstuurd.`
+      );
     } catch (err) {
-      setError(err.message);
+      toast.error(getErrorMessage(err, 'Uitnodigen is mislukt.'));
     } finally {
       setBusy(false);
     }
   }
 
-  async function handleRevoke(inviteId) {
-    setRevoking(inviteId);
+  async function handleRevoke(invite) {
+    setRevoking(invite.id);
     try {
-      await revokeInvite(inviteId);
+      await revokeInvite(invite.id);
       setAllInvites(prev =>
-        prev.map(i => i.id === inviteId ? { ...i, status: 'revoked' } : i)
+        prev.map(i => i.id === invite.id ? { ...i, status: 'revoked' } : i)
       );
-    } catch {}
-    finally { setRevoking(null); }
+      toast.success(`Uitnodiging voor ${invite.email} ingetrokken.`);
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Intrekken is mislukt.'));
+    } finally {
+      setRevoking(null);
+    }
   }
+
+  // ── Leden ────────────────────────────────
 
   function handleRemove(member) {
     setOpenMenu(null);
@@ -108,26 +134,37 @@ export default function Mensen() {
   }
 
   async function handleConfirmDelete() {
-    await removeMember(confirmDelete.id);
-    setConfirmDelete(null);
+    setDeleting(true);
+    try {
+      await removeMember(confirmDelete.id);
+      toast.success(`${confirmDelete.name} is uit de workspace verwijderd.`);
+      setConfirmDelete(null);
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Lid verwijderen is mislukt.'));
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  function handleRoleSelect(member, newRole) {
+    setOpenMenu(null);
+    setPendingRoleChange({ memberId: member.id, name: member.name, newRole });
   }
 
   async function confirmRoleChange() {
     if (!pendingRoleChange) return;
+    const { memberId, name, newRole } = pendingRoleChange;
+
     setSavingRole(true);
     try {
-      await updateMember(pendingRoleChange.memberId, pendingRoleChange.newRole);
-    } catch (err) {
-      console.error(err);
-    } finally {
+      await updateMember(memberId, newRole);
+      toast.success(`${name} is nu ${ROLE_LABELS[newRole] ?? newRole}.`);
       setPendingRoleChange(null);
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Rol wijzigen is mislukt.'));
+    } finally {
       setSavingRole(false);
     }
-  }
-
-  function handleRoleSelect(memberId, newRole, currentRole) {
-    setOpenMenu(null);
-    setPendingRoleChange({ memberId, newRole, currentRole });
   }
 
   const statusLabel = {
@@ -216,9 +253,6 @@ export default function Mensen() {
                 </button>
               </div>
             </div>
-
-            {error   && <p className="mn-feedback mn-feedback--error">{error}</p>}
-            {success && <p className="mn-feedback mn-feedback--success">Uitnodiging verstuurd!</p>}
           </form>
         </div>
       )}
@@ -274,9 +308,7 @@ export default function Mensen() {
                     <div className="mn-info">
                       <span className="mn-name">
                         {member.name}
-                        {member.id === user.id && (
-                          <span className="mn-you">jij</span>
-                        )}
+                        {member.id === user.id && <span className="mn-you">jij</span>}
                       </span>
                       <span className="mn-meta">{member.email}</span>
                     </div>
@@ -288,10 +320,18 @@ export default function Mensen() {
                         <span className="mn-confirm-text">
                           Wijzigen naar <strong>{ROLE_LABELS[pendingRoleChange.newRole]}</strong>?
                         </span>
-                        <button className="mn-confirm-btn mn-confirm-btn--yes" onClick={confirmRoleChange} disabled={savingRole}>
-                          <CheckIcon /> Ja
+                        <button
+                          className="mn-confirm-btn mn-confirm-btn--yes"
+                          onClick={confirmRoleChange}
+                          disabled={savingRole}
+                        >
+                          <CheckIcon /> {savingRole ? '…' : 'Ja'}
                         </button>
-                        <button className="mn-confirm-btn mn-confirm-btn--no" onClick={() => setPendingRoleChange(null)}>
+                        <button
+                          className="mn-confirm-btn mn-confirm-btn--no"
+                          onClick={() => setPendingRoleChange(null)}
+                          disabled={savingRole}
+                        >
                           Nee
                         </button>
                       </div>
@@ -308,6 +348,7 @@ export default function Mensen() {
                         <button
                           className="mn-icon-btn"
                           onClick={() => setOpenMenu(openMenu === member.id ? null : member.id)}
+                          aria-label={`Acties voor ${member.name}`}
                         >
                           <DotsIcon />
                         </button>
@@ -322,7 +363,7 @@ export default function Mensen() {
                                     <button
                                       key={r}
                                       className="mn-menu-item"
-                                      onClick={() => handleRoleSelect(member.id, r, member.role)}
+                                      onClick={() => handleRoleSelect(member, r)}
                                     >
                                       <span className={`mn-menu-dot mn-menu-dot--${r}`} />
                                       {ROLE_LABELS[r]}
@@ -333,7 +374,10 @@ export default function Mensen() {
                               </>
                             )}
                             {can('members', 'delete') && (
-                              <button className="mn-menu-item mn-menu-item--danger" onClick={() => handleRemove(member)}>
+                              <button
+                                className="mn-menu-item mn-menu-item--danger"
+                                onClick={() => handleRemove(member)}
+                              >
                                 <TrashIcon /> Verwijderen
                               </button>
                             )}
@@ -374,29 +418,16 @@ export default function Mensen() {
             ) : (
               <ul className="mn-list">
                 {invitations.map(invite => (
-                  <li key={invite.id} className="mn-item">
-                    <div className="mn-item-user">
-                      <div className="mn-avatar mn-avatar--invite"><MailIcon /></div>
-                      <div className="mn-info">
-                        <span className="mn-name">{invite.email}</span>
-                        <span className="mn-meta">
-                          Uitgenodigd als {ROLE_LABELS[invite.role] ?? invite.role}
-                          {' · '}
-                          Verloopt {new Date(invite.expires_at).toLocaleDateString('nl-NL')}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="mn-item-role">
-                      <span className="mn-badge mn-badge--pending">Wacht op acceptatie</span>
-                    </div>
-                    <div className="mn-item-actions">
-                      {can('invitations', 'revoke') && (
-                        <button className="mn-icon-btn mn-icon-btn--danger" title="Intrekken" onClick={() => handleRevoke(invite.id)} disabled={revoking === invite.id}>
-                          <TrashIcon />
-                        </button>
-                      )}
-                    </div>
-                  </li>
+                  <InviteRow
+                    key={invite.id}
+                    invite={invite}
+                    meta={`Verloopt ${new Date(invite.expires_at).toLocaleDateString('nl-NL')}`}
+                    badgeClass="mn-badge--pending"
+                    badgeLabel="Wacht op acceptatie"
+                    canRevoke={can('invitations', 'revoke')}
+                    revoking={revoking === invite.id}
+                    onRevoke={() => handleRevoke(invite)}
+                  />
                 ))}
               </ul>
             )
@@ -407,31 +438,16 @@ export default function Mensen() {
             allInvites.length === 0 ? <p className="mn-empty">Geen uitnodigingen gevonden.</p> : (
               <ul className="mn-list">
                 {allInvites.map(invite => (
-                  <li key={invite.id} className="mn-item">
-                    <div className="mn-item-user">
-                      <div className="mn-avatar mn-avatar--invite"><MailIcon /></div>
-                      <div className="mn-info">
-                        <span className="mn-name">{invite.email}</span>
-                        <span className="mn-meta">
-                          Uitgenodigd als {ROLE_LABELS[invite.role] ?? invite.role}
-                          {' · '}
-                          {new Date(invite.created_at).toLocaleDateString('nl-NL')}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="mn-item-role">
-                      <span className={`mn-badge ${statusClass[invite.status] ?? ''}`}>
-                        {statusLabel[invite.status] ?? invite.status}
-                      </span>
-                    </div>
-                    <div className="mn-item-actions">
-                      {invite.status === 'pending' && can('invitations', 'revoke') && (
-                        <button className="mn-icon-btn mn-icon-btn--danger" title="Intrekken" onClick={() => handleRevoke(invite.id)} disabled={revoking === invite.id}>
-                          <TrashIcon />
-                        </button>
-                      )}
-                    </div>
-                  </li>
+                  <InviteRow
+                    key={invite.id}
+                    invite={invite}
+                    meta={new Date(invite.created_at).toLocaleDateString('nl-NL')}
+                    badgeClass={statusClass[invite.status] ?? ''}
+                    badgeLabel={statusLabel[invite.status] ?? invite.status}
+                    canRevoke={invite.status === 'pending' && can('invitations', 'revoke')}
+                    revoking={revoking === invite.id}
+                    onRevoke={() => handleRevoke(invite)}
+                  />
                 ))}
               </ul>
             )
@@ -442,29 +458,64 @@ export default function Mensen() {
       {/* Verwijder modal */}
       {confirmDelete && (
         <>
-          <div className="mn-modal-backdrop" onClick={() => setConfirmDelete(null)} />
-          <div className="mn-modal">
+          <div className="mn-modal-backdrop" onClick={() => !deleting && setConfirmDelete(null)} />
+          <div className="mn-modal" role="dialog" aria-modal="true" aria-labelledby="mn-delete-title">
             <div className="mn-modal-icon">
               <TrashIcon />
             </div>
             <div className="mn-modal-body">
-              <h2 className="mn-modal-title">Lid verwijderen</h2>
+              <h2 className="mn-modal-title" id="mn-delete-title">Lid verwijderen</h2>
               <p className="mn-modal-desc">
                 Weet je zeker dat je <strong>{confirmDelete.name}</strong> wilt verwijderen uit deze workspace? Dit kan niet ongedaan worden gemaakt.
               </p>
             </div>
             <div className="mn-modal-footer">
-              <button className="mn-btn-secondary" onClick={() => setConfirmDelete(null)}>
+              <button
+                className="mn-btn-secondary"
+                onClick={() => setConfirmDelete(null)}
+                disabled={deleting}
+              >
                 Annuleren
               </button>
-              <button className="mn-btn-danger" onClick={handleConfirmDelete}>
-                Verwijderen
+              <button className="mn-btn-danger" onClick={handleConfirmDelete} disabled={deleting}>
+                {deleting ? 'Verwijderen…' : 'Verwijderen'}
               </button>
             </div>
           </div>
         </>
       )}
     </div>
+  );
+}
+
+function InviteRow({ invite, meta, badgeClass, badgeLabel, canRevoke, revoking, onRevoke }) {
+  return (
+    <li className="mn-item">
+      <div className="mn-item-user">
+        <div className="mn-avatar mn-avatar--invite"><MailIcon /></div>
+        <div className="mn-info">
+          <span className="mn-name">{invite.email}</span>
+          <span className="mn-meta">
+            Uitgenodigd als {ROLE_LABELS[invite.role] ?? invite.role} · {meta}
+          </span>
+        </div>
+      </div>
+      <div className="mn-item-role">
+        <span className={`mn-badge ${badgeClass}`}>{badgeLabel}</span>
+      </div>
+      <div className="mn-item-actions">
+        {canRevoke && (
+          <button
+            className="mn-icon-btn mn-icon-btn--danger"
+            title="Intrekken"
+            onClick={onRevoke}
+            disabled={revoking}
+          >
+            <TrashIcon />
+          </button>
+        )}
+      </div>
+    </li>
   );
 }
 

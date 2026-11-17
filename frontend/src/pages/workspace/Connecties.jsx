@@ -1,108 +1,141 @@
 import { useState } from 'react';
 import { useParams } from 'react-router';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
+import { useToast } from '../../context/ToastContext.jsx';
+import { getErrorMessage } from '../../lib/utils.js';
 import IntegrationIcon from '../../components/icons/IntegrationIcons.jsx';
 import '../../styles/connecties.css';
 
 export default function Connecties() {
-  const { slug }                              = useParams();
+  const { slug } = useParams();
+  const toast    = useToast();
   const {
     connections, loading, can,
     connectConnection,
     disableConnection,
     deleteConnection,
     updateConnectionConfig,
-  }                                           = useWorkspace();
+  } = useWorkspace();
 
-  const [connectModal, setConnectModal]       = useState(null);
-  const [connectValues, setConnectValues]     = useState({});
-  const [connecting, setConnecting]           = useState(null);
-  const [connectError, setConnectError]       = useState(null);
+  const [connectModal, setConnectModal]   = useState(null);
+  const [connectValues, setConnectValues] = useState({});
+  const [connecting, setConnecting]       = useState(null);
 
-  const [settingsModal, setSettingsModal]     = useState(null);
-  const [configValues, setConfigValues]       = useState({});
-  const [savingConfig, setSavingConfig]       = useState(false);
-  const [configError, setConfigError]         = useState(null);
+  const [settingsModal, setSettingsModal] = useState(null);
+  const [configValues, setConfigValues]   = useState({});
+  const [savingConfig, setSavingConfig]   = useState(false);
 
-  const [confirmDelete, setConfirmDelete]     = useState(null);
-  const [toggling, setToggling]               = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null); // { orgConnectionId, name }
+  const [deleting, setDeleting]           = useState(false);
+  const [toggling, setToggling]           = useState(null);
+
+  // ── Verbinden ────────────────────────────
 
   async function handleConnect(connection) {
     if (connection.auth_type === 'oauth') {
+      // Redirect naar de provider, geen toast nodig
       connectConnection(connection.id);
       return;
     }
+
     if (connection.auth_type === 'public') {
       setConnecting(connection.id);
       try {
         await connectConnection(connection.id);
+        toast.success(`${connection.name} is verbonden.`);
+      } catch (err) {
+        toast.error(getErrorMessage(err, `${connection.name} verbinden is mislukt.`));
       } finally {
         setConnecting(null);
       }
       return;
     }
+
     setConnectValues({});
-    setConnectError(null);
     setConnectModal(connection);
   }
 
   async function handleSaveConnect(e) {
     e.preventDefault();
     setConnecting(connectModal.id);
-    setConnectError(null);
     try {
       await connectConnection(connectModal.id, connectValues);
+      toast.success(`${connectModal.name} is verbonden.`);
       setConnectModal(null);
     } catch (err) {
-      setConnectError(err.response?.data?.error ?? 'Er ging iets mis.');
+      toast.error(getErrorMessage(err, `${connectModal.name} verbinden is mislukt.`));
     } finally {
       setConnecting(null);
     }
   }
 
+  // ── Aan/uit ──────────────────────────────
+
   async function handleToggle(connection) {
     const orgConn   = connection.organization_connection;
     const isEnabled = orgConn?.enabled ?? false;
+
     setToggling(connection.id);
     try {
       if (isEnabled) {
         await disableConnection(orgConn.id);
+        toast.success(`${connection.name} is uitgeschakeld.`);
       } else {
         await connectConnection(connection.id);
+        toast.success(`${connection.name} is ingeschakeld.`);
       }
+    } catch (err) {
+      toast.error(getErrorMessage(
+        err,
+        isEnabled ? 'Uitschakelen is mislukt.' : 'Inschakelen is mislukt.'
+      ));
     } finally {
       setToggling(null);
     }
   }
 
+  // ── Instellingen ─────────────────────────
+
   function handleOpenSettings(connection) {
     setConfigValues({});
-    setConfigError(null);
     setSettingsModal(connection);
   }
 
   async function handleSaveConfig(e) {
     e.preventDefault();
     setSavingConfig(true);
-    setConfigError(null);
     try {
       await updateConnectionConfig(settingsModal.organization_connection.id, configValues);
+      toast.success('Configuratie opgeslagen.');
       setSettingsModal(null);
     } catch (err) {
-      setConfigError(err.response?.data?.error ?? 'Er ging iets mis.');
+      toast.error(getErrorMessage(err, 'Configuratie opslaan is mislukt.'));
     } finally {
       setSavingConfig(false);
     }
   }
 
-  function handleAskDelete(orgConnectionId) {
-    setConfirmDelete({ orgConnectionId });
+  // ── Verwijderen ──────────────────────────
+
+  function handleAskDelete(connection) {
+    setConfirmDelete({
+      orgConnectionId: connection.organization_connection.id,
+      name: connection.name,
+    });
   }
 
   async function handleConfirmDelete() {
-    await deleteConnection(confirmDelete.orgConnectionId);
-    setConfirmDelete(null);
-    setSettingsModal(null);
+    setDeleting(true);
+    try {
+      await deleteConnection(confirmDelete.orgConnectionId);
+      toast.success(`Verbinding met ${confirmDelete.name} is verwijderd.`);
+      setConfirmDelete(null);
+      setSettingsModal(null);
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Verbinding verwijderen is mislukt.'));
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -176,7 +209,7 @@ export default function Connecties() {
                         ) : (
                           <button
                             className="co-btn-icon co-btn-icon--danger"
-                            onClick={() => handleAskDelete(orgConn.id)}
+                            onClick={() => handleAskDelete(connection)}
                             title="Verwijderen"
                           >
                             <TrashIcon />
@@ -207,11 +240,11 @@ export default function Connecties() {
       {/* Connect modal */}
       {connectModal && (
         <>
-          <div className="co-modal-backdrop" onClick={() => setConnectModal(null)} />
-          <div className="co-modal">
+          <div className="co-modal-backdrop" onClick={() => !connecting && setConnectModal(null)} />
+          <div className="co-modal" role="dialog" aria-modal="true" aria-labelledby="co-connect-title">
             <div className="co-modal-header">
-              <h2 className="co-modal-title">{connectModal.name} verbinden</h2>
-              <button className="co-modal-close" onClick={() => setConnectModal(null)}>
+              <h2 className="co-modal-title" id="co-connect-title">{connectModal.name} verbinden</h2>
+              <button className="co-modal-close" onClick={() => setConnectModal(null)} disabled={!!connecting}>
                 <CloseIcon />
               </button>
             </div>
@@ -219,8 +252,9 @@ export default function Connecties() {
             <form className="co-modal-form" onSubmit={handleSaveConnect}>
               {connectModal.auth_config?.fields?.map(field => (
                 <div key={field.key} className="co-modal-field">
-                  <label className="co-modal-label">{field.label}</label>
+                  <label className="co-modal-label" htmlFor={`co-connect-${field.key}`}>{field.label}</label>
                   <input
+                    id={`co-connect-${field.key}`}
                     className="co-modal-input"
                     type={field.type === 'password' ? 'password' : 'text'}
                     placeholder={field.placeholder ?? ''}
@@ -231,9 +265,13 @@ export default function Connecties() {
                   {field.hint && <p className="co-modal-hint">{field.hint}</p>}
                 </div>
               ))}
-              {connectError && <p className="co-modal-error">{connectError}</p>}
               <div className="co-modal-footer">
-                <button type="button" className="co-btn-secondary" onClick={() => setConnectModal(null)}>
+                <button
+                  type="button"
+                  className="co-btn-secondary"
+                  onClick={() => setConnectModal(null)}
+                  disabled={connecting === connectModal.id}
+                >
                   Annuleren
                 </button>
                 <button type="submit" className="co-btn-primary" disabled={connecting === connectModal.id}>
@@ -248,11 +286,11 @@ export default function Connecties() {
       {/* Settings modal */}
       {settingsModal && (
         <>
-          <div className="co-modal-backdrop" onClick={() => setSettingsModal(null)} />
-          <div className="co-modal">
+          <div className="co-modal-backdrop" onClick={() => !savingConfig && setSettingsModal(null)} />
+          <div className="co-modal" role="dialog" aria-modal="true" aria-labelledby="co-settings-title">
             <div className="co-modal-header">
-              <h2 className="co-modal-title">{settingsModal.name}</h2>
-              <button className="co-modal-close" onClick={() => setSettingsModal(null)}>
+              <h2 className="co-modal-title" id="co-settings-title">{settingsModal.name}</h2>
+              <button className="co-modal-close" onClick={() => setSettingsModal(null)} disabled={savingConfig}>
                 <CloseIcon />
               </button>
             </div>
@@ -260,8 +298,9 @@ export default function Connecties() {
               <p className="co-modal-section-title">Configuratie wijzigen</p>
               {settingsModal.auth_config?.fields?.map(field => (
                 <div key={field.key} className="co-modal-field">
-                  <label className="co-modal-label">{field.label}</label>
+                  <label className="co-modal-label" htmlFor={`co-config-${field.key}`}>{field.label}</label>
                   <input
+                    id={`co-config-${field.key}`}
                     className="co-modal-input"
                     type={field.type === 'password' ? 'password' : 'text'}
                     placeholder={field.placeholder ?? ''}
@@ -271,12 +310,12 @@ export default function Connecties() {
                   {field.hint && <p className="co-modal-hint">{field.hint}</p>}
                 </div>
               ))}
-              {configError && <p className="co-modal-error">{configError}</p>}
               <div className="co-modal-footer">
                 <button
                   type="button"
                   className="co-btn-danger"
-                  onClick={() => handleAskDelete(settingsModal.organization_connection.id)}
+                  onClick={() => handleAskDelete(settingsModal)}
+                  disabled={savingConfig}
                 >
                   Verwijderen
                 </button>
@@ -292,23 +331,33 @@ export default function Connecties() {
       {/* Confirm verwijder modal */}
       {confirmDelete && (
         <>
-          <div className="co-modal-backdrop" onClick={() => setConfirmDelete(null)} />
-          <div className="co-modal co-modal--sm">
+          <div className="co-modal-backdrop" onClick={() => !deleting && setConfirmDelete(null)} />
+          <div className="co-modal co-modal--sm" role="dialog" aria-modal="true" aria-labelledby="co-delete-title">
             <div className="co-modal-header">
-              <h2 className="co-modal-title">Verbinding verwijderen</h2>
-              <button className="co-modal-close" onClick={() => setConfirmDelete(null)}>
+              <h2 className="co-modal-title" id="co-delete-title">Verbinding verwijderen</h2>
+              <button className="co-modal-close" onClick={() => setConfirmDelete(null)} disabled={deleting}>
                 <CloseIcon />
               </button>
             </div>
             <p className="co-modal-desc">
-              Weet je zeker dat je deze verbinding wilt verwijderen? Documenten die via deze connectie zijn geïmporteerd blijven bewaard.
+              Weet je zeker dat je de verbinding met <strong>{confirmDelete.name}</strong> wilt verwijderen? Documenten die via deze connectie zijn geïmporteerd blijven bewaard.
             </p>
             <div className="co-modal-footer">
-              <button type="button" className="co-btn-secondary" onClick={() => setConfirmDelete(null)}>
+              <button
+                type="button"
+                className="co-btn-secondary"
+                onClick={() => setConfirmDelete(null)}
+                disabled={deleting}
+              >
                 Annuleren
               </button>
-              <button type="button" className="co-btn-danger-solid" onClick={handleConfirmDelete}>
-                Verwijderen
+              <button
+                type="button"
+                className="co-btn-danger-solid"
+                onClick={handleConfirmDelete}
+                disabled={deleting}
+              >
+                {deleting ? 'Verwijderen…' : 'Verwijderen'}
               </button>
             </div>
           </div>

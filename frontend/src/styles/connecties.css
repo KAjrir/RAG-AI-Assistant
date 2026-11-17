@@ -455,15 +455,6 @@
   color: var(--muted);
 }
 
-.co-modal-error {
-  font-size: 13px;
-  color: #B91C1C;
-  background: #FEF2F2;
-  border: 1px solid rgba(185, 28, 28, 0.15);
-  border-radius: 8px;
-  padding: 10px 14px;
-}
-
 .co-modal-footer {
   display: flex;
   justify-content: flex-end;

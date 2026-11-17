@@ -344,16 +344,6 @@
 .db-field-error   { font-size: 12px; color: #B91C1C; margin-top: 2px; }
 .db-field-success { font-size: 12px; color: #27500A; margin-top: 2px; }
 
-/* ── Foutmelding ─────────────────────────── */
-.db-error {
-  font-size: 13px;
-  color: #B91C1C;
-  background: #FEF2F2;
-  border: 1px solid rgba(185, 28, 28, 0.15);
-  border-radius: 10px;
-  padding: 10px 14px;
-}
-
 /* ── Modal ───────────────────────────────── */
 .db-modal-backdrop {
   position: fixed;

@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router'
+import { useAuth } from '../context/AuthContext.jsx'
+import { useToast } from '../context/ToastContext.jsx'
+import { getErrorMessage, safeRedirect } from '../lib/utils.js'
 import '../styles/auth.css'
 
-import { useAuth } from '../context/AuthContext.jsx'
+const MIN_LENGTH = 8
 
 function getStrength(password) {
-  if (password.length === 0) return { score: 0, label: '' }
-  if (password.length < 6)   return { score: 1, label: 'Te kort' }
-  if (password.length < 10)  return { score: 2, label: 'Matig' }
+  if (password.length === 0)         return { score: 0, label: '' }
+  if (password.length < MIN_LENGTH)  return { score: 1, label: `Te kort (min. ${MIN_LENGTH} tekens)` }
+  if (password.length < 10)          return { score: 2, label: 'Matig' }
   const hasUpper   = /[A-Z]/.test(password)
   const hasNumber  = /[0-9]/.test(password)
   const hasSpecial = /[^A-Za-z0-9]/.test(password)
@@ -18,61 +21,64 @@ function getStrength(password) {
 
 const strengthClass = ['', 'weak', 'medium', 'strong']
 
-export default function Register() {
-  const [form, setForm]   = useState({ name: '', email: '', password: '' })
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [searchParams] = useSearchParams();
-  const redirect = searchParams.get('redirect');
-  const { user, register } = useAuth();
+export default function Registreren() {
+  const [form, setForm]                 = useState({ name: '', email: '', password: '' })
+  const [loading, setLoading]           = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [searchParams]                  = useSearchParams()
+  const redirect                        = searchParams.get('redirect')
+
+  const { user, register } = useAuth()
+  const toast              = useToast()
 
   const strength = getStrength(form.password)
 
   function handleChange(e) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
-    setError('')
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (strength.score < 2) {
-      setError('Kies een sterker wachtwoord.')
+      toast.error(`Kies een wachtwoord van minimaal ${MIN_LENGTH} tekens.`)
       return
     }
-    setLoading(true)
-    setError('')
 
+    setLoading(true)
     try {
-      await register(form.name, form.email, form.password)
+      await register(form.name.trim(), form.email.trim(), form.password)
+      toast.success('Account aangemaakt. Welkom bij Raggy!')
     } catch (err) {
-      setError(err?.response?.data?.error || "Registreren mislukt.")
-    } finally {
+      toast.error(getErrorMessage(err, 'Registreren mislukt.'))
       setLoading(false)
     }
   }
-  
-  if (user) return <Navigate to={redirect || '/onboarding'} replace />;
+
+  if (user) return <Navigate to={safeRedirect(redirect, '/onboarding')} replace />
+
+  const loginLink = redirect
+    ? `/inloggen?redirect=${encodeURIComponent(redirect)}`
+    : '/inloggen'
 
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-logo"><img src="/images/logo.png" alt="Logo" /></div>
+        <Link to="/" className="auth-logo"><img src="/images/logo.png" alt="Raggy" /></Link>
 
         <Link to="/" className="auth-back">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5M12 5l-7 7 7 7"/>
-            </svg>
-            Terug naar home
+          </svg>
+          Terug naar home
         </Link>
+
         <div className="auth-heading">
           <h1>Account <em>aanmaken</em></h1>
           <p>Start gratis. Geen creditcard vereist.</p>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
-          {error && <div className="auth-error">{error}</div>}
-
-        <div className="field">
+          <div className="field">
             <label htmlFor="name">Naam</label>
             <input
               id="name"
@@ -82,6 +88,7 @@ export default function Register() {
               placeholder="Jan de Vries"
               value={form.name}
               onChange={handleChange}
+              autoFocus
               required
             />
           </div>
@@ -102,16 +109,27 @@ export default function Register() {
 
           <div className="field">
             <label htmlFor="password">Wachtwoord</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="new-password"
-              placeholder="Minimaal 8 tekens"
-              value={form.password}
-              onChange={handleChange}
-              required
-            />
+            <div className="field-password-wrap">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                placeholder={`Minimaal ${MIN_LENGTH} tekens`}
+                value={form.password}
+                onChange={handleChange}
+                required
+              />
+              <button
+                type="button"
+                className="field-password-toggle"
+                onClick={() => setShowPassword(p => !p)}
+                tabIndex={-1}
+                aria-label={showPassword ? 'Wachtwoord verbergen' : 'Wachtwoord tonen'}
+              >
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            </div>
             {form.password.length > 0 && (
               <>
                 <div className="strength-bar">
@@ -128,26 +146,52 @@ export default function Register() {
           </div>
 
           <button type="submit" className="btn-submit" disabled={loading}>
-            {loading ? 'Bezig...' : 'Account aanmaken'}
+            {loading ? 'Bezig…' : 'Account aanmaken'}
           </button>
 
           <div className="auth-divider">of</div>
 
           <button type="button" className="btn-oauth">
-            <svg className="oauth-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-            </svg>
+            <GoogleIcon />
             Doorgaan met Google
           </button>
         </form>
 
         <div className="auth-footer">
-          Al een account? <Link to="/inloggen">Inloggen</Link>
+          Al een account? <Link to={loginLink}>Inloggen</Link>
         </div>
       </div>
     </div>
+  )
+}
+
+function EyeIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
+      <circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.3"/>
+    </svg>
+  )
+}
+
+function EyeOffIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M2 2l12 12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+      <path d="M6.5 6.6A2 2 0 0 0 9.4 9.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+      <path d="M4.2 4.3C2.8 5.2 1.7 6.7 1 8c1 2 3.5 5 7 5a7 7 0 0 0 3.7-1.1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+      <path d="M12.5 10.8C13.6 9.8 14.4 8.8 15 8c-1-2-3.5-5-7-5a7 7 0 0 0-2 .3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+function GoogleIcon() {
+  return (
+    <svg className="oauth-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+    </svg>
   )
 }

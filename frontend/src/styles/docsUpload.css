@@ -110,12 +110,6 @@
 }
 
 /* ── Bestand geselecteerd ──────────────── */
-.du-file-preview {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 18px;
-}
 
 .du-file-icon {
   width: 36px;
@@ -168,20 +162,6 @@
   border-color: rgba(185, 28, 28, 0.2);
 }
 
-/* ── Foutmelding ───────────────────────── */
-.du-failed {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 13px;
-  color: #B91C1C;
-  background: #FEF2F2;
-  border: 1px solid rgba(185, 28, 28, 0.15);
-  border-radius: 8px;
-  padding: 10px 14px;
-  margin-bottom: 16px;
-}
-
 /* ── Footer ────────────────────────────── */
 .du-footer {
   display: flex;
@@ -232,46 +212,6 @@
 .du-btn-secondary:hover { background: var(--surface2); }
 
 /* ── Voortgang ─────────────────────────── */
-.du-progress {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 60px 24px;
-  text-align: center;
-  gap: 12px;
-}
-
-.du-progress-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 4px;
-}
-
-.du-progress-icon--uploading,
-.du-progress-icon--processing {
-  background: var(--accent-light);
-  color: var(--accent);
-}
-
-.du-progress-icon--done {
-  background: #EDFAF3;
-  color: #0F7B45;
-}
-
-.du-progress-title {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.du-progress-sub {
-  font-size: 13px;
-  color: var(--muted);
-}
 
 @keyframes spin {
   to { transform: rotate(360deg); }
@@ -298,36 +238,4 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-}
-
-/* ── Meer toevoegen ────────────────────── */
-.du-add-more {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 14px;
-  background: none;
-  border: 1px dashed var(--border-dark);
-  border-radius: var(--radius);
-  font-family: var(--sans);
-  font-size: 13px;
-  color: var(--muted);
-  cursor: pointer;
-  margin-bottom: 16px;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-  overflow: hidden;
-}
-
-.du-add-more:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: var(--accent-light);
-}
-
-.du-add-more .du-input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
 }

@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useLocation, useNavigate, useParams, useOutletContext } from 'react-router';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
 import { useChat } from '../../context/ChatContext.jsx';
-import { useOutletContext } from 'react-router';
-import { api, BASE_URL } from '../../lib/api.js';
-import { random } from '../../lib/utils.js';
+import { useToast } from '../../context/ToastContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
+import { BASE_URL } from '../../lib/api.js';
+import { random, getErrorMessage } from '../../lib/utils.js';
 
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -17,51 +18,97 @@ import '../../styles/chatUI.css';
 import '../../styles/markdown.css';
 
 export default function ChatUI() {
-  const { slug, chatId }                            = useParams();
-  const { workspace }                               = useWorkspace();
-  const { activeChat, setChats, setActiveChat, setTitleLoading } = useChat();
-  const { onMenuClick }                             = useOutletContext();
-  const navigate                                    = useNavigate();
+  const { slug, chatId } = useParams();
+  const { workspace }    = useWorkspace();
+  const {
+    activeChat, setTitleLoading, refreshChats,
+    fetchMessages, createChat, sendMessage, streamMessage,
+    setPendingStream, takePendingStream, trackBlobUrl,
+  } = useChat();
+  const { user }        = useAuth();
+  const { onMenuClick } = useOutletContext() ?? {};
+  const navigate        = useNavigate();
+  const location        = useLocation();
+  const toast           = useToast();
 
-  const [scrolled, setScrolled]                     = useState(false);
-  const [messages, setMessages]                     = useState([]);
-  const [draft, setDraft]                           = useState('');
-  const [chatLoading, setChatLoading]               = useState(false);
-  const [isStreaming, setIsStreaming]               = useState(false);
+  const [scrolled, setScrolled]               = useState(false);
+  const [messages, setMessages]               = useState([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [draft, setDraft]                     = useState('');
+  const [submitSignal, setSubmitSignal]       = useState(0);   // +1 = composer verstuurt draft
+  const [chatLoading, setChatLoading]         = useState(false); // wacht op eerste byte
+  const [isStreaming, setIsStreaming]         = useState(false);
 
-  const assistantIdRef                              = useRef(null);
-  const pendingStreamRef                            = useRef(null);
-  const chatBodyRef                                 = useRef(null);
-  const chatComposerRef                             = useRef(null);
-  const bottomRef                                   = useRef(null);
-  const userMessageRef                              = useRef(null);
-  const assistantMessageRef                         = useRef(null);
+  const abortRef            = useRef(null);  // AbortController van de lopende stream
+  const chatIdRef           = useRef(chatId);
+  const handledStateKeyRef  = useRef(null);
+  const chatBodyRef         = useRef(null);
+  const chatComposerRef     = useRef(null);
+  const bottomRef           = useRef(null);
+  const userMessageRef      = useRef(null);
+  const assistantMessageRef = useRef(null);
 
+  const busy = chatLoading || isStreaming;
+
+  // ── Berichten laden bij chatwissel ───────
   useEffect(() => {
+    chatIdRef.current = chatId;
+
     if (!chatId) {
       setMessages([]);
+      setMessagesLoading(false);
       if (bottomRef.current) bottomRef.current.style.height = '0px';
       return;
     }
 
-    if (pendingStreamRef.current) {
-      const pending = pendingStreamRef.current;
-      pendingStreamRef.current = null;
+    // Net een nieuwe chat aangemaakt: niet ophalen, direct streamen
+    const pending = takePendingStream(chatId);
+    if (pending) {
+      setMessages(pending.messages);
+      setMessagesLoading(false);
+      setChatLoading(true);
       startStream(pending);
-      return;
+      return () => abortRef.current?.abort();
     }
 
-    api.get(`/workspaces/${slug}/chats/${chatId}`).then(res => {
-      setMessages(res.data);
+    let cancelled = false;
+    setMessagesLoading(true);
 
-      // const streamingMsg = res.data.find(m => m.status === 'streaming');
-      // if (streamingMsg) {
-      //   assistantIdRef.current = streamingMsg.id;
-      //   startStream({ chatId, message: null, assistantId: streamingMsg.id });
-      // }
-    });
+    fetchMessages(chatId)
+      .then(data => { if (!cancelled) setMessages(data); })
+      .catch(err => {
+        if (cancelled) return;
+        if (err?.response?.status === 404) {
+          toast.error('Dit gesprek bestaat niet (meer).');
+          navigate(`/w/${slug}`, { replace: true });
+        } else {
+          toast.error(getErrorMessage(err, 'Gesprek laden is mislukt.'));
+        }
+      })
+      .finally(() => { if (!cancelled) setMessagesLoading(false); });
+
+    // Wegnavigeren = lopende stream stoppen en oude response negeren
+    return () => {
+      cancelled = true;
+      abortRef.current?.abort();
+    };
   }, [slug, chatId]);
 
+  // ── Vraag meegegeven via navigatie (Ctrl+K, Overzicht, document) ──
+  // navigate(`/w/${slug}`, { state: { draft: '…', send: true } })
+  useEffect(() => {
+    const state = location.state;
+    if (!state?.draft || handledStateKeyRef.current === location.key) return;
+    handledStateKeyRef.current = location.key;
+
+    setDraft(state.draft);
+    if (state.send) setSubmitSignal(n => n + 1);
+
+    // State opruimen zodat terug/vernieuwen hem niet opnieuw verstuurt
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.key]);
+
+  // ── Spacer zodat het nieuwste bericht bovenaan kan staan ──
   function updateSpacer() {
     if (
       !bottomRef.current ||
@@ -97,290 +144,388 @@ export default function ChatUI() {
     else if (scrollTop === 0 && scrolled) setScrolled(false);
   };
 
-  // ── handleSubmit krijgt model + connections mee van ChatComposer ──
-  const handleSubmit = async (payload, formData) => {
-    if (chatLoading || isStreaming) return;
+  function patchMessage(id, fn) {
+    setMessages(prev => prev.map(m => (m.id === id ? fn(m) : m)));
+  }
 
+  // ── Versturen ────────────────────────────
+  const handleSubmit = async (payload, formData) => {
+    if (busy) return;
     setChatLoading(true);
 
     const tempAssistantId = random();
-    setMessages(prev => [
-      ...prev,
-      {
-        id: random(),
-        role: 'user',
-        content: [
-          // Afbeeldingen
-          ...payload.files
-            .filter(f => f.type.startsWith('image/'))
-            .map(f => ({
-              type: 'image',
-              originalname: f.name,
-              blob: URL.createObjectURL(f),
-              url: null
-            })),
-          // Bestanden
-          ...payload.files
-            .filter(f => !f.type.startsWith('image/'))
-            .map(f => ({
-              type: 'file',
-              originalname: f.name,
-            })),
-          // Tekst
-          ...(payload.message ? [{ type: 'text', text: payload.message }] : [])
-        ]
-      },
-      { 
-        id: tempAssistantId,
-        role: 'assistant',
-        content: [
-          { type: 'text', text: '' },
-          {
-            type: 'sources', sources: {},
+    const startedInChatId = chatId;
+
+    const imageItems = payload.files
+      .filter(f => f.type.startsWith('image/'))
+      .map(f => {
+        const blob = URL.createObjectURL(f);
+        trackBlobUrl(blob);
+        return { type: 'image', originalname: f.name, blob, url: null };
+      });
+
+    const fileItems = payload.files
+      .filter(f => !f.type.startsWith('image/'))
+      .map(f => ({ type: 'file', originalname: f.name }));
+
+    const userMessage = {
+      id: random(),
+      role: 'user',
+      content: [
+        ...imageItems,
+        ...fileItems,
+        ...(payload.message ? [{ type: 'text', text: payload.message }] : []),
+      ],
+    };
+
+    const assistantMessage = {
+      id: tempAssistantId,
+      role: 'assistant',
+      content: [
+        { type: 'text', text: '' },
+        { type: 'sources', sources: {} },
+      ],
+    };
+
+    const previousMessages = messages;
+    setMessages([...previousMessages, userMessage, assistantMessage]);
+
+    // Bestanden zitten al in formData; de stream krijgt alleen de rest
+    const streamPayload = {
+      message:     payload.message,
+      model:       payload.model,
+      connections: payload.connections,
+    };
+
+    try {
+      if (chatId) {
+        const { assistantMessageId } = await sendMessage(chatId, formData);
+
+        // Gebruiker is tijdens het versturen naar een andere chat gegaan
+        if (chatIdRef.current !== startedInChatId) {
+          setChatLoading(false);
+          return;
+        }
+
+        patchMessage(tempAssistantId, m => ({ ...m, id: assistantMessageId }));
+        startStream({ chatId, assistantId: assistantMessageId, payload: streamPayload });
+      } else {
+        const { chatId: newChatId, assistantMessageId } = await createChat(formData);
+
+        if (chatIdRef.current !== startedInChatId) {
+          setChatLoading(false);
+          return;
+        }
+
+        const finalMessages = [
+          ...previousMessages,
+          userMessage,
+          { ...assistantMessage, id: assistantMessageId },
+        ];
+        setMessages(finalMessages);
+        setPendingStream({
+          chatId: newChatId,
+          assistantId: assistantMessageId,
+          payload: streamPayload,
+          messages: finalMessages,
+        });
+        setTitleLoading(true);
+        navigate(`/w/${slug}/chat/${newChatId}`);
+      }
+    } catch (err) {
+      // Optimistische berichten terugdraaien en tekst teruggeven
+      setMessages(previousMessages);
+      setDraft(current => current || payload.message);
+      setChatLoading(false);
+      toast.error(getErrorMessage(err, 'Bericht versturen is mislukt.'));
+    }
+  };
+
+  // ── Streamen ─────────────────────────────
+  async function startStream({ chatId: streamChatId, assistantId, payload }) {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    try {
+      await streamMessage({
+        chatId: streamChatId,
+        assistantId,
+        payload,
+        signal: controller.signal,
+        onOpen: () => {
+          setChatLoading(false);
+          setIsStreaming(true);
+        },
+        onEvent: data => {
+          if (data.type === 'token') {
+            patchMessage(assistantId, m => ({
+              ...m,
+              content: m.content.map(c =>
+                c.type === 'text' ? { ...c, text: c.text + data.content } : c
+              ),
+            }));
+            requestAnimationFrame(updateSpacer);
           }
-        ]
-      }
-    ]);
 
-    if (chatId) {
-      const res = await api.post(`/workspaces/${slug}/chats/${chatId}/messages`, formData);
-      assistantIdRef.current = res.data.assistantMessageId;
+          if (data.type === 'sources') {
+            patchMessage(assistantId, m => ({
+              ...m,
+              content: m.content.map(c =>
+                c.type === 'sources' ? { ...c, sources: data.content } : c
+              ),
+            }));
+          }
 
-      setMessages(prev =>
-        prev.map(msg =>
-          msg.id === tempAssistantId
-            ? { ...msg, id: res.data.assistantMessageId }
-            : msg
-        )
-      );
+          if (data.type === 'error') {
+            patchMessage(assistantId, m => ({ ...m, status: 'error' }));
+            toast.error(data.content || 'Er ging iets mis bij het genereren van het antwoord.');
+          }
 
-      startStream({ chatId, assistantId: res.data.assistantMessageId, payload});
-    } else {
-      const res = await api.post(`/workspaces/${slug}/chats`, formData)
-      const { chatId: newChatId, assistantMessageId } = res.data;
-      assistantIdRef.current = assistantMessageId;
-
-      setMessages(prev =>
-        prev.map(msg =>
-          msg.id === tempAssistantId
-            ? { ...msg, id: assistantMessageId }
-            : msg
-        )
-      );
-      
-      pendingStreamRef.current = { chatId: newChatId, assistantId: assistantMessageId, payload };
-      
-      setTitleLoading(true);
-      navigate(`/w/${slug}/chat/${newChatId}`);
-    }
-  };
-
-  const startStream = async ({ chatId, assistantId, payload }) => {
-    const url = `${BASE_URL}/api/workspaces/${slug}/chats/messages`;
-
-    assistantIdRef.current = assistantId;
-
-    const response = await fetch(url, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chatId, assistantId, payload }),
-    });
-
-    const reader  = response.body.getReader();
-    const decoder = new TextDecoder();
-
-    if (!reader) return;
-
-    setChatLoading(false);
-    setIsStreaming(true);
-
-    let buffer = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-
-      const parts = buffer.split('\n');
-      buffer = parts.pop();
-
-      for (const part of parts) {
-        if (!part.trim()) continue;
-
-        const data = JSON.parse(part);
-
-        if (data.type === 'token') {
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.id === assistantIdRef.current
-                ? { ...msg, 
-                    content: msg.content.map(c => 
-                      c.type === "text"
-                        ? {...c, text: c.text + data.content}
-                        : c
-                    )
-                  }
-                : msg
-            )
-          );
-          updateSpacer();
-        }
-
-        if(data.type === "sources") {
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.id === assistantIdRef.current
-                ? { ...msg, 
-                    content: msg.content.map(c => 
-                      c.type === "sources"
-                        ? {...c, sources: data.content}
-                        : c
-                    )
-                  }
-                : msg
-            )
-          );
-        }
-
-        if (data.type === 'done') {
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.id === assistantIdRef.current
-                ? { ...msg, status: 'done' }
-                : msg
-            )
-          );
-
-          api.get(`/workspaces/${slug}/chats`).then(res => {
-            setChats(res.data);
-            const updated = res.data.find(c => c.id === chatId);
-            if (updated) setActiveChat(updated);
-          });
-
-          setTitleLoading(false);
-        }
+          if (data.type === 'done') {
+            patchMessage(assistantId, m => ({ ...m, status: 'done' }));
+            // Titel en volgorde in de sidebar bijwerken
+            refreshChats().catch(() => {});
+          }
+        },
+      });
+    } catch (err) {
+      if (err?.name === 'AbortError') return;
+      patchMessage(assistantId, m => ({ ...m, status: 'error' }));
+      toast.error(getErrorMessage(err, 'Antwoord ophalen is mislukt.'));
+    } finally {
+      // Alleen resetten als er intussen geen nieuwe stream is gestart
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        setChatLoading(false);
+        setIsStreaming(false);
+        setTitleLoading(false);
       }
     }
+  }
 
-    setTitleLoading(false);
-    setIsStreaming(false);
-  };
+  const lastIndex = messages.length - 1;
+  const isEmpty   = !messagesLoading && messages.length === 0;
+  const firstName = user?.name?.split(' ')[0] ?? '';
+  const logoUrl   = workspace?.logo_resource_url ? `${BASE_URL}${workspace.logo_resource_url}` : null;
 
   return (
     <main className="chatBody" ref={chatBodyRef} onScroll={handleScroll}>
 
       <div className={`chatHeader ${scrolled ? 'scrolled' : ''}`}>
         <div className="chatHeader-left">
-          <button className="chatHeader-hamburger" onClick={onMenuClick}>
-            <HamburgerIcon />
-          </button>
+          {onMenuClick && (
+            <button className="chatHeader-hamburger" onClick={onMenuClick} aria-label="Menu openen">
+              <HamburgerIcon />
+            </button>
+          )}
           <div className="chatHeader-identity">
-            {activeChat && <span className="chatHeader-title">{activeChat?.title || ''}</span>}
-            <span className="chatHeader-workspace" onClick={() => navigate(`/w/${slug}`)}>
-              {workspace?.name}
-            </span>
+            {activeChat?.title ? (
+              <span className="chatHeader-title">{activeChat.title}</span>
+            ) : chatId ? (
+              <span className="chatHeader-title chatHeader-title--muted">Gesprek</span>
+            ) : null}
           </div>
         </div>
-        <button className="chatHeader-share">
-          <ShareIcon />
-        </button>
+        {chatId && (
+          <button
+            className="chatHeader-new"
+            onClick={() => navigate(`/w/${slug}`)}
+            title="Nieuw gesprek"
+          >
+            <PlusIcon /> <span>Nieuw</span>
+          </button>
+        )}
       </div>
 
-      <div className="chatBodyWrapper">
+      <div className={`chatBodyWrapper ${isEmpty ? 'chatBodyWrapper--empty' : ''}`}>
         <div className="chatMessages">
-          {messages.length === 0 ? (
-            <div className="no-messages">Waar kan ik je mee helpen?</div>
-          ) : (
-            messages.map((m, index) => (
-              <div
-                key={m.id}
-                className={`row ${m.role === 'user' ? 'rowUser' : 'rowAssistant'}`}
-                ref={
-                  index === messages.length - 1 ? assistantMessageRef
-                  : index === messages.length - 2 ? userMessageRef
-                  : null
-                }
-              >
-                {m.role === 'user' && (
-                  <div className="bubble bubbleUser">
-                    {/* Bestanden en afbeeldingen */}
-                    {m.content.filter(c => c.type === 'image' || c.type === 'file').length > 0 && (
-                      <div className="bubbleUser-attachments">
-                        {m.content.filter(c => c.type === 'image' || c.type === 'file').map((item, i) => (
-                          item.type === 'image' ? (
-                            <div key={i} className="bubbleUser-image-wrap">
-                              <img
-                                src={item.url ? `${BASE_URL}${item.url}` : item.blob}
-                                alt={item.originalname ?? 'Afbeelding'}
-                                className="bubbleUser-image"
-                              />
-                            </div>
-                          ) : (
-                            <div key={i} className="bubbleUser-file">
-                              <FileIcon />
-                              <span className="bubbleUser-file-name">{item.originalname}</span>
-                            </div>
-                          )
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Tekst */}
-                    {m.content.find(c => c.type === 'text')?.text && (
-                      <p className="bubbleUser-text">
-                        {m.content.find(c => c.type === 'text').text}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {m.role === 'assistant' && (
-                  chatLoading && index === messages.length - 1 ? (
-                    <TypingDots />
-                  ) : (
-                    <div className="bubble bubbleAssistant">
-                      <div className="markdown">
-                        <ReactMarkdown
-                          rehypePlugins={[rehypeRaw, rehypeHighlight]}
-                          remarkPlugins={[remarkGfm]}
-                          components={{
-                            p: ({ children }) => (
-                              <p>{parseCitations(children, m.content.find(c => c.type === 'sources')?.sources)}</p>
-                            ),
-                            li: ({ children }) => (
-                              <li>{parseCitations(children, m.content.find(c => c.type === 'sources')?.sources)}</li>
-                            )
-                          }}
-                        >
-                          {m.content.find(c => c.type === 'text')?.text}
-                        </ReactMarkdown>
-                      </div>
-                    </div>
-                  )
-                )}
+          {messagesLoading ? null : isEmpty ? (
+            <div className="chat-empty">
+              <div className="chat-empty-logo">
+                {logoUrl ? <img src={logoUrl} alt="" /> : (workspace?.name?.[0]?.toUpperCase() ?? 'R')}
               </div>
-            ))
+              <h1 className="chat-empty-title">
+                {greeting()}{firstName ? `, ${firstName}` : ''}
+              </h1>
+              <p className="chat-empty-sub">
+                Wat wil je weten over <strong>{workspace?.name ?? 'je workspace'}</strong>?
+              </p>
+              <div className="chat-empty-suggestions">
+                {SUGGESTIONS.map(sug => (
+                  <button
+                    key={sug}
+                    type="button"
+                    className="chat-empty-suggestion"
+                    onClick={() => setDraft(sug)}
+                  >
+                    {sug}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            messages.map((m, index) => {
+              const text        = m.content?.find(c => c.type === 'text')?.text ?? '';
+              const sources     = m.content?.find(c => c.type === 'sources')?.sources;
+              const attachments = m.content?.filter(c => c.type === 'image' || c.type === 'file') ?? [];
+
+              // Puntjes tot het eerste token binnen is
+              const waiting =
+                m.role === 'assistant' &&
+                index === lastIndex &&
+                busy &&
+                !text &&
+                m.status !== 'error';
+
+              return (
+                <div
+                  key={m.id}
+                  className={`row ${m.role === 'user' ? 'rowUser' : 'rowAssistant'}`}
+                  ref={
+                    index === lastIndex ? assistantMessageRef
+                    : index === lastIndex - 1 ? userMessageRef
+                    : null
+                  }
+                >
+                  {m.role === 'user' && (
+                    <div className="bubble bubbleUser">
+                      {attachments.length > 0 && (
+                        <div className="bubbleUser-attachments">
+                          {attachments.map((item, i) => (
+                            item.type === 'image' ? (
+                              <div key={i} className="bubbleUser-image-wrap">
+                                <img
+                                  src={item.url ? `${BASE_URL}${item.url}` : item.blob}
+                                  alt={item.originalname ?? 'Afbeelding'}
+                                  className="bubbleUser-image"
+                                />
+                              </div>
+                            ) : (
+                              <div key={i} className="bubbleUser-file">
+                                <FileIcon />
+                                <span className="bubbleUser-file-name">{item.originalname}</span>
+                              </div>
+                            )
+                          ))}
+                        </div>
+                      )}
+                      {text && <p className="bubbleUser-text">{text}</p>}
+                    </div>
+                  )}
+
+                  {m.role === 'assistant' && (
+                    waiting ? (
+                      <TypingDots />
+                    ) : (
+                      <div className="bubble bubbleAssistant">
+                        {text && (
+                          <div className="markdown">
+                            <ReactMarkdown
+                              rehypePlugins={[rehypeRaw, rehypeHighlight]}
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                p:  ({ children }) => <p>{parseCitations(children, sources)}</p>,
+                                li: ({ children }) => <li>{parseCitations(children, sources)}</li>,
+                              }}
+                            >
+                              {text}
+                            </ReactMarkdown>
+                          </div>
+                        )}
+                        {m.status === 'error' && (
+                          <p className="bubbleAssistant-error">
+                            {text ? 'Het antwoord is onderbroken.' : 'Er ging iets mis. Probeer het opnieuw.'}
+                          </p>
+                        )}
+                        {!text && m.status !== 'error' && (
+                          <p className="bubbleAssistant-empty">Geen antwoord ontvangen.</p>
+                        )}
+                        {text && !(busy && index === lastIndex) && (
+                          <div className={`msg-actions ${index === lastIndex ? 'msg-actions--visible' : ''}`}>
+                            <CopyButton text={text} />
+                          </div>
+                        )}
+                      </div>
+                    )
+                  )}
+                </div>
+              );
+            })
           )}
           <div ref={bottomRef} />
         </div>
 
         {/* Composer */}
-        <div ref={chatComposerRef} style={{ position: 'sticky', bottom: 0 }}>
+        <div ref={chatComposerRef} className="chatComposerDock">
           <ChatComposer
             draft={draft}
             setDraft={setDraft}
             handleSubmit={handleSubmit}
+            busy={busy}
+            submitSignal={submitSignal}
+            focusKey={`${chatId ?? 'new'}-${location.key}`}
           />
+          {isEmpty && (
+            <p className="chat-disclaimer">
+              Raggy zoekt in de documenten en connecties van {workspace?.name ?? 'deze workspace'}. Controleer belangrijke antwoorden.
+            </p>
+          )}
         </div>
       </div>
     </main>
   );
 }
 
+const SUGGESTIONS = [
+  'Vat het nieuwste document samen',
+  'Welke afspraken staan er in onze contracten?',
+  'Zoek alles over facturatie',
+];
+
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 6)  return 'Goedenacht';
+  if (h < 12) return 'Goedemorgen';
+  if (h < 18) return 'Goedemiddag';
+  return 'Goedenavond';
+}
+
+function CopyButton({ text }) {
+  const toast               = useToast();
+  const [copied, setCopied] = useState(false);
+  const timerRef            = useRef(null);
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+
+  async function handleCopy() {
+    try {
+      // Bronverwijzingen [1] niet meekopiëren
+      await navigator.clipboard.writeText(text.replace(/\s?\[\d+\]/g, '').trim());
+      setCopied(true);
+      clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error('Kopiëren is mislukt.');
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      className="msg-action"
+      onClick={handleCopy}
+      title={copied ? 'Gekopieerd' : 'Kopiëren'}
+      aria-label={copied ? 'Gekopieerd' : 'Kopiëren'}
+    >
+      {copied ? <CheckSmallIcon /> : <CopyIcon />}
+    </button>
+  );
+}
+
 function TypingDots() {
   return (
-    <div className="typing-indicator">
+    <div className="typing-indicator" aria-label="Antwoord wordt gegenereerd">
       <span className="dot" />
       <span className="dot" />
       <span className="dot" />
@@ -398,11 +543,11 @@ function HamburgerIcon() {
   );
 }
 
-function ShareIcon() {
+function PlusIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path d="M10 1.5L12.5 4L10 6.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M12.5 4H5.5C3.8 4 2.5 5.3 2.5 7v3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <line x1="6" y1="1.5" x2="6" y2="10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+      <line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
     </svg>
   );
 }
@@ -416,64 +561,73 @@ function FileIcon() {
   );
 }
 
+function CopyIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <rect x="4.5" y="4.5" width="8" height="8" rx="1.8" stroke="currentColor" strokeWidth="1.2"/>
+      <path d="M9.5 4.5V3.3A1.8 1.8 0 0 0 7.7 1.5H3.3A1.8 1.8 0 0 0 1.5 3.3v4.4a1.8 1.8 0 0 0 1.8 1.8h1.2" stroke="currentColor" strokeWidth="1.2"/>
+    </svg>
+  );
+}
+
+function CheckSmallIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M2.5 7.5l3 3 6-7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
 function parseCitations(children, sources) {
   return React.Children.map(children, child => {
-    if (typeof child !== 'string') return child
-    
-    const parts = child.split(/(\[\d+\])/g)
+    if (typeof child !== 'string') return child;
+
+    const parts = child.split(/(\[\d+\])/g);
     return parts.map((part, i) => {
-      const match = part.match(/^\[(\d+)\]$/)
-      if (match) {
-        return <CitationBadge key={i} id={match[1]} sources={sources} />
-      }
-      return part
-    })
-  })
+      const match = part.match(/^\[(\d+)\]$/);
+      if (match) return <CitationBadge key={i} id={match[1]} sources={sources} />;
+      return part;
+    });
+  });
 }
 
 function CitationBadge({ id, sources }) {
-  const source = sources?.[id]
-  const badgeRef = useRef(null)
-  const tooltipRef = useRef(null)
+  const source     = sources?.[id];
+  const badgeRef   = useRef(null);
+  const tooltipRef = useRef(null);
 
   const handleMouseEnter = () => {
-    const badge = badgeRef.current
-    const tooltip = tooltipRef.current
-    if (!badge || !tooltip) return
+    const badge     = badgeRef.current;
+    const tooltip   = tooltipRef.current;
+    const container = badge?.closest('.chatMessages');
+    if (!badge || !tooltip || !container) return;
 
-    tooltip.style.display = 'flex'
+    tooltip.style.display = 'flex';
 
-    const badgeRect = badge.getBoundingClientRect()
-    const tooltipRect = tooltip.getBoundingClientRect()
-    const containerRect = badge.closest('.chatMessages').getBoundingClientRect()
+    const badgeRect     = badge.getBoundingClientRect();
+    const tooltipRect   = tooltip.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
 
-    // standaard: gecentreerd
-    let left = (badgeRect.width / 2) - (tooltipRect.width / 2)
+    let left = (badgeRect.width / 2) - (tooltipRect.width / 2);
 
-    // te ver naar links
     if (badgeRect.left + left < containerRect.left + 8) {
-      left = containerRect.left - badgeRect.left + 8
+      left = containerRect.left - badgeRect.left + 8;
     }
-
-    // te ver naar rechts
     if (badgeRect.left + left + tooltipRect.width > containerRect.right - 8) {
-      left = containerRect.right - badgeRect.left - tooltipRect.width - 8
+      left = containerRect.right - badgeRect.left - tooltipRect.width - 8;
     }
 
-    tooltip.style.left = `${left}px`
-    tooltip.style.transform = 'none'
-  }
+    tooltip.style.left      = `${left}px`;
+    tooltip.style.transform = 'none';
+  };
 
   const handleMouseLeave = () => {
-    const tooltip = tooltipRef.current
-    if (tooltip) tooltip.style.display = ''
-  }
+    if (tooltipRef.current) tooltipRef.current.style.display = '';
+  };
 
-  if (!source) return <span>[{id}]</span>
+  if (!source) return <span>[{id}]</span>;
 
-  const summary = source.metadata?.summary
-  const title = source.metadata?.title
-  const webUrl = source.metadata?.webUrl
+  const { summary, title, webUrl } = source.metadata ?? {};
 
   return (
     <span
@@ -483,26 +637,19 @@ function CitationBadge({ id, sources }) {
       onMouseLeave={handleMouseLeave}
     >
       <span className="citation-number">{id}</span>
-      <div className="citation-tooltip" ref={tooltipRef}>
-        <div className="citation-tooltip-header">
-          <div className="citation-tooltip-index">{id}</div>
+      <span className="citation-tooltip" ref={tooltipRef}>
+        <span className="citation-tooltip-header">
+          <span className="citation-tooltip-index">{id}</span>
           <span className="citation-tooltip-title">{title}</span>
-        </div>
-        <div className="citation-tooltip-divider"></div>
-        {summary && (
-          <span className="citation-tooltip-excerpt">{summary}</span>
-        )}
+        </span>
+        <span className="citation-tooltip-divider" />
+        {summary && <span className="citation-tooltip-excerpt">{summary}</span>}
         {webUrl && (
-          <a
-            href={webUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="citation-tooltip-link"
-          >
+          <a href={webUrl} target="_blank" rel="noreferrer" className="citation-tooltip-link">
             Bekijk artikel →
           </a>
         )}
-      </div>
+      </span>
     </span>
-  )
+  );
 }
