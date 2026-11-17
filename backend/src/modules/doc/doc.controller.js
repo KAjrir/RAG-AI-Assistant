@@ -42,7 +42,6 @@ router.post("/",
                     return res.status(413).json({ error: "Bestand is te groot"})
                 }
             } else if (err) {
-            // An unknown error occurred when uploading.
                 console.error(err)
                 return res.status(500).json({ error: "Internal Server Error"})
             }
@@ -51,7 +50,7 @@ router.post("/",
             const userId = req.userId
             const orgId = req.orgId
         
-            console.log(req.files)
+            // console.log(req.files)
             
             const files = []
             const duplicateFiles = []

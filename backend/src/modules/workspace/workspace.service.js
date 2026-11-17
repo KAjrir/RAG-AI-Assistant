@@ -127,6 +127,14 @@ export const deleteWorkspaceMember = async (memberId, orgId) => {
     `
 }
 
+export const activatePlan = async (orgId) => {
+	await db`
+		UPDATE organizations
+		SET plan = 'pro'
+		WHERE id = ${orgId}
+	`
+}
+
 export const checkOrgLogo = async (orgId) => {
     const orgLogo = await db`
         SELECT 

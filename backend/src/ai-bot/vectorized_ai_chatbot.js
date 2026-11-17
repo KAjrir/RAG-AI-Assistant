@@ -1,176 +1,293 @@
 import OpenAI from "openai";
-import db from '../database/db.js'
+import db from "../database/db.js";
 
-import { EXPERIMENTAL_SYSTEM_PROMPT3 } from "./prompts.js";
+import { SYSTEM_PROMPT } from "./prompts.js";
 import { openaiInputFormat3 } from "./refactorCode.js";
-
 
 const EMBED_MODEL = "text-embedding-3-small";
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 async function embed(text) {
-  const res = await client.embeddings.create({
-    model: EMBED_MODEL,
-    input: text,
-  });
-  return res.data[0].embedding;
+	const res = await client.embeddings.create({
+		model: EMBED_MODEL,
+		input: text,
+	});
+	return res.data[0].embedding;
 }
 
-async function call_function(name, args) {
-  if (name === "search_sdb") {
-    return await sdbGroepRetrieve(args.question, args.keywords)
-  }
+async function call_function(name, args, orgId) {
+	switch (name) {
+		case "search_sdb":
+			return await sdbGroepRetrieve(args.question, args.keywords);
+		case "search_documents":
+			return await retrieveDocuments(
+				args.question,
+				args.keywords ?? [],
+				orgId,
+			);
+	}
 }
 
-async function sdbGroepRetrieve(question, keywords) {
-  const embedding = await embed(question);
-  
-  const lowercaseKeywords = keywords.map(k => k.toLowerCase());
-  const likePatterns = keywords.map(k => `%${k}%`);
+async function sdbGroepRetrieve(question, keywords = []) {
+	const embedding = await embed(question);
 
-  const rows = await db`
+	const lowercaseKeywords = keywords.map((k) => k.toLowerCase());
+	const likePatterns = keywords.map((k) => `%${k}%`);
+
+	const rows = await db`
+		SELECT
+		content,
+		videos,
+		links,
+		images,
+		metadata,
+		1 - (embedding <=> ${JSON.stringify(embedding)}::vector) AS similarity,
+		CASE 
+			WHEN (
+			metadata->>'title' ILIKE ANY (${likePatterns})
+			OR metadata->>'category' ILIKE ANY (${likePatterns})
+			OR string_to_array(lower(metadata->>'tags'), ', ') && ${lowercaseKeywords}::text[]
+			) THEN 0.3
+			ELSE 0.0 
+		END AS text_boost
+		FROM sdb_groep_articles
+		WHERE 1 - (embedding <=> ${JSON.stringify(embedding)}::vector) > 0.42
+		ORDER BY (
+		1 - (embedding <=> ${JSON.stringify(embedding)}::vector) + 
+		CASE 
+			WHEN (
+			metadata->>'title' ILIKE ANY (${likePatterns})
+			OR metadata->>'category' ILIKE ANY (${likePatterns})
+			OR string_to_array(lower(metadata->>'tags'), ', ') && ${lowercaseKeywords}::text[]
+			) THEN 0.3 
+			ELSE 0.0 
+		END
+		) DESC
+		LIMIT 5;
+  `;
+
+	return rows;
+}
+
+async function retrieveDocuments(question, keywords = [], organizationId) {
+	const embedding = await embed(question);
+
+	const likePatterns = keywords.map((k) => `%${k.trim()}%`);
+
+	const rows = await db`
+    WITH matched_chunks AS (
+      SELECT
+        id,
+        document_id,
+        organization_id,
+        chunk_index,
+        content,
+        metadata,
+
+        1 - (
+          embedding <=>
+          ${JSON.stringify(embedding)}::vector
+        ) AS similarity,
+
+        CASE
+          WHEN (
+            metadata->>'documentTitle' ILIKE ANY (${likePatterns}::text[])
+            OR metadata->>'filename' ILIKE ANY (${likePatterns}::text[])
+          )
+          THEN 0.3
+          ELSE 0.0
+        END AS title_boost,
+
+        CASE
+          WHEN content ILIKE ANY (${likePatterns}::text[])
+          THEN 0.1
+          ELSE 0.0
+        END AS content_boost
+
+      FROM document_chunks
+
+      WHERE organization_id = ${organizationId}::uuid
+    )
+
     SELECT
+      id,
+      document_id,
+      chunk_index,
       content,
-      videos,
-      links,
-      images,
       metadata,
-      1 - (embedding <=> ${JSON.stringify(embedding)}::vector) AS similarity,
-      CASE 
-        WHEN (
-          metadata->>'title' ILIKE ANY (${likePatterns})
-          OR metadata->>'category' ILIKE ANY (${likePatterns})
-          OR string_to_array(lower(metadata->>'tags'), ', ') && ${lowercaseKeywords}::text[]
-        ) THEN 0.3
-        ELSE 0.0 
-      END AS text_boost
-    FROM sdb_groep_articles
-    WHERE 1 - (embedding <=> ${JSON.stringify(embedding)}::vector) > 0.42
-    ORDER BY (
-      1 - (embedding <=> ${JSON.stringify(embedding)}::vector) + 
-      CASE 
-        WHEN (
-          metadata->>'title' ILIKE ANY (${likePatterns})
-          OR metadata->>'category' ILIKE ANY (${likePatterns})
-          OR string_to_array(lower(metadata->>'tags'), ', ') && ${lowercaseKeywords}::text[]
-        ) THEN 0.3 
-        ELSE 0.0 
-      END
-    ) DESC
+      similarity,
+      title_boost,
+      content_boost,
+
+      (
+        similarity +
+        title_boost +
+        content_boost
+      ) AS score
+
+    FROM matched_chunks
+
+    WHERE
+      similarity > 0.42
+      OR title_boost > 0
+
+    ORDER BY score DESC
+
     LIMIT 5;
   `;
 
-  return rows;
+	return rows.map((row) => ({
+		documentId: row.document_id,
+		chunkIndex: row.chunk_index,
+
+		filename: row.metadata?.filename,
+		documentTitle: row.metadata?.documentTitle,
+		pageNumber: row.metadata?.pageNumber,
+		totalPages: row.metadata?.totalPages,
+
+		content: row.content,
+
+		similarity: Number(row.similarity),
+		score: Number(row.score),
+	}));
 }
 
 export async function promptAI(userInput, history) {
-  const chatModel = userInput.model;
-  const tools = userInput.tools
+	const chatModel = userInput.model;
+	const tools = userInput.tools;
+	const orgId = userInput.orgId;
 
-  const historyMessages = history.map( ({ role, content }) => ({ role, content })).slice(0, history.length - 1);
-  const formattedInput = await openaiInputFormat3(historyMessages)
-  // console.dir(formattedInput, {depth: null})
+	const formattedInput = await openaiInputFormat3(history);
+	
 
-  const input = [
-    { role: "system", content: EXPERIMENTAL_SYSTEM_PROMPT3 },
-    ...formattedInput
-  ];
+	const input = [
+		{ role: "system", content: SYSTEM_PROMPT },
+		...formattedInput,
+	];
 
-  // console.log("INPUT: ")
-  // console.dir(input, {depth: null})
+	// console.log("INPUT: ")
+	// console.dir(input, {depth: null})
 
-  async function* trackAndStream() {
-    while(true) {
-      const stream = await client.responses.create({
-        model: chatModel,
-        stream: true,
-        input,
-        tools
-      });
-      
-      let response = {};
+	async function* trackAndStream() {
+		while (true) {
+			const stream = await client.responses.create({
+				model: chatModel,
+				stream: true,
+				input,
+				tools,
+			});
 
-      for await (const event of stream) {
-        // console.dir(event, { depth: null })
-        if(["response.output_item.added", "response.output_item.done", "response.created", "response.completed"].includes(event.type)) {
-          console.dir(event, { depth: null })
-        }
-  
-        if(event.type === "response.output_item.added" && event.item.type === "function_call") {
-          response[event.output_index] = event.item
-        }
-  
-        if(event.type === "response.output_text.delta") {
-            yield {
-              type: "token",
-              content: event.delta
-            };
-        }
-  
-        if (event.type === "response.function_call_arguments.delta") {
-          const index = event.output_index
-          if(response[index]) {
-            response[index].arguments += event.delta
-          }
-        }
-  
-        if(event.type === "response.completed") {
-          const toolCalls = Object.values(response).filter( value => value.type === "function_call")
-          // console.log("TOOLCALLS: ", toolCalls)
-          
-          if(toolCalls.length === 0) {
-            return
-          }
-          console.log("WHILE LOOP ZAL NOG DOORGAAN")
+			let response = {};
 
-          input.push(...event.response.output)
-          
-          for (const tc of toolCalls) {
-            const name = tc.name
-            const args = JSON.parse(tc.arguments)
-            const result = await call_function(name, args)
+			for await (const event of stream) {
+				// console.dir(event, { depth: null });
+				if (
+					[
+						"response.output_item.added",
+						"response.output_item.done",
+						"response.created",
+						"response.completed",
+					].includes(event.type)
+				) {
+					// console.dir(event, { depth: null });
+				}
 
-            // Nummers toevoegen aan chunks
-            const sourceMap = {};
-            result.forEach((row, index) => {
-              sourceMap[index + 1] = row;
-            });
+				if (event.type === "response.output_text.delta") {
+					yield {
+						type: "token",
+						content: event.delta,
+					};
+				}
 
-            yield {
-              type: "sources",
-              content: sourceMap
-            }
+				if (
+					event.type === "response.output_item.done" &&
+					event.item.type === "function_call"
+				) {
+					response[event.output_index] = event.item;
+					yield {
+						type: "function_call",
+						item: event.item,
+					};
+				}
 
-            // OpenAI krijgt genummerde tekst
-            const formattedForLLM = Object.entries(sourceMap)
-              .map(([id, row]) => `[${id}] ${row.metadata.title}\n${row.content}`)
-              .join("\n\n");
-            
-            // console.log("formattedForLLM: ")
-            // console.dir(formattedForLLM, { depth: null })
+				if (event.type === "response.completed") {
+					const toolCalls = Object.values(response).filter(
+						(value) => value.type === "function_call",
+					);
+					// console.log("TOOLCALLS: ", toolCalls)
 
-            input.push({
-              type: "function_call_output",
-              call_id: tc.call_id,
-              output: formattedForLLM
-            })
-          }
+					if (toolCalls.length === 0) {
+						return;
+					}
 
-          // console.dir(input, { depth: null })
-        }
-      }
-    }
-  }
+					console.log("WHILE LOOP ZAL NOG DOORGAAN");
 
-  return trackAndStream()
+					input.push(...event.response.output);
+
+					for (const tc of toolCalls) {
+						const name = tc.name;
+						const args = JSON.parse(tc.arguments);
+						const result = await call_function(name, args, orgId);
+
+						const output = [
+							{
+								type: "input_text",
+								text: JSON.stringify(result, null, 2)
+							}
+						]
+
+						input.push({
+							type: "function_call_output",
+							call_id: tc.call_id,
+							output: output,
+						});
+
+						yield {
+							type: "function_call_output",
+							item: {
+								type: "function_call_output",
+								call_id: tc.call_id,
+								output: output,
+							},
+						};
+
+						// // Nummers toevoegen aan chunks
+						// const sourceMap = {};
+						// result.forEach((row, index) => {
+						// 	sourceMap[index + 1] = row;
+						// });
+
+						// yield {
+						// 	type: "sources",
+						// 	content: sourceMap,
+						// };
+
+						// // OpenAI krijgt genummerde tekst
+						// const formattedForLLM = Object.entries(sourceMap)
+						// 	.map(
+						// 		([id, row]) =>
+						// 			`[${id}] ${row.metadata.title}\n${row.content}`,
+						// 	)
+						// 	.join("\n\n");
+
+						// // console.log("formattedForLLM: ")
+						// // console.dir(formattedForLLM, { depth: null })
+					}
+
+					// console.dir(input, { depth: null })
+				}
+			}
+		}
+	}
+
+	return trackAndStream();
 }
 
-
 async function generalRetrieve(question, orgId) {
-  const embedding = await embed(question);
+	const embedding = await embed(question);
 
-  const rows = await db`
+	const rows = await db`
     SELECT content, metadata,
            1 - (embedding <=> ${JSON.stringify(embedding)}::vector) AS similarity
     FROM document_chunks
@@ -179,39 +296,41 @@ async function generalRetrieve(question, orgId) {
     LIMIT 3
   `;
 
-  return rows;
+	return rows;
 }
 
 async function generalRagLookup() {
-  const docs = await retrieve(question, orgId);
-  // console.log(docs)
-  
-  const context = docs.map((d) => d.content).join("\n\n");
+	const docs = await retrieve(question, orgId);
+	// console.log(docs)
 
-  const allVideos = docs.flatMap((d) => d.videos ?? []);
-  const allLinks = docs.flatMap((d) => d.links ?? []);
-  const allImages = docs.flatMap((d) => d.images ?? []);
+	const context = docs.map((d) => d.content).join("\n\n");
 
-  const videoText =
-    allVideos.length > 0
-      ? allVideos.map((v) => `- ${v}`).join("\n")
-      : "Geen videos beschikbaar";
+	const allVideos = docs.flatMap((d) => d.videos ?? []);
+	const allLinks = docs.flatMap((d) => d.links ?? []);
+	const allImages = docs.flatMap((d) => d.images ?? []);
 
-  const linkText =
-    allLinks.length > 0
-      ? allLinks.map((l) => `- ${l}`).join("\n")
-      : "Geen links beschikbaar";
+	const videoText =
+		allVideos.length > 0
+			? allVideos.map((v) => `- ${v}`).join("\n")
+			: "Geen videos beschikbaar";
 
-  const imageText =
-    allImages.length > 0
-      ? allImages.map((i) => `- ${i.url}`).join("\n")
-      : "Geen fotos beschikbaar";
+	const linkText =
+		allLinks.length > 0
+			? allLinks.map((l) => `- ${l}`).join("\n")
+			: "Geen links beschikbaar";
 
-  // 2. Messages opbouwen
-  // Laatste 2 eraf want die komen van de database. Dit is om de juiste content te sturen naar de llm provider
-  const historyMessages = history.map( ({ role, content }) => ({ role, content })).slice(0, history.length - 2);
+	const imageText =
+		allImages.length > 0
+			? allImages.map((i) => `- ${i.url}`).join("\n")
+			: "Geen fotos beschikbaar";
 
-  const userContent = `
+	// 2. Messages opbouwen
+	// Laatste 2 eraf want die komen van de database. Dit is om de juiste content te sturen naar de llm provider
+	const historyMessages = history
+		.map(({ role, content }) => ({ role, content }))
+		.slice(0, history.length - 2);
+
+	const userContent = `
   Knowledge Base Context:
   ${context}
 
@@ -228,11 +347,10 @@ async function generalRagLookup() {
 
   Follow the RESPONSE FORMAT strictly and render media properly.`;
 
-  const messages = [
-    { role: "system", content: EXPERIMENTAL_SYSTEM_PROMPT },
-    ...historyMessages,
-    { role: "user", content: userContent },
-  ];
-  // console.log(messages.slice(messages.length - 5))
-
+	const messages = [
+		{ role: "system", content: EXPERIMENTAL_SYSTEM_PROMPT },
+		...historyMessages,
+		{ role: "user", content: userContent },
+	];
+	// console.log(messages.slice(messages.length - 5))
 }

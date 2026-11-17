@@ -1,21 +1,21 @@
-import db from "../../database/db.js"
-import OpenAI from "openai"
+import db from "../../database/db.js";
+import OpenAI from "openai";
 
 const openai = new OpenAI();
 
 export const getChatId = async (chatId, userId, orgId) => {
-    const chat = await db`
+	const chat = await db`
         SELECT id, title
         FROM chats
         WHERE id = ${chatId}
         AND user_id = ${userId}
         AND organization_id = ${orgId}
-    `
-    return chat
-}
+    `;
+	return chat;
+};
 
 export const getOwnChatsFromOrg = async (userId, orgId) => {
-    const chats = await db`
+	const chats = await db`
         SELECT
             id,
             title
@@ -23,65 +23,147 @@ export const getOwnChatsFromOrg = async (userId, orgId) => {
         WHERE organization_id = ${orgId} 
             AND user_id = ${userId}
         ORDER BY updated_at DESC
-    `
-    return chats
-}
+    `;
+	return chats;
+};
 
-
-export const getOwnChatMessages = async (orgId, userId, chatId) => {
-    const messages = await db`
-        SELECT 
-            m.id,
-            m.role,
-            m.content,
-            m.status
-        FROM messages m
+export const getChatHistory = async (orgId, userId, chatId) => {
+	const rows = await db`
+		SELECT
+			m.type,
+			m.role,
+			m.content,
+			m.call_id,
+			m.status,
+			m.tool_name
+		FROM messages m
         JOIN chats c ON c.id = m.chat_id
-        WHERE m.chat_id        = ${chatId}
-            AND   c.user_id        = ${userId}
-            AND   c.organization_id = ${orgId}
-        ORDER BY m.created_at ASC
-    `
-    // console.log("MESSAGES: ")
-    // console.dir(messages, { depth:null })
-    return messages
-}
+		WHERE m.chat_id        = ${chatId}
+			AND   c.user_id        = ${userId}
+			AND   c.organization_id = ${orgId}
+		ORDER BY m.sequence ASC
+  	`;
+
+	return rows.map((row) => {
+		switch (row.type) {
+			case "message":
+				return {
+					role: row.role,
+					content: row.content,
+				};
+
+			case "function_call":
+				return {
+					type: "function_call",
+					call_id: row.call_id,
+					name: row.tool_name,
+					arguments: row.content.arguments
+				};
+
+			case "function_call_output":
+				return {
+					type: "function_call_output",
+					call_id: row.call_id,
+					output: row.content.output
+				};
+
+			default:
+				throw new Error(`Unsupported history item: ${row.type}`);
+		}
+	});
+};
 
 export const saveMessage = async (role, content, chatId, status = null) => {
-    const message = await db`
-        INSERT INTO messages (chat_id, role, content, status)
-        VALUES (${chatId}, ${role}, ${JSON.stringify(content)}::jsonb, ${status})
-        RETURNING id, role, content, status
-    `
+	const message = await db`
+		INSERT INTO messages (
+			chat_id,
+			type,
+			role,
+			content,
+			status
+		)
+		VALUES (
+			${chatId},
+			'message',
+			${role},
+			${JSON.stringify(content)}::jsonb,
+			${status}
+		)
+		RETURNING id, type, role, content, status, sequence
+	`;
 
-    return message[0]
-}
+	return message[0];
+};
 
-export const updateAssistantMessage = async (assistantMessageId, assistantContent, status) => {
-    const assistantMessage = await db`
-        UPDATE messages
-        SET status = ${status}, content = ${JSON.stringify(assistantContent)}::jsonb
-        WHERE id = ${assistantMessageId}
-        RETURNING id, role, content, status
-    `
+export const updateAssistantMessage = async (
+	assistantMessageId,
+	assistantContent,
+	status,
+) => {
+	const assistantMessage = await db`
+		UPDATE messages
+		SET
+			status = ${status},
+			content = ${JSON.stringify(assistantContent)}::jsonb
+		WHERE id = ${assistantMessageId}
+			AND role = 'assistant'
+			AND type = 'message'
+		RETURNING id, type, role, content, status, sequence
+	`;
 
-    return assistantMessage[0]
-}
+	return assistantMessage[0] ?? null;
+};
+
+export const saveToolMessage = async (chatId, item) => {
+	if (!["function_call", "function_call_output"].includes(item.type)) {
+		throw new Error(`Invalid tool message type: ${item.type}`);
+	}
+
+	const isFunctionCall = item.type === "function_call";
+
+	// Bewaar de volledige function_call.
+	// Bij function_call_output alleen de output-array.
+	// const content = isFunctionCall ? item : item.output;
+	const content = item;
+	console.log("REGEL 134 CHATSERVICE: ", item)
+
+	const rows = await db`
+    	INSERT INTO messages (
+			chat_id,
+			type,
+			role,
+			call_id,
+			tool_name,
+			content
+		)
+		VALUES (
+			${chatId},
+			${item.type},
+			${null},
+			${item.call_id},
+			${isFunctionCall ? item.name : null},
+			${JSON.stringify(content)}::jsonb
+		)
+		RETURNING id
+	`;
+
+	return rows[0];
+};
 
 export const createChat = async (orgId, userId) => {
-    const chatId = await db`
+	const chatId = await db`
         INSERT INTO chats (organization_id, user_id)
         VALUES (${orgId}, ${userId})
         RETURNING id
-    `
-    return chatId[0]
-}
+    `;
+	return chatId[0];
+};
 
 export const generateChatTitle = async (userContent, chatId) => {
-    const response = await openai.responses.create({
-        model: "gpt-4o-mini",
-        max_output_tokens: 16,
-        instructions: `
+	const response = await openai.responses.create({
+		model: "gpt-4o-mini",
+		max_output_tokens: 16,
+		instructions: `
         You generate short chat titles.
 
         Rules:
@@ -95,40 +177,40 @@ export const generateChatTitle = async (userContent, chatId) => {
 
         Output only the title, nothing else.
         `,
-        input: userContent.slice(0, 300)
-    });
+		input: userContent.slice(0, 300),
+	});
 
-    await db`
+	await db`
         UPDATE chats
         SET title = ${response.output_text}
         WHERE id = ${chatId}
-    `
-}
+    `;
+};
 
 export const deleteChat = async (chatId) => {
-    await db`
+	await db`
         DELETE FROM chats
         WHERE id = ${chatId}
-    `
-}
+    `;
+};
 
 export const updateChatTitle = async (chatId, title) => {
-    const newTitle = await db`
+	const newTitle = await db`
         UPDATE chats
         SET title = ${title}
         WHERE id = ${chatId}
         RETURNING title
-    `
-    return newTitle[0]
-}
+    `;
+	return newTitle[0];
+};
 
 export const getToolsForChat = async (orgId, requestedConnectionIds) => {
-    // 1. Check of org deze connections heeft enabled
-    // 2. Haal config op (api_key etc voor api_key type)
-    // 3. Haal connection_tools op met parameters
-    // Alles in 1 query!
-  
-    const tools = await db`
+	// 1. Check of org deze connections heeft enabled
+	// 2. Haal config op (api_key etc voor api_key type)
+	// 3. Haal connection_tools op met parameters
+	// Alles in 1 query!
+
+	const tools = await db`
         SELECT 
             c.id as connection_id,
             c.key as connection_key,
@@ -147,7 +229,7 @@ export const getToolsForChat = async (orgId, requestedConnectionIds) => {
         JOIN connection_tools ct 
             ON c.id = ct.connection_id
         WHERE c.id = ANY(${requestedConnectionIds})             -- ← Alleen requested connections
-    `
-    
-    return tools
-}
+    `;
+
+	return tools;
+};

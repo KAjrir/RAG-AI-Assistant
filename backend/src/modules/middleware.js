@@ -38,7 +38,8 @@ export async function requireWorkspace(req, res, next) {
 
   req.orgId = membership.organization_id
   req.role  = membership.role
-  req.plan = PLANS[membership.organization_plan]
+  req.plan = membership.organization_plan
+  req.planConfig = PLANS[membership.organization_plan]
   next()
 }
 
@@ -79,9 +80,7 @@ export function requireOwner(req, res, next) {
 }
 
 export function requireActiveSubscription(req, res, next) {
-  if(!req.plan) return next();
-  
-  if (!['paid', 'active'].includes(req.plan)) {
+  if (!['paid', 'active', 'pro'].includes(req.plan)) {
     return res.status(403).json({ 
       error: 'Abonnement vereist',
       action: 'upgrade_plan'
