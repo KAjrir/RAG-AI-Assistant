@@ -63,7 +63,7 @@ export default function Registreren() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <Link to="/" className="auth-logo"><img src="/images/logo.png" alt="Raggy" /></Link>
+        <Link to="/" className="auth-logo"><img src="/images/logo.svg" alt="Raggy" /></Link>
 
         <Link to="/" className="auth-back">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

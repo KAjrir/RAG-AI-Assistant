@@ -94,7 +94,7 @@ export default function Onboarding() {
   return (
     <div className="auth-bg">
       <div className="auth-card onboarding-card">
-        <Link to="/" className="auth-logo"><img alt="Raggy" src="/images/logo.png" /></Link>
+        <Link to="/" className="auth-logo"><img alt="Raggy" src="/images/logo.svg" /></Link>
 
         {/* ── Keuze ── */}
         {step === 'choose' && (

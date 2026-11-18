@@ -1,10 +1,15 @@
-import { useState } from 'react';
-import { useParams } from 'react-router';
+import { useEffect, useState } from 'react';
+import { useParams, useSearchParams } from 'react-router';
 import { useWorkspace } from '../../context/WorkspaceContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { getErrorMessage } from '../../lib/utils.js';
 import IntegrationIcon from '../../components/icons/IntegrationIcons.jsx';
+import DriveFilesModal from '../../components/connections/DriveFilesModal.jsx';
+import ConnectionDetailsModal from '../../components/connections/ConnectionDetailsModal.jsx';
 import '../../styles/connecties.css';
+
+// Connecties waarbij de klant zelf bestanden kiest
+const FILE_PICKER_KEYS = ['google_drive'];
 
 export default function Connecties() {
   const { slug } = useParams();
@@ -28,6 +33,37 @@ export default function Connecties() {
   const [confirmDelete, setConfirmDelete] = useState(null); // { orgConnectionId, name }
   const [deleting, setDeleting]           = useState(false);
   const [toggling, setToggling]           = useState(null);
+  const [driveModal, setDriveModal]       = useState(null); // connection
+  const [detailsId, setDetailsId]         = useState(null); // connection.id
+  const [searchParams, setSearchParams]   = useSearchParams();
+
+  // Terug van de provider na het koppelen: ?connected=<key>&status=gekoppeld|mislukt|geannuleerd
+  useEffect(() => {
+    const key    = searchParams.get('connected');
+    const status = searchParams.get('status');
+    if (!key || loading) return;
+
+    const connection = connections.find(c => c.key === key);
+    const name       = connection?.name ?? 'De connectie';
+
+    if (status === 'gekoppeld') {
+      if (FILE_PICKER_KEYS.includes(key) && connection) {
+        toast.success(`${name} is gekoppeld. Kies nu wat Raggy mag gebruiken.`);
+        setDriveModal(connection);
+      } else {
+        toast.success(`${name} is gekoppeld.`);
+      }
+    } else if (status === 'mislukt') {
+      toast.error(`${name} koppelen is mislukt. Probeer het opnieuw.`);
+    }
+
+    searchParams.delete('connected');
+    searchParams.delete('status');
+    setSearchParams(searchParams, { replace: true });
+  }, [searchParams, loading]);
+
+  // Altijd de actuele versie uit de context, zodat status en knoppen meeveranderen
+  const detailsConnection = connections.find(c => c.id === detailsId) ?? null;
 
   // ── Verbinden ────────────────────────────
 
@@ -162,27 +198,44 @@ export default function Connecties() {
 
             return (
               <li key={connection.id} className={`co-item${comingSoon ? ' co-item--coming-soon' : ''}`}>
-                <div className="co-item-icon">
-                  <IntegrationIcon name={connection.key} />
-                </div>
-
-                <div className="co-item-info">
-                  <div className="co-item-name-row">
-                    <span className="co-item-name">{connection.name}</span>
-                    {comingSoon && <span className="co-badge co-badge--soon">Binnenkort</span>}
-                    {isConnected && (
-                      <span className={`co-badge ${isEnabled ? 'co-badge--active' : 'co-badge--disabled'}`}>
-                        <span className="co-badge-dot" />
-                        {isEnabled ? 'Actief' : 'Uitgeschakeld'}
-                      </span>
-                    )}
+                <button
+                  type="button"
+                  className="co-item-main"
+                  onClick={() => setDetailsId(connection.id)}
+                  aria-label={`Meer over ${connection.name}`}
+                >
+                  <div className="co-item-icon">
+                    <IntegrationIcon name={connection.key} />
                   </div>
-                  <span className="co-item-desc">{connection.description}</span>
-                </div>
+
+                  <div className="co-item-info">
+                    <div className="co-item-name-row">
+                      <span className="co-item-name">{connection.name}</span>
+                      {comingSoon && <span className="co-badge co-badge--soon">Binnenkort</span>}
+                      {isConnected && (
+                        <span className={`co-badge ${isEnabled ? 'co-badge--active' : 'co-badge--disabled'}`}>
+                          <span className="co-badge-dot" />
+                          {isEnabled ? 'Actief' : 'Uitgeschakeld'}
+                        </span>
+                      )}
+                    </div>
+                    <span className="co-item-desc">{connection.description}</span>
+                  </div>
+                </button>
 
                 <div className="co-item-actions">
                   {isConnected ? (
                     <>
+                      {FILE_PICKER_KEYS.includes(connection.key) && (
+                        <button
+                          className="co-btn-files"
+                          onClick={() => setDriveModal(connection)}
+                          title="Kies welke bestanden Raggy mag gebruiken"
+                        >
+                          <FolderIcon /> Bestanden
+                        </button>
+                      )}
+
                       {can('connections', 'toggle') && (
                         <label className="co-toggle" title={isEnabled ? 'Uitschakelen' : 'Inschakelen'}>
                           <input
@@ -235,6 +288,38 @@ export default function Connecties() {
             );
           })}
         </ul>
+      )}
+
+      {/* Wat kan deze connectie */}
+      {detailsConnection && (
+        <ConnectionDetailsModal
+          connection={detailsConnection}
+          canConnect={can('connections', 'connect')}
+          canToggle={can('connections', 'toggle')}
+          canDelete={can('connections', 'delete')}
+          connecting={connecting === detailsConnection.id}
+          toggling={toggling === detailsConnection.id}
+          hasFilePicker={FILE_PICKER_KEYS.includes(detailsConnection.key)}
+          onConnect={() => {
+            if (detailsConnection.auth_type === 'api_key') setDetailsId(null);
+            handleConnect(detailsConnection);
+          }}
+          onToggle={() => handleToggle(detailsConnection)}
+          onOpenFiles={() => {
+            setDetailsId(null);
+            setDriveModal(detailsConnection);
+          }}
+          onDelete={() => {
+            setDetailsId(null);
+            handleAskDelete(detailsConnection);
+          }}
+          onClose={() => setDetailsId(null)}
+        />
+      )}
+
+      {/* Google Drive: bestanden kiezen */}
+      {driveModal && (
+        <DriveFilesModal connection={driveModal} onClose={() => setDriveModal(null)} />
       )}
 
       {/* Connect modal */}
@@ -364,6 +449,14 @@ export default function Connecties() {
         </>
       )}
     </div>
+  );
+}
+
+function FolderIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+    </svg>
   );
 }
 

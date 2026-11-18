@@ -6,8 +6,9 @@ import '../../styles/chatComposer.css';
 
 // key = wat de backend krijgt, label = wat de gebruiker ziet
 const MODELS = [
-  { key: 'gpt-4o-mini', label: 'GPT-4o mini' },
-  { key: 'gpt-4o',      label: 'GPT-4o' },
+	{ key: 'gpt-4o',      label: 'GPT-4o' },
+	{ key: 'gpt-4o-mini', label: 'GPT-4o mini' },
+	{ key: 'gpt-6-luna', label: 'GPT-6' },
   // Toekomst:
   // { key: 'grok-2',   label: 'Grok 2' },
 ];

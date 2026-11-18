@@ -152,7 +152,7 @@ function AuthShell({ children }) {
   return (
     <div className="auth-bg">
       <div className="auth-card">
-        <Link to="/" className="auth-logo"><img src="/images/logo.png" alt="Raggy" /></Link>
+        <Link to="/" className="auth-logo"><img src="/images/logo.svg" alt="Raggy" /></Link>
         {children}
       </div>
     </div>

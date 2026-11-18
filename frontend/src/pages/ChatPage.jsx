@@ -162,7 +162,7 @@ export default function ChatPage() {
         <div className="cpl-header">
           {sidebarOpen && (
             <span className="cpl-logo" onClick={() => navigate('/dashboard')}>
-              <img alt="Raggy" src="/images/logo.png" />
+              <img alt="Raggy" src="/images/logo.svg" />
             </span>
           )}
           <button

@@ -87,7 +87,7 @@ export default function Invitation() {
   return (
     <div className="invitation-page">
       <div className="invitation-card">
-        <span className="invitation-logo"><img alt="Raggy" src="/images/logo.png" /></span>
+        <span className="invitation-logo"><img alt="Raggy" src="/images/logo.svg" /></span>
 
         {/* Laden */}
         {status === 'loading' && (

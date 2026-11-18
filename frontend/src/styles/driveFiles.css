@@ -1,0 +1,265 @@
+/* driveFiles.css: modal "Google Drive – bestanden kiezen"
+   Bouwt voort op .co-modal / .co-modal-backdrop uit connecties.css */
+
+.co-modal.gd-modal {
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(720px, calc(100svh - 32px));
+  gap: 16px;
+}
+
+/* ── Header ────────────────────────────── */
+.gd-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.gd-header-icon {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.gd-header-icon svg,
+.gd-header-icon img { width: 24px; height: 24px; }
+
+.gd-header-text { flex: 1; min-width: 0; }
+
+.gd-header-sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* ── Kies-knop ─────────────────────────── */
+.gd-pick {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px dashed var(--border-dark);
+  border-radius: 14px;
+  background: var(--surface);
+  font-family: var(--sans);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.gd-pick:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.gd-pick:disabled { cursor: progress; opacity: 0.8; }
+
+.gd-pick-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--dark-btn);
+  color: #fff;
+}
+
+.gd-pick-text { display: flex; flex-direction: column; gap: 2px; }
+.gd-pick-text b { font-size: 14px; font-weight: 600; color: var(--text); }
+.gd-pick-text small { font-size: 12px; color: var(--muted); }
+
+/* ── Lijst ─────────────────────────────── */
+.gd-list-wrap {
+  flex: 1;
+  min-height: 120px;
+  overflow-y: auto;
+  margin: 0 -6px;
+  padding: 0 6px;
+}
+
+.gd-section + .gd-section { margin-top: 14px; }
+
+.gd-section-title {
+  margin: 0 0 6px 2px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.gd-section-title span {
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 100px;
+  background: var(--surface2);
+  letter-spacing: 0;
+}
+
+.gd-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.gd-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 10px 10px 12px;
+  background: var(--surface);
+  transition: background 0.12s, opacity 0.15s;
+}
+
+.gd-item + .gd-item { border-top: 1px solid var(--border); }
+.gd-item:hover { background: var(--surface2); }
+.gd-item--removing { opacity: 0.5; }
+
+.gd-item-icon {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--surface2);
+  color: var(--muted);
+}
+
+.gd-item-icon img { width: 16px; height: 16px; }
+
+.gd-item-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.gd-item-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gd-item-meta {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.gd-item-btn {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s, color 0.12s;
+}
+
+.gd-item:hover .gd-item-btn,
+.gd-item-btn:focus-visible { opacity: 1; }
+
+.gd-item-btn:hover { background: var(--border); color: var(--text); }
+.gd-item-btn--danger:hover { background: #FEF2F2; color: #B91C1C; }
+.gd-item-btn:disabled { cursor: not-allowed; }
+
+/* ── Laden / leeg ──────────────────────── */
+.gd-skeletons { display: flex; flex-direction: column; gap: 8px; }
+
+.gd-skeleton {
+  display: block;
+  height: 50px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, var(--border) 25%, var(--surface2) 50%, var(--border) 75%);
+  background-size: 200% 100%;
+  animation: gd-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes gd-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.gd-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 28px 16px;
+  text-align: center;
+}
+
+.gd-empty-icon {
+  width: 44px;
+  height: 44px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--surface2);
+  color: var(--muted);
+}
+
+.gd-empty-title { margin: 0; font-size: 14px; font-weight: 600; color: var(--text); }
+.gd-empty-sub { margin: 0; max-width: 340px; font-size: 13px; line-height: 1.5; color: var(--muted); }
+
+/* ── Voetnoot ──────────────────────────── */
+.gd-footnote {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Knop "Bestanden" op de connectiekaart */
+.co-btn-files {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border-dark);
+  border-radius: 100px;
+  background: var(--surface);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.co-btn-files:hover { background: var(--surface2); border-color: var(--text); }
+
+@media (max-width: 600px) {
+  .gd-item-btn { opacity: 1; }
+}

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { flushSync } from 'react-dom';
-import { api } from '../lib/api.js';
+import { api, BASE_URL } from '../lib/api.js';
 import { useAuth } from './AuthContext.jsx';
 import { PERMISSIONS } from '../lib/permissions.js';
 
@@ -204,7 +204,8 @@ export function WorkspaceProvider({ slug, children }) {
     if (!connection) return;
 
     if (connection.auth_type === 'oauth') {
-      window.location.href = connection.auth_config.oauth_url;
+      // Alle OAuth-koppelingen via dezelfde route (GET = doorsturen naar de provider)
+      window.location.href = `${BASE_URL}/api/workspaces/${slug}/connections/${connectionId}/connect`;
       return;
     }
 
@@ -255,6 +256,23 @@ export function WorkspaceProvider({ slug, children }) {
     ));
   }
 
+  // ── Gekozen bestanden van een connectie (Google Drive, straks OneDrive) ──
+  // orgConnectionId = connection.organization_connection.id
+  // De lijst komt rechtstreeks van Google: met drive.file geeft Google alleen
+  // terug wat de klant in de Picker heeft gekozen.
+
+  async function getPickerConfig(orgConnectionId) {
+    const res = await api.get(`/workspaces/${slug}/connections/${orgConnectionId}/picker`);
+    return res.data; // Google: { accessToken, apiKey, appId }
+  }
+
+  async function fetchConnectionItems(orgConnectionId) {
+    const res = await api.get(`/workspaces/${slug}/connections/${orgConnectionId}/items`);
+    return res.data.items ?? [];
+  }
+
+
+
   return (
     <WorkspaceContext.Provider value={{
       isSidebarOpen, toggleSidebar,
@@ -269,6 +287,7 @@ export function WorkspaceProvider({ slug, children }) {
       disableConnection,
       updateConnectionConfig,
       deleteConnection,
+      getPickerConfig, fetchConnectionItems,
       stats,
     }}>
       {children}

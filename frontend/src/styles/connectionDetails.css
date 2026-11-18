@@ -1,0 +1,391 @@
+/* connectionDetails.css: detailweergave van een connectie
+   Bouwt voort op .co-modal / .co-modal-backdrop / .co-badge uit connecties.css */
+
+.co-modal.cd-modal {
+  position: fixed;
+  width: min(760px, calc(100vw - 32px));
+  max-height: min(820px, calc(100svh - 32px));
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.cd-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+}
+
+.cd-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* ── Hero ──────────────────────────────── */
+.cd-hero {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 48px 32px 32px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+
+.cd-hero-icon {
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+.cd-hero-icon svg,
+.cd-hero-icon img { width: 48px; height: 48px; }
+
+.cd-hero-text { flex: 1; min-width: 0; }
+
+.cd-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.cd-title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.cd-tagline {
+  margin: 6px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.cd-hero-actions { flex-shrink: 0; }
+
+/* ── Knoppen in de hero ────────────────── */
+.cd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 12px;
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.cd-btn--primary { background: var(--dark-btn); color: #fff; }
+.cd-btn--primary:hover:not(:disabled) { opacity: 0.88; }
+.cd-btn--primary:disabled { opacity: 0.6; cursor: progress; }
+
+.cd-btn--connected {
+  background: var(--surface);
+  border: 1px solid var(--border-dark);
+  color: var(--text);
+  cursor: default;
+}
+
+button.cd-btn--connected { cursor: pointer; }
+button.cd-btn--connected:hover { background: var(--surface2); }
+
+.cd-btn--soon {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+/* Split-knop: hoofdactie + pijltje voor het menu */
+.cd-split {
+  position: relative;
+  display: inline-flex;
+}
+
+.cd-split-main:not(:last-child) {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.cd-split-toggle {
+  padding: 0 12px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.cd-split-toggle.cd-btn--primary { border-left: 1px solid rgba(255, 255, 255, 0.22); }
+.cd-split-toggle.cd-btn--connected { border-left: none; }
+
+.cd-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 5;
+  min-width: 220px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+
+.cd-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cd-menu-item:hover:not(:disabled) { background: var(--surface2); }
+.cd-menu-item:disabled { opacity: 0.5; cursor: progress; }
+.cd-menu-item--danger { color: #B91C1C; }
+.cd-menu-item--danger:hover { background: #FEF2F2 !important; }
+
+/* ── Body ──────────────────────────────── */
+.cd-body {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 28px 32px 32px;
+}
+
+.cd-about {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--text);
+  white-space: pre-line;
+}
+
+.cd-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.cd-section-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.cd-count {
+  padding: 2px 8px;
+  border-radius: 100px;
+  background: var(--surface2);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* ── Tool-chips ────────────────────────── */
+.cd-chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.cd-chip {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 100px;
+  background: var(--surface2);
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.cd-chip svg { flex-shrink: 0; color: var(--muted); }
+.cd-chip:hover { background: var(--border); }
+
+.cd-chip--active,
+.cd-chip--active:hover {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.cd-chip--active svg { color: var(--accent); }
+
+.cd-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Uitleg van de gekozen tool */
+.cd-tool-detail {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  animation: cd-in 0.18s ease-out;
+}
+
+@keyframes cd-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.cd-tool-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.cd-tool-text { flex: 1; min-width: 0; }
+
+.cd-tool-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cd-tool-key {
+  display: inline-block;
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.cd-tool-summary {
+  margin: 8px 0 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.cd-hint {
+  margin: 14px 2px 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.cd-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 18px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.cd-note svg { flex-shrink: 0; margin-top: 1px; color: var(--accent); }
+
+.cd-empty {
+  margin: 0;
+  padding: 18px;
+  border: 1px dashed var(--border-dark);
+  border-radius: 12px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* ── Koppelen en privacy ───────────────── */
+.cd-auth {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: var(--surface2);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.cd-auth svg { flex-shrink: 0; margin-top: 2px; color: var(--muted); }
+
+/* ── Klikbare kaart op de connectiepagina ─ */
+.co-item-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.co-item-main:hover .co-item-name { text-decoration: underline; text-underline-offset: 3px; }
+.co-item-main:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 10px; }
+
+/* ── Mobiel ────────────────────────────── */
+@media (max-width: 640px) {
+  .cd-hero {
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 44px 20px 24px;
+  }
+
+  .cd-hero-icon { width: 64px; height: 64px; border-radius: 14px; }
+  .cd-hero-icon svg,
+  .cd-hero-icon img { width: 36px; height: 36px; }
+
+  .cd-hero-text { flex-basis: calc(100% - 80px); }
+  .cd-title { font-size: 22px; }
+
+  .cd-hero-actions { width: 100%; }
+  .cd-hero-actions > .cd-btn,
+  .cd-split { width: 100%; }
+  .cd-split-main { flex: 1; }
+
+  .cd-body { padding: 24px 20px 28px; gap: 28px; }
+  .cd-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+}
