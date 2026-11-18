@@ -6,11 +6,9 @@ Built from scratch with Node.js, React and PostgreSQL + pgvector. No LangChain o
 
 ## Demo
 
-> _Screenshot / GIF coming soon_
->
-> `docs/demo-chat.gif`: asking a question → the model calls the search tool → answer streams in with `[1] [2]` source citations
-> `docs/demo-documents.png`: document upload with processing status (queued → processing → completed)
-> `docs/demo-roles.png`: workspace members and roles
+![RAGGY demo: upload a document, ask a question, get an answer grounded in that document](docs/demo.gif)
+
+Upload a document → RAGGY parses, chunks and embeds it → ask a question in plain language → the answer comes from your own documents.
 
 ## Highlights
 
