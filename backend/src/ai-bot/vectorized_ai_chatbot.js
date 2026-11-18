@@ -2,13 +2,17 @@ import OpenAI from "openai";
 import db from "../database/db.js";
 
 import { SYSTEM_PROMPT } from "./prompts.js";
-import { openaiInputFormat3 } from "./refactorCode.js";
+import { openaiInputFormat } from "./refactorCode.js";
+
+import { toolExecute, toolMap } from "./tools/toolRegistry.js";
+import { sdbGroepRetrieve } from "./tools/sdbGroepRetrieve.js";
+import { listDriveFiles, searchDriveFiles, readDriveFile } from "./tools/googleDrive.js";
 
 const EMBED_MODEL = "text-embedding-3-small";
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-async function embed(text) {
+export async function embed(text) {
 	const res = await client.embeddings.create({
 		model: EMBED_MODEL,
 		input: text,
@@ -17,140 +21,20 @@ async function embed(text) {
 }
 
 async function call_function(name, args, orgId) {
+	if (toolMap.has(name)) {
+		return await toolExecute(name, args, orgId);
+	}
+
 	switch (name) {
 		case "search_sdb":
-			return await sdbGroepRetrieve(args.question, args.keywords);
-		case "search_documents":
-			return await retrieveDocuments(
-				args.question,
-				args.keywords ?? [],
-				orgId,
-			);
+			return await sdbGroepRetrieve(args);
+		case "list_drive_files":
+			return await listDriveFiles(args, orgId);
+		case "search_drive_files":
+			return await searchDriveFiles(args, orgId);
+		case "read_drive_file":
+			return await readDriveFile(args, orgId);
 	}
-}
-
-async function sdbGroepRetrieve(question, keywords = []) {
-	const embedding = await embed(question);
-
-	const lowercaseKeywords = keywords.map((k) => k.toLowerCase());
-	const likePatterns = keywords.map((k) => `%${k}%`);
-
-	const rows = await db`
-		SELECT
-		content,
-		videos,
-		links,
-		images,
-		metadata,
-		1 - (embedding <=> ${JSON.stringify(embedding)}::vector) AS similarity,
-		CASE 
-			WHEN (
-			metadata->>'title' ILIKE ANY (${likePatterns})
-			OR metadata->>'category' ILIKE ANY (${likePatterns})
-			OR string_to_array(lower(metadata->>'tags'), ', ') && ${lowercaseKeywords}::text[]
-			) THEN 0.3
-			ELSE 0.0 
-		END AS text_boost
-		FROM sdb_groep_articles
-		WHERE 1 - (embedding <=> ${JSON.stringify(embedding)}::vector) > 0.42
-		ORDER BY (
-		1 - (embedding <=> ${JSON.stringify(embedding)}::vector) + 
-		CASE 
-			WHEN (
-			metadata->>'title' ILIKE ANY (${likePatterns})
-			OR metadata->>'category' ILIKE ANY (${likePatterns})
-			OR string_to_array(lower(metadata->>'tags'), ', ') && ${lowercaseKeywords}::text[]
-			) THEN 0.3 
-			ELSE 0.0 
-		END
-		) DESC
-		LIMIT 5;
-  `;
-
-	return rows;
-}
-
-async function retrieveDocuments(question, keywords = [], organizationId) {
-	const embedding = await embed(question);
-
-	const likePatterns = keywords.map((k) => `%${k.trim()}%`);
-
-	const rows = await db`
-    WITH matched_chunks AS (
-      SELECT
-        id,
-        document_id,
-        organization_id,
-        chunk_index,
-        content,
-        metadata,
-
-        1 - (
-          embedding <=>
-          ${JSON.stringify(embedding)}::vector
-        ) AS similarity,
-
-        CASE
-          WHEN (
-            metadata->>'documentTitle' ILIKE ANY (${likePatterns}::text[])
-            OR metadata->>'filename' ILIKE ANY (${likePatterns}::text[])
-          )
-          THEN 0.3
-          ELSE 0.0
-        END AS title_boost,
-
-        CASE
-          WHEN content ILIKE ANY (${likePatterns}::text[])
-          THEN 0.1
-          ELSE 0.0
-        END AS content_boost
-
-      FROM document_chunks
-
-      WHERE organization_id = ${organizationId}::uuid
-    )
-
-    SELECT
-      id,
-      document_id,
-      chunk_index,
-      content,
-      metadata,
-      similarity,
-      title_boost,
-      content_boost,
-
-      (
-        similarity +
-        title_boost +
-        content_boost
-      ) AS score
-
-    FROM matched_chunks
-
-    WHERE
-      similarity > 0.42
-      OR title_boost > 0
-
-    ORDER BY score DESC
-
-    LIMIT 5;
-  `;
-
-	return rows.map((row) => ({
-		documentId: row.document_id,
-		chunkIndex: row.chunk_index,
-
-		filename: row.metadata?.filename,
-		documentTitle: row.metadata?.documentTitle,
-		pageNumber: row.metadata?.pageNumber,
-		totalPages: row.metadata?.totalPages,
-
-		content: row.content,
-
-		similarity: Number(row.similarity),
-		score: Number(row.score),
-	}));
 }
 
 export async function promptAI(userInput, history) {
@@ -158,8 +42,7 @@ export async function promptAI(userInput, history) {
 	const tools = userInput.tools;
 	const orgId = userInput.orgId;
 
-	const formattedInput = await openaiInputFormat3(history);
-	
+	const formattedInput = await openaiInputFormat(history);
 
 	const input = [
 		{ role: "system", content: SYSTEM_PROMPT },
@@ -233,9 +116,9 @@ export async function promptAI(userInput, history) {
 						const output = [
 							{
 								type: "input_text",
-								text: JSON.stringify(result, null, 2)
-							}
-						]
+								text: JSON.stringify(result, null, 2),
+							},
+						];
 
 						input.push({
 							type: "function_call_output",
@@ -271,8 +154,23 @@ export async function promptAI(userInput, history) {
 						// 	)
 						// 	.join("\n\n");
 
-						// // console.log("formattedForLLM: ")
-						// // console.dir(formattedForLLM, { depth: null })
+						// input.push({
+						// 	type: "function_call_output",
+						// 	call_id: tc.call_id,
+						// 	output: formattedForLLM,
+						// });
+
+						// yield {
+						// 	type: "function_call_output",
+						// 	item: {
+						// 		type: "function_call_output",
+						// 		call_id: tc.call_id,
+						// 		output: formattedForLLM,
+						// 	},
+						// };
+
+						// console.log("formattedForLLM: ")
+						// console.dir(formattedForLLM, { depth: null })
 					}
 
 					// console.dir(input, { depth: null })

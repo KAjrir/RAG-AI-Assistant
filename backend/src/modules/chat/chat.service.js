@@ -125,7 +125,6 @@ export const saveToolMessage = async (chatId, item) => {
 	// Bij function_call_output alleen de output-array.
 	// const content = isFunctionCall ? item : item.output;
 	const content = item;
-	console.log("REGEL 134 CHATSERVICE: ", item)
 
 	const rows = await db`
     	INSERT INTO messages (
@@ -205,11 +204,6 @@ export const updateChatTitle = async (chatId, title) => {
 };
 
 export const getToolsForChat = async (orgId, requestedConnectionIds) => {
-	// 1. Check of org deze connections heeft enabled
-	// 2. Haal config op (api_key etc voor api_key type)
-	// 3. Haal connection_tools op met parameters
-	// Alles in 1 query!
-
 	const tools = await db`
         SELECT 
             c.id as connection_id,

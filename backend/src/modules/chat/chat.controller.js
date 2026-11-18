@@ -304,7 +304,7 @@ router.post("/messages", async (req, res) => {
 	// console.dir(availableTools, { depth: null })
 
 	const tools = openaiToolFormat(availableTools);
-	// console.dir(tools, {depth: null})
+	console.dir(tools, {depth: null})
 
 	const history = await getChatHistory(orgId, userId, chatId);
 
