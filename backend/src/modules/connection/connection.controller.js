@@ -30,6 +30,7 @@ router.use(requireOwner, requireActiveSubscription);
 
 router.get("/:connectionId/connect", async (req, res) => {
 	const orgId = req.orgId;
+	const slug = req.slug;
 	const connectionId = req.params.connectionId;
 	const config = req.body.config;
 	console.log(orgId, connectionId, config);
@@ -59,11 +60,12 @@ router.get("/:connectionId/connect", async (req, res) => {
 		// 	return res.json({ success: true });
 
 		case "oauth": {
-			const url = oauthProviders[connection.key].authUrl(
+			const url = oauthProviders[connection.key].authUrl({
 				orgId,
-				connection.key,
+				slug,
+				key: connection.key,
 				connectionId,
-			);
+			});
 
 			return res.redirect(url);
 		}

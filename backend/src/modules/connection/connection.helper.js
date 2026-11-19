@@ -4,7 +4,7 @@ import db from "../../database/db.js";
 
 export const oauthProviders = {
 	google_drive: {
-		authUrl: (orgId, key, connectionId) => {
+		authUrl: ({ orgId, slug, key, connectionId }) => {
 			const state = crypto.randomBytes(32).toString("base64url");
 			const codeVerifier = crypto.randomBytes(32).toString("base64url");
 			const codeChallenge = crypto
@@ -17,6 +17,7 @@ export const oauthProviders = {
 				orgId,
 				codeVerifier,
 				connectionId,
+				slug,
 			});
 
 			const params = new URLSearchParams({

@@ -37,6 +37,7 @@ export async function requireWorkspace(req, res, next) {
   }
 
   req.orgId = membership.organization_id
+  req.slug = slug
   req.role  = membership.role
   req.plan = membership.organization_plan
   req.planConfig = PLANS[membership.organization_plan]

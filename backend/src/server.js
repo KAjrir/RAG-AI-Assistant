@@ -77,7 +77,7 @@ app.get("/api/auth/:provider/callback", async (req, res) => {
 	console.log("AUTH ERROR: ", error);
 	console.log("PROVIDER: ", provider);
 
-	const { orgId, key, codeVerifier, connectionId } = states.get(state);
+	const { orgId, key, codeVerifier, connectionId, slug } = states.get(state);
 	states.delete(state);
 
 	console.log(orgId);
@@ -103,7 +103,7 @@ app.get("/api/auth/:provider/callback", async (req, res) => {
 			)
 		`;
 
-		return res.redirect("/dashboard");
+		return res.redirect(`${FRONTEND_URL}/w/${slug}/connecties`);
 	}
 
 	if (key === "onedrive") {
