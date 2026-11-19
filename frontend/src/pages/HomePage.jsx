@@ -583,6 +583,7 @@ function Footer() {
           <a href="#hoe-het-werkt">Hoe het werkt</a>
           <a href="#prijzen">Prijzen</a>
           <a href="#faq">FAQ</a>
+          <a href="/privacy">Privacybeleid</a>
           <a href="mailto:support@raggy.nl">Contact</a>
         </nav>
       </div>

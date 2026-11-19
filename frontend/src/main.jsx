@@ -4,6 +4,7 @@ import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
 import './index.css'
 
 import HomePage from './pages/HomePage.jsx'
+import Privacy from './pages/Privacy.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Inloggen from './pages/Inloggen.jsx'
 import Registreren from './pages/Registreren.jsx'
@@ -33,6 +34,7 @@ import Abonnement from './pages/workspace/Abonnement.jsx'
 
 const router = createBrowserRouter([
   { path: '/',                    element: <HomePage /> },
+  { path: '/privacy',             element: <Privacy /> },
   { path: '/inloggen',            element: <Inloggen /> },
   { path: '/registreren',         element: <Registreren /> },
   { path: '/wachtwoord-vergeten', element: <WachtwoordVergeten /> },
