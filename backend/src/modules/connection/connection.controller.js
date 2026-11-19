@@ -115,7 +115,10 @@ router.delete("/:orgConnectionId", async (req, res) => {
 	const orgId = req.orgId;
 	const orgConnectionId = req.params.orgConnectionId;
 
-	await deleteOrgConnection(orgId, orgConnectionId);
+	const orgConn = await deleteOrgConnection(orgId, orgConnectionId);
+	
+	const provider = oauthProviders[orgConn.key];
+	await provider.revoke(orgConn.config)
 
 	res.status(200).json({
 		success: true,

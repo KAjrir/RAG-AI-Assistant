@@ -104,6 +104,28 @@ export const oauthProviders = {
 				expires_at: Date.now() + data.expires_in * 1000, // expires_in is in seconden
 			};
 		},
+		async revoke(config) {
+			const token = config.refresh_token ?? config.access_token;
+			if (!token) return;
+
+			const res = await fetch(
+				`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(token)}`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/x-www-form-urlencoded",
+					},
+				},
+			);
+
+			// 400 = token was al ongeldig (zelf ingetrokken door de klant, of verlopen).
+			// Dan is het doel al bereikt, dus geen fout.
+			if (!res.ok && res.status !== 400) {
+				throw new Error(
+					`Google gaf een fout bij het intrekken (${res.status}).`,
+				);
+			}
+		},
 	},
 
 	// onedrive: { authUrl: (state) => …, exchangeCode: async (code) => … }

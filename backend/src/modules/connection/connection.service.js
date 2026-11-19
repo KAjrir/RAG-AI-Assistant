@@ -108,11 +108,18 @@ export const disableOrgConnection = async (orgId, orgConnectionId) => {
 };
 
 export const deleteOrgConnection = async (orgId, orgConnectionId) => {
-	await db`
-        DELETE FROM organization_connections
-        WHERE id = ${orgConnectionId}
-        AND organization_id = ${orgId};
-    `;
+	const orgConn = await db`
+		DELETE FROM organization_connections oc
+		USING connections c
+		WHERE oc.id = ${orgConnectionId}
+			AND oc.organization_id = ${orgId}
+			AND oc.connection_id = c.id
+		RETURNING
+			oc.*,
+			c.key;
+	`;
+
+	return orgConn[0];
 };
 
 export const updateOrgConnectionConfig = async (

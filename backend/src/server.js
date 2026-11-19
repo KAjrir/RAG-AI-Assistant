@@ -70,12 +70,6 @@ const chatLimiter = rateLimit({
 
 app.get("/api/auth/:provider/callback", async (req, res) => {
 	const { code, state, error } = req.query;
-	const { provider } = req.params;
-
-	console.log("CODE: ", code);
-	console.log("STATE: ", state);
-	console.log("AUTH ERROR: ", error);
-	console.log("PROVIDER: ", provider);
 
 	const { orgId, key, codeVerifier, connectionId, slug } = states.get(state);
 	states.delete(state);
