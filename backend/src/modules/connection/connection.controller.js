@@ -13,6 +13,7 @@ import {
 import { requireActiveSubscription, requireOwner } from "../middleware.js";
 import { getAccessToken, oauthProviders } from "./connection.helper.js";
 import { FILE_TYPES } from "../../ai-bot/tools/googleDrive.js";
+import { FRONTEND_URL } from "../../constants.js";
 
 const router = Router();
 
@@ -32,47 +33,60 @@ router.get("/:connectionId/connect", async (req, res) => {
 	const orgId = req.orgId;
 	const slug = req.slug;
 	const connectionId = req.params.connectionId;
-	const config = req.body.config;
-	console.log(orgId, connectionId, config);
 
 	const connection = await getConnection(connectionId, orgId);
-	console.log(connection);
 
-	if (connection.organization_connection) {
-		if (connection.organization_connection.enabled === false) {
-			const orgConnection = await enableOrgConnection(
-				orgId,
-				connectionId,
-			);
-			return res.status(201).json(orgConnection);
-		}
+	if (!connection || connection.auth_type !== "oauth" || !oauthProviders[connection.key]) {
+		return res.redirect(
+			`${FRONTEND_URL}/w/${slug}/connecties?connected=${connection?.key ?? ""}&status=mislukt`,
+		);
+	}
+
+	const url = oauthProviders[connection.key].authUrl({
+		orgId,
+		slug,
+		key: connection.key,
+		connectionId,
+	});
+
+	return res.redirect(url);
+});
+
+router.post("/:connectionId/connect", async (req, res) => {
+	const orgId = req.orgId;
+	const connectionId = req.params.connectionId;
+	const config = req.body.config ?? {};
+
+	const connection = await getConnection(connectionId, orgId);
+	if (!connection) {
+		return res.status(404).json({ error: "Connectie niet gevonden." });
+	}
+
+	// Bestaat al maar staat uit: weer aanzetten (ook voor OAuth, tokens zijn er nog)
+	if (connection.organization_connection?.enabled === false) {
+		const orgConnection = await enableOrgConnection(orgId, connectionId);
+		return res.status(200).json(orgConnection);
 	}
 
 	switch (connection.auth_type) {
-		case "public":
-			await enableOrgConnection(orgId, connectionId);
-
-			return res.json({ success: true });
-
-		// case "api_key":
-		// 	await connectApiKey(orgId, connectionId, req.body.apiKey);
-
-		// 	return res.json({ success: true });
-
-		case "oauth": {
-			const url = oauthProviders[connection.key].authUrl({
-				orgId,
-				slug,
-				key: connection.key,
-				connectionId,
-			});
-
-			return res.redirect(url);
+		case "public": {
+			const orgConnection = await enableOrgConnection(orgId, connectionId);
+			return res.status(201).json(orgConnection);
 		}
-		default:
+
+		// case "api_key": {
+		// 	const orgConnection = await connectApiKey(orgId, connectionId, config);
+		// 	return res.status(201).json(orgConnection);
+		// }
+
+		case "oauth":
+			// Een nieuwe OAuth-koppeling loopt via de GET (redirect), niet via fetch
 			return res.status(400).json({
-				error: "Unsupported authentication type",
+				error: "Deze connectie koppel je door in te loggen bij de dienst zelf.",
 			});
+
+		default:
+			return res.status(400).json({ error: "Dit type koppeling wordt niet ondersteund." });
 	}
 });
 

@@ -90,7 +90,7 @@ export const enableOrgConnection = async (orgId, connectionId, config) => {
         ON CONFLICT (organization_id, connection_id) DO UPDATE SET
             enabled = true,
             updated_at = NOW()
-        RETURNING *;
+        RETURNING id, enabled, connected_at;
     `;
 
 	return orgConnection[0];
