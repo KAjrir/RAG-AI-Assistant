@@ -325,51 +325,6 @@
   text-decoration: none;
 }
 
-.auth-divider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 4px 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.auth-divider::before,
-.auth-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
-
-.btn-oauth {
-  width: 100%;
-  padding: 11px;
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border-dark);
-  border-radius: 100px;
-  font-family: var(--sans);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-}
-
-.btn-oauth:hover {
-  border-color: var(--accent);
-  background: var(--accent-light);
-}
-
-.oauth-icon {
-  width: 18px;
-  height: 18px;
-}
-
 /* ── Footer link ───────────────────────── */
 .auth-footer {
   margin-top: 28px;
