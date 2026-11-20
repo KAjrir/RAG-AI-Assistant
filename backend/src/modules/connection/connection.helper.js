@@ -58,13 +58,12 @@ export const oauthProviders = {
 				throw new Error("Google token exchange failed");
 			}
 
-			const { access_token, refresh_token, scope, expires_in } =
+			const { access_token, refresh_token, expires_in } =
 				await response.json();
 
 			return {
 				access_token,
 				refresh_token,
-				scope,
 				expires_at: Date.now() + expires_in * 1000,
 			};
 		},
@@ -83,10 +82,15 @@ export const oauthProviders = {
 			});
 
 			const data = await res.json();
-
+			console.log(data);
 			if (!res.ok) {
 				// invalid_grant = refresh token is ingetrokken of verlopen
 				if (data.error === "invalid_grant") {
+					console.error("OAuth refresh failed:", {
+						status: res.status,
+						error: data.error,
+						description: data.error_description,
+					});
 					throw new Error(
 						"De koppeling met Google Drive is verlopen. Ga naar Connecties en koppel opnieuw.",
 					);

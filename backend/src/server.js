@@ -82,18 +82,19 @@ app.get("/api/auth/:provider/callback", async (req, res) => {
 	}
 
 	if (key === "google_drive") {
-		const provider = await oauthProviders[key];
-		const { access_token, refresh_token, scope } = await provider.exchangeCode(
+		const provider = oauthProviders[key];
+		const { access_token, refresh_token, expires_at } = await provider.exchangeCode(
 			code,
 			codeVerifier,
 		);
+		console.log("TOKEN_AANVRAAG: ", miauw)
 
 		await db`
 			INSERT INTO organization_connections (organization_id, connection_id, config)
 			VALUES(
 				${orgId},
 				${connectionId},
-				${JSON.stringify({ access_token, refresh_token, scope })}::jsonb
+				${JSON.stringify({ access_token, refresh_token, expires_at })}::jsonb
 			)
 		`;
 
